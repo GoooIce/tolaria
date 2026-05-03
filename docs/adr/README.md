@@ -60,7 +60,7 @@ proposed → active → superseded
 | [0002](0002-filesystem-source-of-truth.md) | Filesystem as the single source of truth | active |
 | [0003](0003-single-note-model.md) | Single note open at a time (no tabs) | active |
 | [0004](0004-vault-vs-app-settings-storage.md) | Vault vs app settings for state storage | active |
-| [0005](0005-tauri-ios-for-ipad.md) | Tauri v2 iOS for iPad support (vs SwiftUI rewrite) | active |
+| [0005](0005-tauri-ios-for-ipad.md) | Tauri v2 iOS for iPad support (vs SwiftUI rewrite) | superseded → [0109](0109-universal-mobile-app-with-expo-react-native.md) |
 | [0006](0006-flat-vault-structure.md) | Flat vault structure (no type-based folders) | active |
 | [0007](0007-title-filename-sync.md) | Title equals filename (slug sync) | active |
 | [0008](0008-underscore-system-properties.md) | Underscore convention for system properties | active |
@@ -162,3 +162,4 @@ proposed → active → superseded
 | [0107](0107-markdown-durable-tldraw-whiteboards.md) | Markdown-durable tldraw whiteboards in notes | active |
 | [0107](0107-pointer-owned-editor-block-reordering.md) | Pointer-owned editor block reordering | active |
 | [0108](0108-sanitized-rendered-markup-and-safe-regex.md) | Sanitized rendered markup and safe user regex | active |
+| [0109](0109-universal-mobile-app-with-expo-react-native.md) | Universal mobile app with Expo React Native | active |

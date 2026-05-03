@@ -1,0 +1,860 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tolaria Mobile High Fidelity Mockups</title>
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css">
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css">
+  <style>
+    :root {
+      --surface-app: #ffffff;
+      --surface-sidebar: #f7f6f3;
+      --surface-muted: #f3f3f1;
+      --surface-selected: #eaf7f0;
+      --text-primary: #37352f;
+      --text-secondary: #787774;
+      --text-muted: #b4b4b4;
+      --border: #e9e9e7;
+      --border-strong: #d9d9d6;
+      --blue: #155dff;
+      --blue-light: #e8f0ff;
+      --green: #38a169;
+      --green-light: rgba(56, 161, 105, 0.12);
+      --orange: #d69e2e;
+      --red: #e53e3e;
+      --purple: #805ad5;
+      --shadow: 0 26px 70px rgba(34, 34, 30, 0.18), 0 4px 16px rgba(34, 34, 30, 0.08);
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text-primary);
+      background: #e6e3db;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        linear-gradient(135deg, rgba(255,255,255,0.72), rgba(255,255,255,0.34)),
+        radial-gradient(circle at 8% 18%, rgba(56, 161, 105, 0.18), transparent 34%),
+        radial-gradient(circle at 92% 10%, rgba(21, 93, 255, 0.12), transparent 32%),
+        #e6e3db;
+      padding: 44px 48px 54px;
+    }
+
+    .board-header {
+      max-width: 1820px;
+      margin: 0 auto 30px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: 30px;
+      letter-spacing: 0;
+      line-height: 1.1;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--text-secondary);
+      font-size: 15px;
+      line-height: 1.45;
+    }
+
+    .flow {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text-secondary);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .pill {
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.72);
+      border-radius: 999px;
+      padding: 7px 11px;
+    }
+
+    .screens {
+      max-width: 1820px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(260px, 1fr));
+      gap: 28px;
+      align-items: start;
+    }
+
+    .screen-block {
+      display: grid;
+      gap: 14px;
+    }
+
+    .caption {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      color: var(--text-secondary);
+      font-size: 13px;
+      padding: 0 10px;
+    }
+
+    .caption strong {
+      color: var(--text-primary);
+      font-size: 15px;
+      font-weight: 650;
+    }
+
+    .phone {
+      width: 393px;
+      height: 852px;
+      margin: 0 auto;
+      border-radius: 48px;
+      background: #0b0b0b;
+      padding: 12px;
+      box-shadow: var(--shadow);
+      position: relative;
+    }
+
+    .phone::before {
+      content: "";
+      position: absolute;
+      top: 18px;
+      left: 50%;
+      width: 120px;
+      height: 34px;
+      transform: translateX(-50%);
+      background: #0b0b0b;
+      border-radius: 999px;
+      z-index: 5;
+    }
+
+    .screen {
+      height: 100%;
+      overflow: hidden;
+      border-radius: 38px;
+      background: var(--surface-app);
+      position: relative;
+    }
+
+    .status {
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      font-weight: 700;
+      font-size: 15px;
+      position: relative;
+      z-index: 6;
+    }
+
+    .indicators {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #111;
+      font-size: 14px;
+    }
+
+    .toolbar {
+      height: 54px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 18px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,0.94);
+    }
+
+    .toolbar.transparent {
+      border-bottom: 0;
+      background: transparent;
+    }
+
+    .title {
+      font-size: 19px;
+      font-weight: 720;
+      letter-spacing: 0;
+    }
+
+    .muted-title {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      color: var(--text-secondary);
+      font-size: 14px;
+      font-weight: 600;
+      min-width: 0;
+    }
+
+    .icon-button {
+      width: 36px;
+      height: 36px;
+      display: inline-grid;
+      place-items: center;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: #fff;
+      color: var(--text-secondary);
+      font-size: 18px;
+      box-shadow: 0 5px 18px rgba(0,0,0,0.05);
+    }
+
+    .icon-button i,
+    .wide-button i,
+    .type-mark i,
+    .nav-row i,
+    .property-label i,
+    .tag i,
+    .bottom-strip i,
+    .muted-title i {
+      display: block;
+      line-height: 1;
+    }
+
+    .icon-button i { font-size: 17px; }
+
+    .icon-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .note-list {
+      height: calc(100% - 104px);
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .note-card {
+      min-height: 112px;
+      padding: 16px 18px 14px;
+      border-bottom: 1px solid var(--border);
+      position: relative;
+      background: #fff;
+    }
+
+    .note-card.selected {
+      background: var(--surface-selected);
+      box-shadow: inset 3px 0 0 var(--green);
+    }
+
+    .note-card h3 {
+      margin: 0 0 7px;
+      font-size: 17px;
+      line-height: 1.24;
+      font-weight: 700;
+      letter-spacing: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding-right: 22px;
+    }
+
+    .note-card p {
+      margin: 0;
+      color: var(--text-secondary);
+      font-size: 14px;
+      line-height: 1.36;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      overflow: hidden;
+    }
+
+    .note-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 11px;
+      color: var(--text-secondary);
+      font-size: 12px;
+    }
+
+    .tag-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      max-width: 150px;
+      padding: 3px 7px;
+      border-radius: 6px;
+      font-size: 12px;
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      background: var(--green-light);
+      color: var(--green);
+    }
+
+    .tag.blue { background: var(--blue-light); color: var(--blue); }
+    .tag.red { background: rgba(229, 62, 62, 0.1); color: var(--red); }
+
+    .type-mark {
+      position: absolute;
+      right: 18px;
+      top: 17px;
+      color: var(--green);
+    }
+
+    .type-mark i { font-size: 17px; }
+
+    .fab {
+      position: absolute;
+      right: 22px;
+      bottom: 24px;
+      width: 58px;
+      height: 58px;
+      border-radius: 999px;
+      background: var(--blue);
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-size: 28px;
+      box-shadow: 0 16px 32px rgba(21, 93, 255, 0.28);
+      z-index: 4;
+    }
+
+    .fab i { font-size: 27px; }
+
+    .bottom-strip {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 36px;
+      border-top: 1px solid var(--border);
+      background: rgba(255,255,255,0.96);
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      color: var(--text-secondary);
+      font-size: 11px;
+    }
+
+    .bottom-strip span {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .sidebar-canvas {
+      height: calc(100% - 50px);
+      display: grid;
+      grid-template-columns: 300px 93px;
+      overflow: hidden;
+    }
+
+    .mobile-sidebar {
+      background: var(--surface-sidebar);
+      border-right: 1px solid var(--border);
+      padding: 10px 10px 0;
+      overflow: hidden;
+    }
+
+    .sidebar-peek {
+      background: #fff;
+      box-shadow: inset 14px 0 28px rgba(0,0,0,0.05);
+      overflow: hidden;
+    }
+
+    .side-top {
+      height: 48px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 4px 8px;
+    }
+
+    .traffic {
+      display: flex;
+      gap: 6px;
+      margin-right: auto;
+    }
+
+    .dot { width: 10px; height: 10px; border-radius: 999px; background: var(--border-strong); }
+    .dot.red { background: #ff5f57; }
+    .dot.yellow { background: #febc2e; }
+    .dot.green { background: #28c840; }
+
+    .nav-row {
+      height: 39px;
+      display: grid;
+      grid-template-columns: 26px 1fr auto;
+      align-items: center;
+      gap: 8px;
+      border-radius: 7px;
+      padding: 0 8px;
+      font-size: 15px;
+      font-weight: 640;
+      color: var(--text-primary);
+    }
+
+    .nav-row i {
+      font-size: 17px;
+      justify-self: center;
+    }
+
+    .nav-row.active {
+      background: #e1e6fa;
+      color: var(--blue);
+    }
+
+    .count {
+      min-width: 28px;
+      height: 24px;
+      padding: 0 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.7);
+      color: var(--text-secondary);
+      font-weight: 500;
+      font-size: 13px;
+    }
+
+    .count.blue {
+      background: var(--blue);
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .section {
+      margin-top: 13px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    .section-title {
+      height: 27px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 8px;
+      color: var(--text-secondary);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+    }
+
+    .section-title span {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .color-orange { color: var(--orange); }
+    .color-red { color: var(--red); }
+    .color-green { color: var(--green); }
+    .color-purple { color: var(--purple); }
+    .color-blue { color: var(--blue); }
+
+    .peek-card {
+      width: 174px;
+      padding: 15px 12px;
+      border-bottom: 1px solid var(--border);
+      transform: translateX(-14px);
+    }
+
+    .peek-card h4 {
+      margin: 0 0 6px;
+      font-size: 15px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .peek-card p {
+      margin: 0;
+      color: var(--text-secondary);
+      font-size: 13px;
+      line-height: 1.36;
+    }
+
+    .editor-body {
+      height: calc(100% - 104px);
+      padding: 28px 28px 70px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .breadcrumb {
+      display: inline-flex;
+      max-width: 205px;
+      color: var(--text-secondary);
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .doc-title {
+      margin: 22px 0 18px;
+      font-size: 32px;
+      line-height: 1.08;
+      letter-spacing: 0;
+      font-weight: 790;
+    }
+
+    .rule {
+      height: 1px;
+      background: var(--border);
+      margin: 0 0 18px;
+    }
+
+    .bullet {
+      display: grid;
+      grid-template-columns: 18px 1fr;
+      gap: 11px;
+      margin: 0 0 16px;
+      font-size: 17px;
+      line-height: 1.42;
+    }
+
+    .bullet::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--blue);
+      margin-top: 8px;
+      justify-self: center;
+    }
+
+    .bullet strong { font-weight: 760; }
+    .link { color: var(--blue); text-decoration: underline; text-underline-offset: 2px; }
+
+    .wide-button {
+      height: 36px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      padding: 0 13px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      color: var(--text-secondary);
+      background: #fff;
+      box-shadow: 0 5px 18px rgba(0,0,0,0.05);
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .wide-button i { font-size: 16px; }
+
+    .properties {
+      height: calc(100% - 104px);
+      overflow: hidden;
+      padding: 10px 18px 30px;
+      background: #fff;
+    }
+
+    .property-row {
+      min-height: 40px;
+      display: grid;
+      grid-template-columns: 102px 1fr;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+    }
+
+    .property-label {
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .value-chip {
+      justify-self: start;
+      min-height: 30px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      border-radius: 8px;
+      padding: 4px 10px;
+      font-weight: 700;
+      background: var(--surface-muted);
+    }
+
+    .value-chip.green {
+      color: var(--green);
+      background: var(--green-light);
+    }
+
+    .disabled {
+      color: var(--text-muted);
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 16px 0 14px;
+    }
+
+    .field-group {
+      margin: 0 0 13px;
+    }
+
+    .field-group label {
+      display: block;
+      color: var(--text-secondary);
+      font-size: 14px;
+      margin: 0 0 7px;
+    }
+
+    .dashed-input {
+      height: 38px;
+      border: 1px dashed var(--border-strong);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    .add-relationship {
+      height: 42px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      color: var(--text-secondary);
+      font-size: 14px;
+      margin-top: 13px;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 9px 10px;
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    .history {
+      border-left: 3px solid var(--border);
+      padding-left: 12px;
+      display: grid;
+      gap: 12px;
+      color: var(--text-secondary);
+      font-size: 13px;
+    }
+
+    .history a {
+      color: var(--blue);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    @media (max-width: 1500px) {
+      .screens { grid-template-columns: repeat(2, minmax(260px, 1fr)); }
+    }
+  </style>
+</head>
+<body>
+  <header class="board-header">
+    <div>
+      <h1>Tolaria Mobile</h1>
+      <p class="subtitle">High-fidelity iPhone screens adapting the desktop four-column workspace into Bear-like horizontal navigation.</p>
+    </div>
+    <div class="flow" aria-label="Navigation model">
+      <span class="pill">Sidebar</span>
+      <span>←</span>
+      <span class="pill">Inbox</span>
+      <span>→</span>
+      <span class="pill">Editor</span>
+      <span>→</span>
+      <span class="pill">Properties</span>
+    </div>
+  </header>
+
+  <main class="screens">
+    <section class="screen-block">
+      <div class="caption"><strong>Inbox / Note List</strong><span>default surface</span></div>
+      <div class="phone">
+        <div class="screen">
+          <div class="status"><span>11:41</span><span class="indicators">▮▮▮ 5G ◖▰</span></div>
+          <div class="toolbar">
+            <span class="icon-button"><i class="ph ph-sidebar-simple"></i></span>
+            <span class="title">Inbox</span>
+            <span class="icon-row"><span class="icon-button"><i class="ph ph-magnifying-glass"></i></span><span class="icon-button"><i class="ph ph-plus"></i></span></span>
+          </div>
+          <div class="note-list">
+            <article class="note-card">
+              <span class="type-mark"><i class="ph ph-books"></i></span>
+              <h3>Refero Styles</h3>
+              <p>Refero Styles is a beta design-reference search tool from Refero focused on...</p>
+              <div class="tag-row">
+                <span class="tag blue">↗ styles.refero.design</span>
+                <span class="tag"><i class="ph ph-tag"></i> Design</span>
+              </div>
+              <div class="note-meta"><span>6h ago</span><span>Created 1d ago</span></div>
+            </article>
+            <article class="note-card selected">
+              <span class="type-mark"><i class="ph ph-paint-brush"></i></span>
+              <h3>Workflow Orchestration Essay</h3>
+              <p>The current narrative / temptation: everything routed through an LLM —...</p>
+              <div class="note-meta"><span>9h ago</span><span>Created 5d ago</span></div>
+            </article>
+            <article class="note-card">
+              <span class="type-mark"><i class="ph ph-file-text"></i></span>
+              <h3>How I Run an Open Source Project i...</h3>
+              <p>Tolaria's unexpected success: various sources of input. Requests: features &amp; bug...</p>
+              <div class="note-meta"><span>10h ago</span><span>Created 10h ago</span></div>
+            </article>
+            <article class="note-card">
+              <span class="type-mark"><i class="ph ph-file-text"></i></span>
+              <h3>Tolaria stable-v2026.5.2</h3>
+              <p>Tag: stable-v2026.5.2 Release: Tolaria 2026.5.2 Cleanup date: 2026-05-02...</p>
+              <div class="tag-row"><span class="tag red">♧ Tolaria MVP</span></div>
+              <div class="note-meta"><span>12h ago</span><span>Created 1d ago</span></div>
+            </article>
+            <article class="note-card">
+              <span class="type-mark color-blue"><i class="ph ph-flag"></i></span>
+              <h3>v2026-05-02</h3>
+              <p>Another Tolaria release in the bag! This one is focused on performance, bug fixes...</p>
+              <div class="note-meta"><span>12h ago</span><span>Created 1d ago</span></div>
+            </article>
+          </div>
+          <div class="fab"><i class="ph ph-pencil-simple"></i></div>
+          <div class="bottom-strip"><span><i class="ph ph-git-commit"></i> Commit</span><span class="color-green"><i class="ph ph-arrows-clockwise"></i> Synced</span><span><i class="ph-fill ph-sparkle"></i> Claude</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen-block">
+      <div class="caption"><strong>Sidebar Reveal</strong><span>swipe from list</span></div>
+      <div class="phone">
+        <div class="screen">
+          <div class="status"><span>11:41</span><span class="indicators">▮▮▮ 5G ◖▰</span></div>
+          <div class="sidebar-canvas">
+            <aside class="mobile-sidebar">
+              <div class="side-top">
+                <div class="traffic"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span></div>
+                <span class="icon-button"><i class="ph ph-command"></i></span>
+              </div>
+              <div class="nav-row active"><i class="ph-fill ph-tray"></i><span>Inbox</span><span class="count blue">7</span></div>
+              <div class="nav-row"><i class="ph ph-file-text"></i><span>All Notes</span><span class="count">8846</span></div>
+              <div class="nav-row"><i class="ph ph-archive"></i><span>Archive</span><span class="count">276</span></div>
+
+              <div class="section">
+                <div class="section-title"><span><i class="ph ph-caret-down"></i> FAVORITES</span><span class="count">2</span></div>
+                <div class="nav-row"><i class="ph ph-sun color-orange"></i><span>Personal Journal</span></div>
+                <div class="nav-row"><i class="ph ph-drop color-red"></i><span>Tolaria MVP</span></div>
+              </div>
+
+              <div class="section">
+                <div class="section-title"><span><i class="ph ph-caret-down"></i> VIEWS</span><span><i class="ph ph-plus"></i></span></div>
+                <div class="nav-row"><i class="ph ph-sun color-orange"></i><span>Notes for Mondays</span><span class="count">404</span></div>
+              </div>
+
+              <div class="section">
+                <div class="section-title"><span><i class="ph ph-caret-down"></i> TYPES</span><span><i class="ph ph-sliders-horizontal"></i> <i class="ph ph-plus"></i></span></div>
+                <div class="nav-row"><i class="ph ph-calendar color-red"></i><span>Years</span><span class="count">1</span></div>
+                <div class="nav-row"><i class="ph ph-calendar-blank color-red"></i><span>Quarters</span><span class="count">1</span></div>
+                <div class="nav-row"><i class="ph ph-wrench color-red"></i><span>Projects</span><span class="count">6</span></div>
+                <div class="nav-row"><i class="ph ph-gear color-purple"></i><span>Responsibilities</span><span class="count">18</span></div>
+                <div class="nav-row"><i class="ph ph-arrows-clockwise color-purple"></i><span>Procedures</span><span class="count">51</span></div>
+                <div class="nav-row"><i class="ph ph-tag color-green"></i><span>Topics</span><span class="count">83</span></div>
+                <div class="nav-row"><i class="ph ph-paint-brush color-green"></i><span>Essays</span><span class="count">448</span></div>
+              </div>
+            </aside>
+            <div class="sidebar-peek">
+              <div class="peek-card"><h4>Refero Styles</h4><p>Refero Styles is a beta design-reference...</p></div>
+              <div class="peek-card"><h4>Workflow Orchestration</h4><p>The current narrative / temptation...</p></div>
+              <div class="peek-card"><h4>How I Run an Open...</h4><p>Tolaria's unexpected success...</p></div>
+              <div class="peek-card"><h4>Tolaria stable...</h4><p>Tag: stable-v2026.5.2...</p></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen-block">
+      <div class="caption"><strong>Editor</strong><span>note opens from right</span></div>
+      <div class="phone">
+        <div class="screen">
+          <div class="status"><span>11:41</span><span class="indicators">▮▮▮ 5G ◖▰</span></div>
+          <div class="toolbar transparent">
+            <span class="icon-button"><i class="ph ph-caret-left"></i></span>
+            <span class="breadcrumb">Essay › workflow-orchestration-kestra</span>
+            <span class="wide-button"><i class="ph ph-info"></i><i class="ph ph-dots-three-vertical"></i></span>
+          </div>
+          <article class="editor-body">
+            <h2 class="doc-title">Workflow Orchestration Essay</h2>
+            <div class="rule"></div>
+            <p class="bullet"><span><strong>The current narrative / temptation:</strong> everything routed through an LLM — Claude Code routines, N8N replacements, agents calling agents. Fast to ship + feels powerful.</span></p>
+            <p class="bullet"><span><strong>A real example (Tolaria + OpenClaw):</strong> OpenClaw does a lot of things for me in the <span class="link">Tolaria</span> product dev process. Cracks show through: latency, hard to debug when a run fails, it does not recover from failures, giga expensive, ...</span></p>
+            <p class="bullet"><span><strong>The cost of AI everywhere:</strong> for work that doesn't need intelligence, LLMs are just expensive, slow, and unpredictable. And there is a lot of work like that: routing, retries, conditionals, scheduling.</span></p>
+            <p class="bullet"><span><strong>Agents as scaffolding:</strong> agents are useful first to discover what the workflow should be, but once the pattern is known, extract and harden into deterministic code.</span></p>
+          </article>
+          <div class="bottom-strip"><span><i class="ph ph-plus"></i></span><span><i class="ph ph-dots-six-vertical"></i></span><span>Raw</span><span>AI</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen-block">
+      <div class="caption"><strong>Properties</strong><span>swipe from editor</span></div>
+      <div class="phone">
+        <div class="screen">
+          <div class="status"><span>11:41</span><span class="indicators">▮▮▮ 5G ◖▰</span></div>
+          <div class="toolbar">
+            <span class="muted-title"><i class="ph ph-sliders-horizontal"></i> Properties</span>
+            <span class="icon-button"><i class="ph ph-x"></i></span>
+          </div>
+          <div class="properties">
+            <div class="property-row"><div class="property-label"><i class="ph ph-stack-simple"></i> Type</div><div class="value-chip green"><i class="ph ph-paint-brush"></i> Essay⌄</div></div>
+            <div class="property-row"><div class="property-label"><i class="ph ph-calendar-blank"></i> Date</div><div class="value-chip">May 13, 2026</div></div>
+            <div class="property-row disabled"><div class="property-label"><i class="ph ph-circle"></i> Status</div><div>—</div></div>
+            <div class="property-row disabled"><div class="property-label"><i class="ph ph-link"></i> URL</div><div>—</div></div>
+            <div class="property-row disabled"><div class="property-label"><i class="ph ph-text-t"></i> Icon</div><div>—</div></div>
+            <div class="property-row disabled"><div class="property-label"><i class="ph ph-plus"></i> Add property</div><div></div></div>
+            <div class="divider"></div>
+            <div class="field-group"><label>Belongs to</label><div class="dashed-input">Add</div></div>
+            <div class="field-group"><label>Related to</label><div class="dashed-input">Add</div></div>
+            <div class="field-group"><label>Has</label><div class="dashed-input">Add</div></div>
+            <div class="add-relationship"><i class="ph ph-plus"></i> Add relationship</div>
+            <div class="divider"></div>
+            <div class="section-title" style="padding:0;margin-bottom:10px;"><span>ⓘ Info</span></div>
+            <div class="info-grid">
+              <span>Modified</span><span>May 3, 2026</span>
+              <span>Created</span><span>Apr 28, 2026</span>
+              <span>Words</span><span>333</span>
+              <span>Size</span><span>2.4 KB</span>
+            </div>
+            <div class="divider"></div>
+            <div class="section-title" style="padding:0;margin-bottom:10px;"><span>↶ History</span></div>
+            <div class="history">
+              <div><a>eb373865c · Updated 1 note</a><br>today</div>
+              <div><a>5e853fdfe · Updated 1 note</a><br>today</div>
+              <div><a>d199a318d · Updated 1 note</a><br>today</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
