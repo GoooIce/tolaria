@@ -8,7 +8,7 @@ This file is the resumable working log for Tolaria mobile. The strategy and road
 
 - Branch: `codex/mobile`
 - Active phase: Phase 2 - Mobile Shell
-- Active slice: Add mobile Git remote auth strategy parsing
+- Active slice: Connect parsed Git remotes to mobile vault configuration
 - Push policy: commit locally; do not push unless explicitly requested
 - Validation target: iPad/iOS simulator first
 
@@ -44,14 +44,15 @@ This file is the resumable working log for Tolaria mobile. The strategy and road
 - Added a tested compact gesture mapper and `SwipeSurface` wrapper so phone panels can transition through swipe gestures while keeping panel behavior in the reducer.
 - Re-tested the iPad simulator path; the app now launches in Expo Go on `iPad Pro 13-inch (M4)`.
 - Added a pure mobile Git remote parser that codifies the auth choice: GitHub remotes use the GitHub OAuth App path, arbitrary Git remotes use the SSH-key path.
+- Added a pure mobile vault configuration model that keeps vault storage app-local, distinguishes local-only vs remote-backed sync, and derives the required Git auth path from the parsed remote.
 
 ## Next Action
 
 Continue Phase 2 with the next mobile shell slice:
 
 1. Dismiss or suppress Expo Go's first-run tools modal during simulator QA so screenshots capture the app without the overlay.
-2. Connect parsed Git remotes to a mobile vault configuration model.
-3. Begin the TenTap editor spike behind a `MobileEditorAdapter` once the shell/storage boundary is stable.
+2. Begin the TenTap editor spike behind a `MobileEditorAdapter` once the shell/storage boundary is stable.
+3. Add the first native storage adapter around the vault config/repository contracts after the editor spike confirms the app shape.
 
 ## Verification Log
 
@@ -119,6 +120,10 @@ Continue Phase 2 with the next mobile shell slice:
 - `pnpm --filter @tolaria/mobile typecheck` passed after Git remote auth parsing.
 - CodeScene after Git remote auth parsing: `apps/mobile/src/mobileGitRemote.ts` and `apps/mobile/src/mobileGitRemote.test.ts` scored `10`.
 - `pnpm --filter @tolaria/mobile exec expo export --platform ios --output-dir /tmp/tolaria-mobile-export` passed after Git remote auth parsing.
+- `pnpm --filter @tolaria/mobile test -- src/mobileVaultConfig.test.ts` passed after vault config extraction: 7 files / 24 tests.
+- `pnpm --filter @tolaria/mobile typecheck` passed after vault config extraction.
+- CodeScene after vault config extraction: `apps/mobile/src/mobileVaultConfig.ts` and `apps/mobile/src/mobileVaultConfig.test.ts` scored `10`.
+- `pnpm --filter @tolaria/mobile exec expo export --platform ios --output-dir /tmp/tolaria-mobile-export` passed after vault config extraction.
 
 ## Risks / Watch Items
 
