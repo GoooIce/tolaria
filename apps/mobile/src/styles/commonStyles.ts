@@ -34,6 +34,9 @@ export const commonStyles = StyleSheet.create({
   pressed: {
     opacity: 0.65,
   },
+  swipeSurface: {
+    flex: 1,
+  },
   tagRow: {
     marginTop: spacing.sm,
     flexDirection: 'row',

@@ -25,6 +25,7 @@ import {
   type CompactPanel,
 } from './compactNavigation'
 import { NamedIcon, type IconName } from './NamedIcon'
+import { SwipeSurface } from './SwipeSurface'
 import { styles } from './styles'
 import { colors } from './theme'
 
@@ -80,29 +81,41 @@ function CompactShell({
   selectedNoteId: string
 }) {
   if (activePanel === 'sidebar') {
-    return <SidebarPanel onClose={() => onNavigate({ type: 'closeSidebar' })} />
+    return (
+      <SwipeSurface panel="sidebar" onNavigate={onNavigate}>
+        <SidebarPanel onClose={() => onNavigate({ type: 'closeSidebar' })} />
+      </SwipeSurface>
+    )
   }
 
   if (activePanel === 'note') {
     return (
-      <EditorPanel
-        note={note}
-        onBack={() => onNavigate({ type: 'backToList' })}
-        onOpenProperties={() => onNavigate({ type: 'openProperties' })}
-      />
+      <SwipeSurface panel="note" onNavigate={onNavigate}>
+        <EditorPanel
+          note={note}
+          onBack={() => onNavigate({ type: 'backToList' })}
+          onOpenProperties={() => onNavigate({ type: 'openProperties' })}
+        />
+      </SwipeSurface>
     )
   }
 
   if (activePanel === 'properties') {
-    return <PropertiesPanel note={note} onClose={() => onNavigate({ type: 'closeProperties' })} />
+    return (
+      <SwipeSurface panel="properties" onNavigate={onNavigate}>
+        <PropertiesPanel note={note} onClose={() => onNavigate({ type: 'closeProperties' })} />
+      </SwipeSurface>
+    )
   }
 
   return (
-    <NoteListPanel
-      selectedNoteId={selectedNoteId}
-      onOpenSidebar={() => onNavigate({ type: 'openSidebar' })}
-      onSelectNote={onSelectNote}
-    />
+    <SwipeSurface panel="list" onNavigate={onNavigate}>
+      <NoteListPanel
+        selectedNoteId={selectedNoteId}
+        onOpenSidebar={() => onNavigate({ type: 'openSidebar' })}
+        onSelectNote={onSelectNote}
+      />
+    </SwipeSurface>
   )
 }
 

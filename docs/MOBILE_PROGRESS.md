@@ -1,6 +1,6 @@
 # Mobile Progress
 
-Last updated: 2026-05-03
+Last updated: 2026-05-04
 
 This file is the resumable working log for Tolaria mobile. The strategy and roadmap live in [MOBILE_STRATEGY.md](./MOBILE_STRATEGY.md); this file records the current execution state.
 
@@ -8,7 +8,7 @@ This file is the resumable working log for Tolaria mobile. The strategy and road
 
 - Branch: `codex/mobile`
 - Active phase: Phase 2 - Mobile Shell
-- Active slice: Include mobile tests in root test runner and commit gate
+- Active slice: Add compact swipe gesture support
 - Push policy: commit locally; do not push unless explicitly requested
 - Validation target: iPad/iOS simulator first
 
@@ -39,14 +39,18 @@ This file is the resumable working log for Tolaria mobile. The strategy and road
 - Added a minimal mobile vault repository contract plus fixture implementation so app-local vault storage and git sync can plug in behind `listNotes` / `readNote` later.
 - Updated `scripts/run-tests.mjs` so full `pnpm test` runs desktop, mobile, and shared package tests, while targeted `apps/mobile/...` and `packages/markdown/...` paths route to the correct workspace Vitest config.
 - Updated `.husky/pre-commit` to use `pnpm test -- --silent` so local commits include the new mobile test suite.
+- Added `react-native-gesture-handler` at Expo's SDK-compatible version.
+- Wrapped the mobile root in `GestureHandlerRootView`.
+- Added a tested compact gesture mapper and `SwipeSurface` wrapper so phone panels can transition through swipe gestures while keeping panel behavior in the reducer.
+- Re-tested the iPad simulator path; the app now launches in Expo Go on `iPad Pro 13-inch (M4)`.
 
 ## Next Action
 
 Continue Phase 2 with the next mobile shell slice:
 
-1. Resolve the local CoreSimulator hang so `pnpm mobile:ios` can launch the app in an iPad simulator.
-2. Add native gesture support for phone/tablet panel transitions once the simulator path is usable.
-3. Start the storage/auth abstraction skeleton after the shell has a reliable simulator loop.
+1. Dismiss or suppress Expo Go's first-run tools modal during simulator QA so screenshots capture the app without the overlay.
+2. Add the storage/auth abstraction skeleton behind the mobile vault repository.
+3. Begin the TenTap editor spike behind a `MobileEditorAdapter` once the shell/storage boundary is stable.
 
 ## Verification Log
 
@@ -84,7 +88,7 @@ Continue Phase 2 with the next mobile shell slice:
 - CodeScene mobile shell scores: `apps/mobile/App.tsx`, `apps/mobile/src/MobileApp.tsx`, `apps/mobile/src/NamedIcon.tsx`, `apps/mobile/src/demoData.ts`, `apps/mobile/src/demoData.test.ts`, and all scorable style modules scored `10`; tiny config/export/theme files returned no scorable code.
 - CodeScene pre-commit safeguard passed for the current change set.
 - Codacy MCP can read repository analysis and security items for `refactoringhq/tolaria`; local Codacy CLI analysis is currently blocked because the Codacy CLI binary is not installed in this environment.
-- iOS simulator validation is blocked locally: Xcode is installed (`Xcode 26.3`), but `xcrun simctl list ...` hangs indefinitely even after opening `/Applications/Xcode.app/Contents/Developer/Applications/Simulator.app`.
+- iOS simulator validation was initially blocked locally: Xcode is installed (`Xcode 26.3`), but `xcrun simctl list ...` hung indefinitely even after opening `/Applications/Xcode.app/Contents/Developer/Applications/Simulator.app`.
 - `pnpm --filter @tolaria/mobile test` passed after compact navigation extraction: 2 files / 6 tests.
 - `pnpm --filter @tolaria/mobile typecheck` passed after compact navigation extraction.
 - CodeScene after compact navigation extraction: `apps/mobile/src/compactNavigation.ts`, `apps/mobile/src/compactNavigation.test.ts`, and the touched `apps/mobile/src/MobileApp.tsx` scored `10`.
@@ -101,6 +105,15 @@ Continue Phase 2 with the next mobile shell slice:
 - `pnpm test -- packages/markdown/src/noteTitle.test.ts` passed and ran only the shared Markdown note-title test file.
 - `pnpm test -- --silent` passed after runner/hook updates: 309 desktop files / 3639 desktop tests, 4 mobile files / 11 mobile tests, 3 shared Markdown files / 56 shared tests.
 - CodeScene after test-runner update: `scripts/run-tests.mjs` scored `10`; `.husky/pre-commit` is unsupported by CodeScene file analysis because it has no supported extension.
+- `xcrun simctl list devices available` now responds with available iPhone/iPad devices.
+- `xcrun simctl boot 40724AA3-A793-41D8-9C66-79745DA28DE4` booted `iPad Pro 13-inch (M4)`.
+- `pnpm --filter @tolaria/mobile exec expo start --ios` installed/opened Expo Go and launched Tolaria on the booted iPad simulator.
+- Simulator screenshot captured at `/tmp/tolaria-mobile-ipad.png`; the Tolaria shell renders behind Expo Go's first-run tools modal.
+- `pnpm --filter @tolaria/mobile test` passed after adding gesture support: 5 files / 15 tests.
+- `pnpm --filter @tolaria/mobile typecheck` passed after adding gesture support.
+- CodeScene after gesture support: `apps/mobile/src/compactGestures.ts`, `apps/mobile/src/compactGestures.test.ts`, `apps/mobile/src/SwipeSurface.tsx`, touched app/root files, and touched style module scored `10`; `apps/mobile/index.ts` returned no scorable code.
+- `pnpm --filter @tolaria/mobile exec expo export --platform ios --output-dir /tmp/tolaria-mobile-export` passed after adding gesture support.
+- Simulator screenshot after gesture support captured at `/tmp/tolaria-mobile-gestures-ipad.png`; no red runtime error overlay appeared.
 
 ## Risks / Watch Items
 
