@@ -37,6 +37,8 @@ import { NamedIcon, type IconName } from './NamedIcon'
 import { SwipeSurface } from './SwipeSurface'
 import { styles } from './styles'
 import { colors } from './theme'
+import { MobileNoteCreatePrompt } from './MobileNoteCreatePrompt'
+import { useMobileNoteCreateFlow } from './useMobileNoteCreateFlow'
 
 export function MobileApp() {
   const { width } = useWindowDimensions()
@@ -44,8 +46,6 @@ export function MobileApp() {
   const showsProperties = width >= 1120
   const [availableNotes, setAvailableNotes] = useState(fallbackNotes)
   const [compactNavigation, setCompactNavigation] = useState(() => createCompactNavigationState(fallbackNotes[0].id))
-  const [createNoteFailed, setCreateNoteFailed] = useState(false)
-  const [isCreatingNote, setIsCreatingNote] = useState(false)
   const [saveStateByNoteId, setSaveStateByNoteId] = useState<Record<string, MobileEditorSaveState>>({})
   const selectedNote = useMemo(
     () => availableNotes.find((note) => note.id === compactNavigation.selectedNoteId) ?? availableNotes[0],
@@ -90,29 +90,13 @@ export function MobileApp() {
     setCompactNavigation((state) => transitionCompactNavigation(state, { type: 'selectNote', noteId: note.id }))
   }
   const saveDraft = useCallback((draft: MobileEditorDraft) => autosaveQueue.enqueue(draft), [autosaveQueue])
-  const createNote = useCallback(() => {
-    if (isCreatingNote) {
-      return
-    }
-
-    setCreateNoteFailed(false)
-    setIsCreatingNote(true)
-    void createDemoVaultNote()
-      .then((note) => {
-        if (!note) {
-          return
-        }
-
-        setAvailableNotes((notes) => [note, ...notes.filter((item) => item.id !== note.id)])
-        setCompactNavigation((state) => transitionCompactNavigation(state, { type: 'selectNote', noteId: note.id }))
-      })
-      .catch(() => {
-        setCreateNoteFailed(true)
-      })
-      .finally(() => {
-        setIsCreatingNote(false)
-      })
-  }, [isCreatingNote])
+  const createFlow = useMobileNoteCreateFlow({
+    createNote: (title) => createDemoVaultNote({ title }),
+    onCreated: (note) => {
+      setAvailableNotes((notes) => [note, ...notes.filter((item) => item.id !== note.id)])
+      setCompactNavigation((state) => transitionCompactNavigation(state, { type: 'selectNote', noteId: note.id }))
+    },
+  })
 
   return (
     <SafeAreaProvider>
@@ -123,9 +107,14 @@ export function MobileApp() {
             <NoteListPanel
               notes={availableNotes}
               selectedNoteId={compactNavigation.selectedNoteId}
-              createNoteFailed={createNoteFailed}
-              isCreatingNote={isCreatingNote}
-              onCreateNote={createNote}
+              createNoteFailed={createFlow.failed}
+              createNoteTitle={createFlow.title}
+              isCreatePromptOpen={createFlow.isPromptOpen}
+              isCreatingNote={createFlow.isCreating}
+              onCancelCreateNote={createFlow.cancel}
+              onChangeCreateNoteTitle={createFlow.setTitle}
+              onOpenCreateNote={createFlow.open}
+              onSubmitCreateNote={createFlow.submit}
               onSelectNote={selectNote}
             />
             <EditorPanel note={selectedNote} saveState={selectedSaveState} onDraftChange={saveDraft} />
@@ -140,9 +129,14 @@ export function MobileApp() {
             selectedNoteId={compactNavigation.selectedNoteId}
             onNavigate={(event) => setCompactNavigation((state) => transitionCompactNavigation(state, event))}
             onDraftChange={saveDraft}
-            createNoteFailed={createNoteFailed}
-            isCreatingNote={isCreatingNote}
-            onCreateNote={createNote}
+            createNoteFailed={createFlow.failed}
+            createNoteTitle={createFlow.title}
+            isCreatePromptOpen={createFlow.isPromptOpen}
+            isCreatingNote={createFlow.isCreating}
+            onCancelCreateNote={createFlow.cancel}
+            onChangeCreateNoteTitle={createFlow.setTitle}
+            onOpenCreateNote={createFlow.open}
+            onSubmitCreateNote={createFlow.submit}
             onSelectNote={selectNote}
           />
         )}
@@ -159,8 +153,13 @@ function CompactShell({
   onNavigate,
   onDraftChange,
   createNoteFailed,
+  createNoteTitle,
+  isCreatePromptOpen,
   isCreatingNote,
-  onCreateNote,
+  onCancelCreateNote,
+  onChangeCreateNoteTitle,
+  onOpenCreateNote,
+  onSubmitCreateNote,
   onSelectNote,
   selectedNoteId,
 }: {
@@ -169,10 +168,15 @@ function CompactShell({
   notes: MobileNote[]
   saveState: MobileEditorSaveState
   createNoteFailed: boolean
+  createNoteTitle: string
+  isCreatePromptOpen: boolean
   isCreatingNote: boolean
   onNavigate: (event: CompactNavigationEvent) => void
   onDraftChange: (draft: MobileEditorDraft) => void
-  onCreateNote: () => void
+  onCancelCreateNote: () => void
+  onChangeCreateNoteTitle: (title: string) => void
+  onOpenCreateNote: () => void
+  onSubmitCreateNote: () => void
   onSelectNote: (note: MobileNote) => void
   selectedNoteId: string
 }) {
@@ -212,10 +216,15 @@ function CompactShell({
         notes={notes}
         selectedNoteId={selectedNoteId}
         createNoteFailed={createNoteFailed}
+        createNoteTitle={createNoteTitle}
+        isCreatePromptOpen={isCreatePromptOpen}
         isCreatingNote={isCreatingNote}
-        onCreateNote={onCreateNote}
+        onCancelCreateNote={onCancelCreateNote}
+        onChangeCreateNoteTitle={onChangeCreateNoteTitle}
+        onOpenCreateNote={onOpenCreateNote}
         onOpenSidebar={() => onNavigate({ type: 'openSidebar' })}
         onSelectNote={onSelectNote}
+        onSubmitCreateNote={onSubmitCreateNote}
       />
     </SwipeSurface>
   )
@@ -257,18 +266,28 @@ function SidebarPanel({ onClose }: { onClose?: () => void }) {
 function NoteListPanel({
   notes,
   createNoteFailed,
+  createNoteTitle,
+  isCreatePromptOpen,
   isCreatingNote,
-  onCreateNote,
+  onCancelCreateNote,
+  onChangeCreateNoteTitle,
+  onOpenCreateNote,
   onOpenSidebar,
   onSelectNote,
+  onSubmitCreateNote,
   selectedNoteId,
 }: {
   notes: MobileNote[]
   createNoteFailed: boolean
+  createNoteTitle: string
+  isCreatePromptOpen: boolean
   isCreatingNote: boolean
-  onCreateNote: () => void
+  onCancelCreateNote: () => void
+  onChangeCreateNoteTitle: (title: string) => void
+  onOpenCreateNote: () => void
   onOpenSidebar?: () => void
   onSelectNote: (note: MobileNote) => void
+  onSubmitCreateNote: () => void
   selectedNoteId: string
 }) {
   return (
@@ -307,11 +326,20 @@ function NoteListPanel({
           </Pressable>
         )}
       />
-      {createNoteFailed ? <Text style={styles.createNoteError}>Could not create note</Text> : null}
+      {isCreatePromptOpen ? (
+        <MobileNoteCreatePrompt
+          failed={createNoteFailed}
+          isCreating={isCreatingNote}
+          onCancel={onCancelCreateNote}
+          onChangeTitle={onChangeCreateNoteTitle}
+          onSubmit={onSubmitCreateNote}
+          title={createNoteTitle}
+        />
+      ) : null}
       <Pressable
         accessibilityLabel="Create note"
         disabled={isCreatingNote}
-        onPress={onCreateNote}
+        onPress={onOpenCreateNote}
         style={({ pressed }) => [
           styles.composeButton,
           isCreatingNote ? styles.composeButtonDisabled : null,

@@ -8,18 +8,23 @@ export function createMobileNoteFile({
   title?: string
 } = {}): MobileVaultFile {
   const id = `note-${now.getTime().toString(36)}`
+  const displayTitle = normalizeMobileNoteCreateTitle(title)
 
   return {
     path: `${id}.md`,
     content: [
       '---',
-      `title: ${title}`,
+      `title: ${displayTitle}`,
       'type: Note',
       `created: ${now.toISOString()}`,
       '---',
       '',
-      `# ${title}`,
+      `# ${displayTitle}`,
       '',
     ].join('\n'),
   }
+}
+
+export function normalizeMobileNoteCreateTitle(title: string) {
+  return title.trim() || 'Untitled'
 }

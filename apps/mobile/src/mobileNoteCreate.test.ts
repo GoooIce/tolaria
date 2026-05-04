@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createMobileNoteFile } from './mobileNoteCreate'
+import { createMobileNoteFile, normalizeMobileNoteCreateTitle } from './mobileNoteCreate'
 
 describe('mobile note create', () => {
   it('creates a deterministic markdown file from the current time', () => {
@@ -30,5 +30,10 @@ describe('mobile note create', () => {
 
     expect(file.content).toContain('title: Meeting notes')
     expect(file.content).toContain('# Meeting notes')
+  })
+
+  it('normalizes blank and padded create titles', () => {
+    expect(normalizeMobileNoteCreateTitle('  Meeting notes  ')).toBe('Meeting notes')
+    expect(normalizeMobileNoteCreateTitle('   ')).toBe('Untitled')
   })
 })

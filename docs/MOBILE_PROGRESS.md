@@ -1,14 +1,14 @@
 # Mobile Progress
 
-Last updated: 2026-05-04
+Last updated: 2026-05-05
 
 This file is the resumable working log for Tolaria mobile. The strategy and roadmap live in [MOBILE_STRATEGY.md](./MOBILE_STRATEGY.md); this file records the current execution state.
 
 ## Current State
 
 - Branch: `codex/mobile`
-- Active phase: Phase 2 - Mobile Shell
-- Active slice: Add create-note UX state
+- Active phase: Phase 3 - App-Managed Vault Storage
+- Active slice: Start durable app-managed vault state
 - Push policy: commit locally; do not push unless explicitly requested
 - Validation target: iPad/iOS simulator first
 
@@ -64,14 +64,15 @@ This file is the resumable working log for Tolaria mobile. The strategy and road
 - Refreshed the in-memory mobile note projection after the latest successful editor save so the note list, editor source, properties words, and snippets update from canonical Markdown.
 - Added the first app-local mobile note creation path and wired the compose button to write a new Markdown note, prepend it to the current list, and select it through the shared compact navigation reducer.
 - Added create-note UX state so the compose button disables during app-local creation and displays a compact failure message if storage creation fails.
+- Added a title-entry prompt for mobile note creation so new notes are named before they are written to app-local storage.
 
 ## Next Action
 
-Continue Phase 2 with the next mobile shell slice:
+Continue Phase 3 with app-managed vault storage hardening:
 
-1. Dismiss or suppress Expo Go's first-run tools modal during simulator QA so screenshots capture the app without the overlay.
-2. Add a focused simulator interaction path for editor typing/autosave once Expo Go's overlay no longer blocks clean screenshots.
-3. Add an eventual title-entry flow for new mobile notes instead of creating `Untitled` immediately.
+1. Add local saved state for active vault and last selected note, then restore it on launch.
+2. Add delete/archive support for local app-managed notes.
+3. Add a focused simulator interaction path for create/open/edit/autosave once Expo Go's overlay no longer blocks clean screenshots.
 
 ## Verification Log
 
@@ -215,6 +216,11 @@ Continue Phase 2 with the next mobile shell slice:
 - CodeScene after create-note UX state: `apps/mobile/src/MobileApp.tsx`, `apps/mobile/src/styles/noteListStyles.ts`, and `apps/mobile/src/styles/noteCreateStyles.ts` scored `10`.
 - `pnpm --filter @tolaria/mobile test` passed after create-note UX state: 17 files / 53 tests.
 - `pnpm --filter @tolaria/mobile exec expo export --platform ios --output-dir /tmp/tolaria-mobile-export` passed after create-note UX state.
+- `pnpm --filter @tolaria/mobile test -- src/mobileNoteCreate.test.ts` passed after title-entry note creation: 17 files / 54 tests.
+- `pnpm --filter @tolaria/mobile typecheck` passed after title-entry note creation.
+- CodeScene after title-entry note creation: `apps/mobile/src/MobileApp.tsx`, `apps/mobile/src/MobileNoteCreatePrompt.tsx`, `apps/mobile/src/useMobileNoteCreateFlow.ts`, `apps/mobile/src/mobileDemoVault.ts`, `apps/mobile/src/mobileNoteCreate.test.ts`, and `apps/mobile/src/styles/noteCreateStyles.ts` scored `10`.
+- `pnpm --filter @tolaria/mobile test` passed after title-entry note creation: 17 files / 54 tests.
+- `pnpm --filter @tolaria/mobile exec expo export --platform ios --output-dir /tmp/tolaria-mobile-export` passed after title-entry note creation.
 
 ## Risks / Watch Items
 

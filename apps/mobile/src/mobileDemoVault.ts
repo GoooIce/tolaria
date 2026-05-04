@@ -25,9 +25,9 @@ export function saveDemoVaultDraft(draft: MobileEditorDraft) {
   })
 }
 
-export async function createDemoVaultNote() {
+export async function createDemoVaultNote({ title }: { title?: string } = {}) {
   const storage = createNativeMobileVaultStorage()
-  const file = createMobileNoteFile()
+  const file = createMobileNoteFile({ title })
   await storage.writeMarkdownFile(demoVault, file.path, file.content)
 
   return createStoredMobileVaultRepository({ storage, vault: demoVault }).readNote(file.path.replace(/\.md$/, ''))
