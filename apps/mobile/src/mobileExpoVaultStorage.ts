@@ -7,6 +7,7 @@ export type ExpoMobileVaultFileInfo = {
 }
 
 export type ExpoMobileVaultFileSystem = {
+  deleteAsync: (uri: string, options?: { idempotent?: boolean }) => Promise<void>
   documentDirectory: string | null
   getInfoAsync: (uri: string) => Promise<ExpoMobileVaultFileInfo>
   makeDirectoryAsync: (uri: string, options: { intermediates: true }) => Promise<void>
@@ -44,10 +45,21 @@ export function createExpoMobileVaultStorage(
   fileSystem: ExpoMobileVaultFileSystem,
 ): MobileVaultStorageDriver {
   return {
+    deleteMarkdownFile: (vault, path) => deleteMarkdownFile(fileSystem, vault, path),
     listMarkdownFiles: (vault) => listMarkdownFiles(fileSystem, vault),
     readMarkdownFile: (vault, path) => readMarkdownFile(fileSystem, vault, path),
     writeMarkdownFile: (vault, path, content) => writeMarkdownFile(fileSystem, vault, path, content),
   }
+}
+
+async function deleteMarkdownFile(
+  fileSystem: ExpoMobileVaultFileSystem,
+  vault: MobileVaultConfig,
+  path: string,
+) {
+  const rootUri = vaultRootUri(fileSystem, vault)
+  const safePath = normalizeVaultPath({ path })
+  await fileSystem.deleteAsync(appendUri({ root: rootUri, segments: [safePath] }), { idempotent: true })
 }
 
 async function listMarkdownFiles(

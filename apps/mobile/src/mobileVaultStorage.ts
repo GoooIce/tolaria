@@ -6,6 +6,7 @@ export type MobileVaultFile = {
 }
 
 export type MobileVaultStorageDriver = {
+  deleteMarkdownFile: (vault: MobileVaultConfig, path: string) => Promise<void>
   listMarkdownFiles: (vault: MobileVaultConfig) => Promise<MobileVaultFile[]>
   readMarkdownFile: (vault: MobileVaultConfig, path: string) => Promise<string | null>
   writeMarkdownFile: (vault: MobileVaultConfig, path: string, content: string) => Promise<void>
@@ -15,6 +16,9 @@ export function createMemoryMobileVaultStorage(files: MobileVaultFile[]): Mobile
   const fileByPath = new Map(files.map((file) => [file.path, file.content]))
 
   return {
+    deleteMarkdownFile: async (_vault, path) => {
+      fileByPath.delete(path)
+    },
     listMarkdownFiles: () => Promise.resolve(markdownFiles(fileByPath)),
     readMarkdownFile: (_vault, path) => Promise.resolve(fileByPath.get(path) ?? null),
     writeMarkdownFile: async (_vault, path, content) => {

@@ -8,7 +8,7 @@ This file is the resumable working log for Tolaria mobile. The strategy and road
 
 - Branch: `codex/mobile`
 - Active phase: Phase 3 - App-Managed Vault Storage
-- Active slice: Start durable app-managed vault state
+- Active slice: Harden app-managed vault lifecycle actions
 - Push policy: commit locally; do not push unless explicitly requested
 - Validation target: iPad/iOS simulator first
 
@@ -66,14 +66,16 @@ This file is the resumable working log for Tolaria mobile. The strategy and road
 - Added create-note UX state so the compose button disables during app-local creation and displays a compact failure message if storage creation fails.
 - Added a title-entry prompt for mobile note creation so new notes are named before they are written to app-local storage.
 - Added app-managed mobile state storage for the active vault and last selected note, then restored and persisted note selection across launches.
+- Added delete support for app-managed mobile notes through the storage driver, Expo FileSystem adapter, repository boundary, demo vault facade, and editor toolbar.
+- Extracted mobile note deletion orchestration into a small hook so the app shell stays at CodeScene `10.0`.
 
 ## Next Action
 
 Continue Phase 3 with app-managed vault storage hardening:
 
-1. Add delete/archive support for local app-managed notes.
-2. Add a focused simulator interaction path for create/open/edit/autosave once Expo Go's overlay no longer blocks clean screenshots.
-3. Add app-local vault metadata beyond the hardcoded demo vault id.
+1. Add a focused simulator interaction path for create/open/edit/autosave/delete once Expo Go's overlay no longer blocks clean screenshots.
+2. Add app-local vault metadata beyond the hardcoded demo vault id.
+3. Decide whether archive should be modeled as a first-class note state or deferred until the mobile vault schema exists.
 
 ## Verification Log
 
@@ -227,6 +229,11 @@ Continue Phase 3 with app-managed vault storage hardening:
 - CodeScene after saved app state storage: `apps/mobile/src/MobileApp.tsx`, `apps/mobile/src/mobileAppStateStorage.ts`, `apps/mobile/src/mobileAppStateStorage.test.ts`, and `apps/mobile/src/mobileNativeAppStateStorage.ts` scored `10`.
 - `pnpm --filter @tolaria/mobile test` passed after saved app state storage: 18 files / 57 tests.
 - `pnpm --filter @tolaria/mobile exec expo export --platform ios --output-dir /tmp/tolaria-mobile-export` passed after saved app state storage.
+- `pnpm --filter @tolaria/mobile test -- src/mobileVaultStorage.test.ts src/mobileExpoVaultStorage.test.ts src/mobileVaultRepository.test.ts src/mobileNoteDelete.test.ts` passed after local note deletion: 19 files / 62 tests.
+- `pnpm --filter @tolaria/mobile typecheck` passed after local note deletion.
+- CodeScene after local note deletion: `apps/mobile/src/MobileApp.tsx`, `apps/mobile/src/useMobileNoteDeleteFlow.ts`, `apps/mobile/src/mobileNoteDelete.ts`, `apps/mobile/src/mobileNoteDelete.test.ts`, `apps/mobile/src/mobileVaultStorage.ts`, `apps/mobile/src/mobileVaultStorage.test.ts`, `apps/mobile/src/mobileExpoVaultStorage.ts`, `apps/mobile/src/mobileExpoVaultStorage.test.ts`, `apps/mobile/src/mobileVaultRepository.ts`, `apps/mobile/src/mobileVaultRepository.test.ts`, and `apps/mobile/src/mobileDemoVault.ts` scored `10`.
+- `pnpm --filter @tolaria/mobile test` passed after local note deletion: 19 files / 62 tests.
+- `pnpm --filter @tolaria/mobile exec expo export --platform ios --output-dir /tmp/tolaria-mobile-export` passed after local note deletion.
 
 ## Risks / Watch Items
 

@@ -33,6 +33,11 @@ export async function createDemoVaultNote({ title }: { title?: string } = {}) {
   return createStoredMobileVaultRepository({ storage, vault: demoVault }).readNote(file.path.replace(/\.md$/, ''))
 }
 
+export async function deleteDemoVaultNote(noteId: string) {
+  const storage = createNativeMobileVaultStorage()
+  await createStoredMobileVaultRepository({ storage, vault: demoVault }).deleteNote(noteId)
+}
+
 function demoVaultFiles(): MobileVaultFile[] {
   return demoNoteSources.map((source) => ({
     path: source.filename,

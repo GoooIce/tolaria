@@ -16,9 +16,10 @@ import {
   MagnifyingGlass,
   PencilSimple,
   SlidersHorizontal,
+  Trash,
 } from 'phosphor-react-native'
 import { MobileNote, notes as fallbackNotes, sidebarSections } from './demoData'
-import { createDemoVaultNote, loadDemoVaultNotes, saveDemoVaultDraft } from './mobileDemoVault'
+import { createDemoVaultNote, deleteDemoVaultNote, loadDemoVaultNotes, saveDemoVaultDraft } from './mobileDemoVault'
 import { createMobileAutosaveQueue } from './mobileAutosaveQueue'
 import type { MobileEditorDraft } from './mobileEditorDraft'
 import {
@@ -39,6 +40,7 @@ import { styles } from './styles'
 import { colors } from './theme'
 import { MobileNoteCreatePrompt } from './MobileNoteCreatePrompt'
 import { useMobileNoteCreateFlow } from './useMobileNoteCreateFlow'
+import { useMobileNoteDeleteFlow } from './useMobileNoteDeleteFlow'
 import { createNativeMobileAppStateStorage } from './mobileNativeAppStateStorage'
 
 const activeMobileVaultId = 'personal'
@@ -96,6 +98,14 @@ export function MobileApp() {
   }, [appStateStorage])
   const selectNote = useCallback((note: MobileNote) => selectNoteId(note.id), [selectNoteId])
   const saveDraft = useCallback((draft: MobileEditorDraft) => autosaveQueue.enqueue(draft), [autosaveQueue])
+  const deleteFlow = useMobileNoteDeleteFlow({
+    deleteNote: deleteDemoVaultNote,
+    loadNotes: loadDemoVaultNotes,
+    notes: availableNotes,
+    onNotesLoaded: setAvailableNotes,
+    onSelectedNoteId: selectNoteId,
+    selectedNoteId: selectedNote.id,
+  })
   const createFlow = useMobileNoteCreateFlow({
     createNote: (title) => createDemoVaultNote({ title }),
     onCreated: (note) => {
@@ -123,7 +133,12 @@ export function MobileApp() {
               onSubmitCreateNote={createFlow.submit}
               onSelectNote={selectNote}
             />
-            <EditorPanel note={selectedNote} saveState={selectedSaveState} onDraftChange={saveDraft} />
+            <EditorPanel
+              note={selectedNote}
+              saveState={selectedSaveState}
+              onDeleteNote={deleteFlow.canDelete ? deleteFlow.deleteSelectedNote : undefined}
+              onDraftChange={saveDraft}
+            />
             {showsProperties ? <PropertiesPanel note={selectedNote} /> : null}
           </View>
         ) : (
@@ -134,6 +149,7 @@ export function MobileApp() {
             saveState={selectedSaveState}
             selectedNoteId={compactNavigation.selectedNoteId}
             onNavigate={(event) => setCompactNavigation((state) => transitionCompactNavigation(state, event))}
+            onDeleteNote={deleteFlow.canDelete ? deleteFlow.deleteSelectedNote : undefined}
             onDraftChange={saveDraft}
             createNoteFailed={createFlow.failed}
             createNoteTitle={createFlow.title}
@@ -157,6 +173,7 @@ function CompactShell({
   notes,
   saveState,
   onNavigate,
+  onDeleteNote,
   onDraftChange,
   createNoteFailed,
   createNoteTitle,
@@ -178,6 +195,7 @@ function CompactShell({
   isCreatePromptOpen: boolean
   isCreatingNote: boolean
   onNavigate: (event: CompactNavigationEvent) => void
+  onDeleteNote?: () => void
   onDraftChange: (draft: MobileEditorDraft) => void
   onCancelCreateNote: () => void
   onChangeCreateNoteTitle: (title: string) => void
@@ -200,6 +218,7 @@ function CompactShell({
         <EditorPanel
           note={note}
           saveState={saveState}
+          onDeleteNote={onDeleteNote}
           onDraftChange={onDraftChange}
           onBack={() => onNavigate({ type: 'backToList' })}
           onOpenProperties={() => onNavigate({ type: 'openProperties' })}
@@ -375,12 +394,14 @@ function selectLoadedNote(
 function EditorPanel({
   note,
   saveState,
+  onDeleteNote,
   onDraftChange,
   onBack,
   onOpenProperties,
 }: {
   note: MobileNote
   saveState?: MobileEditorSaveState
+  onDeleteNote?: () => void
   onDraftChange?: (draft: MobileEditorDraft) => void
   onBack?: () => void
   onOpenProperties?: () => void
@@ -391,6 +412,7 @@ function EditorPanel({
         {onBack ? <IconButton icon={<CaretLeft size={25} color={colors.textSoft} />} onPress={onBack} /> : null}
         <View style={styles.toolbarSpacer} />
         {onOpenProperties ? <IconButton icon={<Info size={23} color={colors.textSoft} />} onPress={onOpenProperties} /> : null}
+        {onDeleteNote ? <IconButton icon={<Trash size={23} color={colors.textSoft} />} onPress={onDeleteNote} /> : null}
         <IconButton icon={<DotsThreeVertical size={23} color={colors.textSoft} />} />
       </Toolbar>
       <MobileEditorAdapter note={note} saveState={saveState} onDraftChange={onDraftChange} />

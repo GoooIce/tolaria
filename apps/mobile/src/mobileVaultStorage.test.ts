@@ -26,6 +26,15 @@ describe('mobile vault storage', () => {
     await expect(storage.readMarkdownFile(vault, 'inbox.md')).resolves.toBe('# Updated Inbox')
     await expect(storage.readMarkdownFile(vault, 'missing.md')).resolves.toBeNull()
   })
+
+  it('deletes markdown file content by vault path', async () => {
+    const storage = createMemoryMobileVaultStorage([{ path: 'inbox.md', content: '# Inbox' }])
+
+    await storage.deleteMarkdownFile(vault, 'inbox.md')
+
+    await expect(storage.readMarkdownFile(vault, 'inbox.md')).resolves.toBeNull()
+    await expect(storage.listMarkdownFiles(vault)).resolves.toEqual([])
+  })
 })
 
 function createVault() {

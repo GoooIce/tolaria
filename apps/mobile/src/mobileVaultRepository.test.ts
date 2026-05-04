@@ -50,6 +50,21 @@ describe('mobile vault repository', () => {
       title: 'Release',
     })
   })
+
+  it('deletes notes from app-local markdown storage by id', async () => {
+    const repository = createStoredMobileVaultRepository({
+      storage: createMemoryMobileVaultStorage([
+        { path: 'inbox/workflow.md', content: '# Workflow\n\nStored markdown body.' },
+        { path: 'release.md', content: '# Release\n\nRelease body.' },
+      ]),
+      vault: createVault(),
+    })
+
+    await repository.deleteNote('inbox/workflow')
+
+    const notes = await repository.listNotes()
+    expect(notes.map((note) => note.id)).toEqual(['release'])
+  })
 })
 
 function createSource(id: string, title: string): MobileNoteSource {

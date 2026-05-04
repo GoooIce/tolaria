@@ -3,6 +3,7 @@ import type { MobileVaultConfig } from './mobileVaultConfig'
 import type { MobileVaultFile, MobileVaultStorageDriver } from './mobileVaultStorage'
 
 export type MobileVaultRepository = {
+  deleteNote: (id: string) => Promise<void>
   listNotes: () => Promise<MobileNote[]>
   readNote: (id: string) => Promise<MobileNote | null>
 }
@@ -11,6 +12,7 @@ export function createFixtureMobileVaultRepository(sources: MobileNoteSource[]):
   const notes = projectMobileNotes(sources)
 
   return {
+    deleteNote: () => Promise.resolve(),
     listNotes: () => Promise.resolve(notes),
     readNote: (id) => Promise.resolve(notes.find((note) => note.id === id) ?? null),
   }
@@ -24,6 +26,12 @@ export function createStoredMobileVaultRepository({
   vault: MobileVaultConfig
 }): MobileVaultRepository {
   return {
+    deleteNote: async (id) => {
+      const file = await findFileById({ id, storage, vault })
+      if (file) {
+        await storage.deleteMarkdownFile(vault, file.path)
+      }
+    },
     listNotes: async () => projectMobileNotes((await storage.listMarkdownFiles(vault)).map(fileToSource)),
     readNote: async (id) => {
       const file = await findFileById({ id, storage, vault })

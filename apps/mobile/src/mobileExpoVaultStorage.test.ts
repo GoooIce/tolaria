@@ -27,6 +27,18 @@ describe('Expo mobile vault storage', () => {
     await expect(storage.readMarkdownFile(vault, 'notes/new.md')).resolves.toBe('# New')
   })
 
+  it('deletes markdown files idempotently from the app-local vault directory', async () => {
+    const storage = createExpoMobileVaultStorage(createFakeFileSystem({
+      'file:///documents/vaults/personal-journal/notes/new.md': '# New',
+    }))
+
+    await storage.deleteMarkdownFile(vault, 'notes/new.md')
+    await storage.deleteMarkdownFile(vault, 'notes/new.md')
+
+    await expect(storage.readMarkdownFile(vault, 'notes/new.md')).resolves.toBeNull()
+  })
+
+
   it('rejects paths outside the app-local vault directory', async () => {
     const storage = createExpoMobileVaultStorage(createFakeFileSystem({}))
 
@@ -53,6 +65,9 @@ function createFakeFileSystem(files: Record<string, string>): ExpoMobileVaultFil
   }
 
   return {
+    deleteAsync: async (uri) => {
+      fileByUri.delete(uri)
+    },
     documentDirectory: 'file:///documents',
     getInfoAsync: async (uri) => ({
       exists: fileByUri.has(uri) || directoryUris.has(uri),
