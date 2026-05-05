@@ -44,12 +44,12 @@ describe('mobile editor draft', () => {
         title: 'Symbols',
         content: '# Symbols',
       },
-      editorHtml: '<h1>Symbols</h1><p>Use &lt;tags&gt; &amp; &quot;quotes&quot;</p>',
+      editorHtml: '<h1>Symbols</h1><p>Use &lt;tags&gt; &amp; &quot;quotes&quot;, &#33;&#x3f; and non&nbsp;breaking space</p>',
     })
 
     expect(draft).toMatchObject({
       persistable: true,
-      canonicalMarkdown: '# Symbols\n\nUse <tags> & "quotes"',
+      canonicalMarkdown: '# Symbols\n\nUse <tags> & "quotes", !? and non breaking space',
     })
   })
 

@@ -1,3 +1,5 @@
+import { decodeMobileHtmlEntities } from './mobileHtmlEntities'
+
 type HtmlInput = {
   html: string
 }
@@ -42,7 +44,7 @@ function tableRow(input: HtmlInput): TableRow {
 }
 
 function tableCellMarkdown(input: HtmlInput) {
-  return decodeHtmlEntities({ text: stripCellTags(input).trim() })
+  return decodeMobileHtmlEntities({ text: stripCellTags(input).trim() })
     .replace(/\s+/g, ' ')
     .replace(/\|/g, '\\|')
 }
@@ -57,13 +59,4 @@ function tableSeparator(input: { columnCount: number }) {
 
 function stripCellTags(input: HtmlInput) {
   return input.html.replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, '')
-}
-
-function decodeHtmlEntities(input: { text: string }) {
-  return input.text
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&amp;/g, '&')
 }

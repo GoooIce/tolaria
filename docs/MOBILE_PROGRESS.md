@@ -102,6 +102,7 @@ This file is the resumable working log for Tolaria mobile. The strategy and road
 - Added the first native mobile Git transport adapter contract, wiring the app to a native-module-shaped boundary that currently fails clearly until the real implementation is present.
 - Added the app-managed vault directory name to the native Git transport request so the future native module can locate the repository without deriving paths from display names.
 - Added TenTap horizontal-rule serialization so common divider output persists as canonical Markdown instead of blocking the draft.
+- Centralized mobile editor HTML entity decoding and added numeric entity / non-breaking-space support for paragraph, code, image/link, and table serialization.
 
 ## Next Action
 
@@ -391,6 +392,10 @@ Continue Phase 4 with editor durability:
 - `pnpm --filter @tolaria/mobile typecheck` passed after horizontal-rule serialization.
 - CodeScene after horizontal-rule serialization: `apps/mobile/src/mobileEditorHtmlMarkdown.ts` and `apps/mobile/src/mobileEditorDraft.test.ts` scored `10`.
 - `pnpm --filter @tolaria/mobile exec expo export --platform ios --output-dir /tmp/tolaria-mobile-export` passed after horizontal-rule serialization.
+- `pnpm --filter @tolaria/mobile test -- src/mobileEditorDraft.test.ts src/mobileHtmlEntities.test.ts` passed after centralized mobile HTML entity decoding: 45 files / 150 tests.
+- `pnpm --filter @tolaria/mobile typecheck` passed after centralized mobile HTML entity decoding.
+- CodeScene after centralized mobile HTML entity decoding: `apps/mobile/src/mobileHtmlEntities.ts`, `apps/mobile/src/mobileHtmlEntities.test.ts`, `apps/mobile/src/mobileEditorHtmlMarkdown.ts`, `apps/mobile/src/mobileEditorTableMarkdown.ts`, and `apps/mobile/src/mobileEditorDraft.test.ts` scored `10`.
+- `pnpm --filter @tolaria/mobile exec expo export --platform ios --output-dir /tmp/tolaria-mobile-export` passed after centralized mobile HTML entity decoding.
 
 ## Risks / Watch Items
 

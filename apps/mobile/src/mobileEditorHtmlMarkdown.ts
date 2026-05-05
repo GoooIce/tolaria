@@ -3,6 +3,7 @@ import {
   isMobileEditorTableBlock,
   mobileEditorTableMarkdown,
 } from './mobileEditorTableMarkdown'
+import { decodeMobileHtmlEntities } from './mobileHtmlEntities'
 
 type EditorHtmlInput = {
   editorHtml: string
@@ -168,7 +169,7 @@ function blockquoteMarkdown(input: HtmlInput) {
 function codeBlockMarkdown(input: HtmlInput) {
   return [
     `\`\`\`${codeBlockLanguage(input)}`,
-    decodeHtmlEntities({ text: codeBlockText(input) }).trimEnd(),
+    decodeMobileHtmlEntities({ text: codeBlockText(input) }).trimEnd(),
     '```',
   ].join('\n')
 }
@@ -183,7 +184,7 @@ function codeBlockText(input: HtmlInput) {
 }
 
 function inlineMarkdown(input: HtmlInput) {
-  return decodeHtmlEntities({ text: stripRemainingTags(markInlineHtml(input)).trim() })
+  return decodeMobileHtmlEntities({ text: stripRemainingTags(markInlineHtml(input)).trim() })
 }
 
 function markInlineHtml(input: HtmlInput) {
@@ -225,7 +226,7 @@ function imageMarkdown(input: { tag: string }) {
   }
 
   const alt = htmlAttribute({ tag: input.tag, name: 'alt' }) ?? ''
-  return `![${decodeHtmlEntities({ text: alt })}](${decodeHtmlEntities({ text: src })})`
+  return `![${decodeMobileHtmlEntities({ text: alt })}](${decodeMobileHtmlEntities({ text: src })})`
 }
 
 function imageSource(input: { tag: string }) {
@@ -240,7 +241,7 @@ function linkMarkdown(input: { tag: string; label: string }) {
 
 function linkDestination(input: { tag: string }) {
   const href = htmlAttribute({ tag: input.tag, name: 'href' })
-  return href && isPersistableLinkDestination({ href }) ? decodeHtmlEntities({ text: href }) : null
+  return href && isPersistableLinkDestination({ href }) ? decodeMobileHtmlEntities({ text: href }) : null
 }
 
 function htmlAttribute(input: { tag: string; name: string }) {
@@ -265,7 +266,7 @@ function isRelativeImageSource(input: { src: string }) {
 }
 
 function isPersistableLinkDestination(input: { href: string }) {
-  const href = decodeHtmlEntities({ text: input.href })
+  const href = decodeMobileHtmlEntities({ text: input.href })
   if (href.match(/[\n\r]/)) {
     return false
   }
@@ -287,13 +288,4 @@ function isRelativeLinkDestination(input: { href: string }) {
 
 function stripRemainingTags(value: string) {
   return value.replace(/<[^>]+>/g, '')
-}
-
-function decodeHtmlEntities(input: { text: string }) {
-  return input.text
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&amp;/g, '&')
 }
