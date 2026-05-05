@@ -185,7 +185,7 @@ function markInlineHtml(input: HtmlInput) {
     .replace(/<(em|i)(?:\s[^>]*)?>([\s\S]*?)<\/\1>/gi, '*$2*')
     .replace(/<(s|strike|del)(?:\s[^>]*)?>([\s\S]*?)<\/\1>/gi, '~~$2~~')
     .replace(/<code(?:\s[^>]*)?>([\s\S]*?)<\/code>/gi, '`$1`')
-    .replace(/<a(?:\s[^>]*)?href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi, '[$2]($1)')
+    .replace(/<a\b[^>]*>([\s\S]*?)<\/a>/gi, (tag, label) => linkMarkdown({ tag, label }) ?? tag)
 }
 
 function containsUnsupportedTag(input: HtmlInput) {
@@ -194,11 +194,15 @@ function containsUnsupportedTag(input: HtmlInput) {
 }
 
 function blocksUnsafeEditorOutput(input: HtmlInput) {
-  return containsUnsupportedTag(input) || containsUnsafeImage(input) || containsUnsafeTable(input)
+  return containsUnsupportedTag(input) || containsUnsafeImage(input) || containsUnsafeLink(input) || containsUnsafeTable(input)
 }
 
 function containsUnsafeImage(input: HtmlInput) {
   return [...input.html.matchAll(/<img\b[^>]*>/gi)].some((match) => !imageMarkdown({ tag: match[0] }))
+}
+
+function containsUnsafeLink(input: HtmlInput) {
+  return [...input.html.matchAll(/<a\b[^>]*>/gi)].some((match) => !linkMarkdown({ tag: match[0], label: '' }))
 }
 
 function containsUnsafeTable(input: HtmlInput) {
@@ -220,6 +224,16 @@ function imageSource(input: { tag: string }) {
   return src && isPersistableImageSource({ src }) ? src : null
 }
 
+function linkMarkdown(input: { tag: string; label: string }) {
+  const href = linkDestination(input)
+  return href ? `[${input.label}](${href})` : null
+}
+
+function linkDestination(input: { tag: string }) {
+  const href = htmlAttribute({ tag: input.tag, name: 'href' })
+  return href && isPersistableLinkDestination({ href }) ? decodeHtmlEntities({ text: href }) : null
+}
+
 function htmlAttribute(input: { tag: string; name: string }) {
   const match = input.tag.match(new RegExp(`${input.name}=["']([^"']+)["']`, 'i'))
   return match?.[1] ?? null
@@ -239,6 +253,27 @@ function isRemoteImageSource(input: { src: string }) {
 
 function isRelativeImageSource(input: { src: string }) {
   return !input.src.startsWith('/') && !input.src.startsWith('//') && !input.src.match(/^[A-Za-z][A-Za-z0-9+.-]*:/)
+}
+
+function isPersistableLinkDestination(input: { href: string }) {
+  const href = decodeHtmlEntities({ text: input.href })
+  if (href.match(/[\n\r]/)) {
+    return false
+  }
+
+  return isRemoteLinkDestination({ href }) || isMailLinkDestination({ href }) || isRelativeLinkDestination({ href })
+}
+
+function isRemoteLinkDestination(input: { href: string }) {
+  return input.href.startsWith('https://') || input.href.startsWith('http://')
+}
+
+function isMailLinkDestination(input: { href: string }) {
+  return input.href.startsWith('mailto:')
+}
+
+function isRelativeLinkDestination(input: { href: string }) {
+  return !input.href.startsWith('/') && !input.href.startsWith('//') && !input.href.match(/^[A-Za-z][A-Za-z0-9+.-]*:/)
 }
 
 function stripRemainingTags(value: string) {

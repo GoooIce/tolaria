@@ -80,6 +80,32 @@ describe('mobile editor draft', () => {
     })
   })
 
+  it('serializes safe link destinations and decodes escaped link URLs', () => {
+    const draft = createMobileEditorDraft({
+      note: {
+        id: 'links',
+        title: 'Links',
+        content: '# Links',
+      },
+      editorHtml: [
+        '<p><a href="https://tolaria.app?ref=notes&amp;device=ios">Website</a></p>',
+        '<p><a href="mailto:hello@tolaria.app">Email</a></p>',
+        '<p><a href="notes/workflow.md">Relative note</a></p>',
+      ].join(''),
+    })
+
+    expect(draft).toMatchObject({
+      persistable: true,
+      canonicalMarkdown: [
+        '[Website](https://tolaria.app?ref=notes&device=ios)',
+        '',
+        '[Email](mailto:hello@tolaria.app)',
+        '',
+        '[Relative note](notes/workflow.md)',
+      ].join('\n'),
+    })
+  })
+
   it('serializes blockquotes, code blocks, and strikethrough', () => {
     const draft = createMobileEditorDraft({
       note: {
@@ -144,6 +170,23 @@ describe('mobile editor draft', () => {
       noteId: 'workflow',
       sourceMarkdown: '# Workflow\n\nOriginal markdown',
       editorHtml: '<figure><figcaption>Not yet supported</figcaption></figure>',
+      persistable: false,
+      blockedReason: 'unsupportedEditorHtml',
+    })
+  })
+
+  it('blocks unsafe link destinations instead of persisting risky Markdown', () => {
+    expect(
+      createMobileEditorDraft({
+        note: {
+          id: 'links',
+          title: 'Links',
+          content: '# Links',
+        },
+        editorHtml: '<p><a href="javascript:alert(1)">Unsafe</a></p>',
+      }),
+    ).toMatchObject({
+      noteId: 'links',
       persistable: false,
       blockedReason: 'unsupportedEditorHtml',
     })

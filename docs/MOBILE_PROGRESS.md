@@ -98,6 +98,7 @@ This file is the resumable working log for Tolaria mobile. The strategy and road
 - Separated the mobile Git remote setup prompt styles from note-creation prompt styles so vault-management UI can evolve without coupling to compose UI names.
 - Added a sidebar vault-management card that shows the active app-local vault, Git sync state, and an explicit Git remote action on iPad and compact sidebar surfaces.
 - Added the first mobile Git transport execution boundary behind the existing sync/auth plan, including explicit pull/push routing and a visible unavailable-transport failure until the native Git implementation lands.
+- Hardened TenTap link serialization so safe HTTP, mailto, and relative links persist while unsafe link destinations block draft persistence.
 
 ## Next Action
 
@@ -371,6 +372,10 @@ Continue Phase 4 with editor durability:
 - `pnpm --filter @tolaria/mobile typecheck` passed after adding the mobile Git transport execution boundary.
 - CodeScene after adding the mobile Git transport execution boundary: `apps/mobile/src/MobileApp.tsx`, `apps/mobile/src/useMobileGitSyncFlow.ts`, `apps/mobile/src/mobileGitSyncPlan.ts`, `apps/mobile/src/mobileGitPrimaryAction.ts`, `apps/mobile/src/mobileGitPrimaryAction.test.ts`, `apps/mobile/src/mobileGitTransport.ts`, `apps/mobile/src/mobileGitTransport.test.ts`, `apps/mobile/src/mobileGitSyncFlowAction.ts`, and `apps/mobile/src/mobileGitSyncFlowAction.test.ts` scored `10`.
 - `pnpm --filter @tolaria/mobile exec expo export --platform ios --output-dir /tmp/tolaria-mobile-export` passed after adding the mobile Git transport execution boundary.
+- `pnpm --filter @tolaria/mobile test -- src/mobileEditorDraft.test.ts src/mobileEditorDraftSave.test.ts` passed after hardening TenTap link serialization: 43 files / 145 tests.
+- `pnpm --filter @tolaria/mobile typecheck` passed after hardening TenTap link serialization.
+- CodeScene after hardening TenTap link serialization: `apps/mobile/src/mobileEditorHtmlMarkdown.ts` and `apps/mobile/src/mobileEditorDraft.test.ts` scored `10`.
+- `pnpm --filter @tolaria/mobile exec expo export --platform ios --output-dir /tmp/tolaria-mobile-export` passed after hardening TenTap link serialization.
 
 ## Risks / Watch Items
 
