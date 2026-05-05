@@ -8,6 +8,7 @@ import { propertiesStyles } from './styles/propertiesStyles'
 import { propertyChipStyles } from './styles/propertyChipStyles'
 import { remotePromptStyles } from './styles/remotePromptStyles'
 import { sidebarStyles } from './styles/sidebarStyles'
+import { vaultManagementStyles } from './styles/vaultManagementStyles'
 import { vaultLoadStyles } from './styles/vaultLoadStyles'
 
 export const styles = {
@@ -21,5 +22,6 @@ export const styles = {
   ...propertyChipStyles,
   ...remotePromptStyles,
   ...sidebarStyles,
+  ...vaultManagementStyles,
   ...vaultLoadStyles,
 }

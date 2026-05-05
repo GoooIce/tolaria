@@ -96,13 +96,14 @@ This file is the resumable working log for Tolaria mobile. The strategy and road
 - Added a mobile vault remote setup prompt behind the sidebar controls, with persisted remote URL metadata validation and removal by blanking the value.
 - Exposed the missing `EXPO_PUBLIC_GITHUB_OAUTH_CLIENT_ID` requirement inside the mobile remote setup prompt and split the client-id detector away from native AuthSession imports.
 - Separated the mobile Git remote setup prompt styles from note-creation prompt styles so vault-management UI can evolve without coupling to compose UI names.
+- Added a sidebar vault-management card that shows the active app-local vault, Git sync state, and an explicit Git remote action on iPad and compact sidebar surfaces.
 
 ## Next Action
 
 Continue Phase 4 with editor durability:
 
-1. Add a clearer mobile settings/vault-management surface around the remote setup prompt.
-2. Continue TenTap Markdown serialization coverage for any editor output observed in simulator QA.
+1. Continue TenTap Markdown serialization coverage for any editor output observed in simulator QA.
+2. Start the mobile Git transport execution boundary behind the existing sync/auth plan.
 3. Retry the iOS development-client build after installing an iOS 26.2 simulator runtime in Xcode.
 
 ## Verification Log
@@ -361,6 +362,10 @@ Continue Phase 4 with editor durability:
 - `pnpm --filter @tolaria/mobile typecheck` passed after splitting mobile remote prompt styles.
 - CodeScene after splitting mobile remote prompt styles: `apps/mobile/src/MobileVaultRemotePrompt.tsx`, `apps/mobile/src/styles/remotePromptStyles.ts`, and `apps/mobile/src/styles/noteCreateStyles.ts` scored `10`; `apps/mobile/src/styles.ts` returned no scorable code and no findings.
 - `pnpm --filter @tolaria/mobile exec expo export --platform ios --output-dir /tmp/tolaria-mobile-export` passed after splitting mobile remote prompt styles.
+- `pnpm --filter @tolaria/mobile test -- src/mobileVaultManagementSummary.test.ts src/mobileVaultRemoteSetup.test.ts` passed after adding the vault-management sidebar card: 40 files / 134 tests.
+- `pnpm --filter @tolaria/mobile typecheck` passed after adding the vault-management sidebar card.
+- CodeScene after adding the vault-management sidebar card: `apps/mobile/src/MobileApp.tsx`, `apps/mobile/src/MobileVaultManagementCard.tsx`, `apps/mobile/src/mobileVaultManagementSummary.ts`, `apps/mobile/src/mobileVaultManagementSummary.test.ts`, and `apps/mobile/src/styles/vaultManagementStyles.ts` scored `10`; `apps/mobile/src/styles.ts` returned no scorable code and no findings.
+- `pnpm --filter @tolaria/mobile exec expo export --platform ios --output-dir /tmp/tolaria-mobile-export` passed after adding the vault-management sidebar card; Metro recovered from a cache deserialize warning by doing a full crawl.
 
 ## Risks / Watch Items
 

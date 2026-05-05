@@ -15,7 +15,6 @@ import {
   List,
   MagnifyingGlass,
   PencilSimple,
-  SlidersHorizontal,
   Trash,
 } from 'phosphor-react-native'
 import { MobileNote, notes as fallbackNotes, sidebarSections } from './demoData'
@@ -47,6 +46,7 @@ import { styles } from './styles'
 import { colors } from './theme'
 import { MobileNoteCreatePrompt } from './MobileNoteCreatePrompt'
 import { MobilePropertiesPanel } from './MobilePropertiesPanel'
+import { MobileVaultManagementCard } from './MobileVaultManagementCard'
 import { MobileVaultRemotePrompt } from './MobileVaultRemotePrompt'
 import { useMobileNoteCreateFlow } from './useMobileNoteCreateFlow'
 import { useMobileNoteDeleteFlow } from './useMobileNoteDeleteFlow'
@@ -60,7 +60,7 @@ import {
   currentMobileGitHubOAuthClientIdState,
 } from './mobileGitHubOAuthEnvironment'
 import type { MobileGitSyncPlan } from './mobileGitSyncPlan'
-import { defaultMobileVaultMetadata } from './mobileVaultMetadata'
+import { defaultMobileVaultMetadata, type MobileVaultMetadata } from './mobileVaultMetadata'
 import type { MobileVaultRuntime } from './mobileVaultRuntime'
 import { useMobileVaultRuntimeLoader } from './useMobileVaultRuntimeLoader'
 import type { MobileNotePropertyPatch } from './mobileNoteProperties'
@@ -160,7 +160,7 @@ export function MobileApp() {
       <SafeAreaView style={styles.safeArea}>
         {isTablet ? (
           <View style={styles.tabletShell}>
-            <SidebarPanel onOpenRemoteSetup={remoteSetupFlow.open} />
+            <SidebarPanel activeVault={activeVaultMetadata} onOpenRemoteSetup={remoteSetupFlow.open} />
             <NoteListPanel
               gitSyncPlan={gitSyncFlow.gitSyncPlan}
               notes={availableNotes}
@@ -196,6 +196,7 @@ export function MobileApp() {
         ) : (
           <CompactShell
             activePanel={compactNavigation.panel}
+            activeVault={activeVaultMetadata}
             note={selectedNote}
             gitSyncPlan={gitSyncFlow.gitSyncPlan}
             notes={availableNotes}
@@ -240,6 +241,7 @@ export function MobileApp() {
 
 function CompactShell({
   activePanel,
+  activeVault,
   note,
   gitSyncPlan,
   notes,
@@ -266,6 +268,7 @@ function CompactShell({
   selectedNoteId,
 }: {
   activePanel: CompactPanel
+  activeVault: MobileVaultMetadata
   note: MobileNote
   gitSyncPlan: MobileGitSyncPlan
   notes: MobileNote[]
@@ -294,7 +297,11 @@ function CompactShell({
   if (activePanel === 'sidebar') {
     return (
       <SwipeSurface panel="sidebar" onNavigate={onNavigate}>
-        <SidebarPanel onClose={() => onNavigate({ type: 'closeSidebar' })} onOpenRemoteSetup={onOpenRemoteSetup} />
+        <SidebarPanel
+          activeVault={activeVault}
+          onClose={() => onNavigate({ type: 'closeSidebar' })}
+          onOpenRemoteSetup={onOpenRemoteSetup}
+        />
       </SwipeSurface>
     )
   }
@@ -353,9 +360,11 @@ function CompactShell({
 }
 
 function SidebarPanel({
+  activeVault,
   onClose,
   onOpenRemoteSetup,
 }: {
+  activeVault: MobileVaultMetadata
   onClose?: () => void
   onOpenRemoteSetup: () => void
 }) {
@@ -364,9 +373,9 @@ function SidebarPanel({
       <Toolbar>
         {onClose ? <IconButton icon={<CaretLeft size={24} color={colors.textSoft} />} onPress={onClose} /> : null}
         <View style={styles.toolbarSpacer} />
-        <IconButton icon={<SlidersHorizontal size={22} color={colors.textSoft} />} onPress={onOpenRemoteSetup} />
       </Toolbar>
       <ScrollView contentContainerStyle={styles.sidebarContent}>
+        <MobileVaultManagementCard vault={activeVault} onOpenRemoteSetup={onOpenRemoteSetup} />
         {sidebarSections.map((section) => (
           <View key={section.title} style={styles.sidebarSection}>
             <Text style={styles.sidebarSectionTitle}>{section.title}</Text>
