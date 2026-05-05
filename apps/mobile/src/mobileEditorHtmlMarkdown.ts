@@ -31,6 +31,7 @@ const supportedHtmlTags = new Set([
   'h4',
   'h5',
   'h6',
+  'hr',
   'i',
   'img',
   'input',
@@ -53,7 +54,7 @@ const supportedHtmlTags = new Set([
 
 export function serializeSupportedMobileEditorHtml(input: EditorHtmlInput) {
   const html = normalizeBlockSpacing(input)
-  const blocks = html.match(/<(h[1-6]|p|ul|ol|blockquote|pre|table)(?:\s[^>]*)?>[\s\S]*?<\/\1>/gi)
+  const blocks = html.match(/<(h[1-6]|p|ul|ol|blockquote|pre|table)(?:\s[^>]*)?>[\s\S]*?<\/\1>|<hr(?:\s[^>]*)?\s*\/?>/gi)
   if (!blocks) {
     return null
   }
@@ -93,6 +94,10 @@ function serializeBlock(input: HtmlInput) {
     return codeBlockMarkdown(input)
   }
 
+  if (isHorizontalRule(input)) {
+    return '---'
+  }
+
   if (isMobileEditorTableBlock(input)) {
     return mobileEditorTableMarkdown(input)
   }
@@ -119,6 +124,10 @@ function isBlockquote(input: HtmlInput) {
 
 function isCodeBlock(input: HtmlInput) {
   return input.html.match(/^<pre/i)
+}
+
+function isHorizontalRule(input: HtmlInput) {
+  return input.html.match(/^<hr/i)
 }
 
 function listItemMarkdown(input: HtmlInput) {

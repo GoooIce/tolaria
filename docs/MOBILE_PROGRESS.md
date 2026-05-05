@@ -101,6 +101,7 @@ This file is the resumable working log for Tolaria mobile. The strategy and road
 - Hardened TenTap link serialization so safe HTTP, mailto, and relative links persist while unsafe link destinations block draft persistence.
 - Added the first native mobile Git transport adapter contract, wiring the app to a native-module-shaped boundary that currently fails clearly until the real implementation is present.
 - Added the app-managed vault directory name to the native Git transport request so the future native module can locate the repository without deriving paths from display names.
+- Added TenTap horizontal-rule serialization so common divider output persists as canonical Markdown instead of blocking the draft.
 
 ## Next Action
 
@@ -386,6 +387,10 @@ Continue Phase 4 with editor durability:
 - `pnpm --filter @tolaria/mobile typecheck` passed after adding the vault directory name to native Git transport requests.
 - CodeScene after adding the vault directory name to native Git transport requests: `apps/mobile/src/mobileNativeGitTransport.ts` and `apps/mobile/src/mobileNativeGitTransport.test.ts` scored `10`.
 - `pnpm --filter @tolaria/mobile exec expo export --platform ios --output-dir /tmp/tolaria-mobile-export` passed after adding the vault directory name to native Git transport requests; Metro recovered from a cache deserialize warning by doing a full crawl.
+- `pnpm --filter @tolaria/mobile test -- src/mobileEditorDraft.test.ts` passed after horizontal-rule serialization: 44 files / 149 tests.
+- `pnpm --filter @tolaria/mobile typecheck` passed after horizontal-rule serialization.
+- CodeScene after horizontal-rule serialization: `apps/mobile/src/mobileEditorHtmlMarkdown.ts` and `apps/mobile/src/mobileEditorDraft.test.ts` scored `10`.
+- `pnpm --filter @tolaria/mobile exec expo export --platform ios --output-dir /tmp/tolaria-mobile-export` passed after horizontal-rule serialization.
 
 ## Risks / Watch Items
 

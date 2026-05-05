@@ -135,6 +135,22 @@ describe('mobile editor draft', () => {
     })
   })
 
+  it('serializes horizontal rules from TenTap HTML', () => {
+    const draft = createMobileEditorDraft({
+      note: {
+        id: 'break',
+        title: 'Break',
+        content: '# Break',
+      },
+      editorHtml: '<p>Before</p><hr><p>After</p>',
+    })
+
+    expect(draft).toMatchObject({
+      persistable: true,
+      canonicalMarkdown: 'Before\n\n---\n\nAfter',
+    })
+  })
+
   it('serializes TenTap-style task list items', () => {
     const draft = createMobileEditorDraft({
       note: {
