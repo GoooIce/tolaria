@@ -55,7 +55,10 @@ import { useMobileVaultRemoteSetupFlow } from './useMobileVaultRemoteSetupFlow'
 import { createNativeMobileAppStateStorage } from './mobileNativeAppStateStorage'
 import { createNativeMobileVaultMetadataStorage } from './mobileNativeVaultMetadataStorage'
 import { createNativeMobileGitCredentialStorage } from './mobileNativeGitCredentialStorage'
-import { createNativeMobileGitHubOAuthSessionFromEnvironment } from './mobileGitHubOAuthEnvironment'
+import {
+  createNativeMobileGitHubOAuthSessionFromEnvironment,
+  currentMobileGitHubOAuthClientIdState,
+} from './mobileGitHubOAuthEnvironment'
 import type { MobileGitSyncPlan } from './mobileGitSyncPlan'
 import { defaultMobileVaultMetadata } from './mobileVaultMetadata'
 import type { MobileVaultRuntime } from './mobileVaultRuntime'
@@ -69,6 +72,7 @@ export function MobileApp() {
   const showsProperties = width >= 1000
   const appStateStorage = useMemo(() => createNativeMobileAppStateStorage(), [])
   const gitCredentialStorage = useMemo(() => createNativeMobileGitCredentialStorage(), [])
+  const gitHubOAuthClientIdState = useMemo(() => currentMobileGitHubOAuthClientIdState(), [])
   const vaultMetadataStorage = useMemo(() => createNativeMobileVaultMetadataStorage(), [])
   const [activeVaultMetadata, setActiveVaultMetadata] = useState(defaultMobileVaultMetadata)
   const [availableNotes, setAvailableNotes] = useState(fallbackNotes)
@@ -221,6 +225,7 @@ export function MobileApp() {
         {remoteSetupFlow.isOpen ? (
           <MobileVaultRemotePrompt
             failed={remoteSetupFlow.failed}
+            hasGitHubOAuthClientId={gitHubOAuthClientIdState.state === 'configured'}
             isSaving={remoteSetupFlow.isSaving}
             onCancel={remoteSetupFlow.cancel}
             onChangeRemoteUrl={remoteSetupFlow.setRemoteUrl}

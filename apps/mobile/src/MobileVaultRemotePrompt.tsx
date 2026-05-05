@@ -3,6 +3,7 @@ import { styles } from './styles'
 
 export function MobileVaultRemotePrompt({
   failed,
+  hasGitHubOAuthClientId,
   isSaving,
   onCancel,
   onChangeRemoteUrl,
@@ -10,6 +11,7 @@ export function MobileVaultRemotePrompt({
   remoteUrl,
 }: {
   failed: boolean
+  hasGitHubOAuthClientId: boolean
   isSaving: boolean
   onCancel: () => void
   onChangeRemoteUrl: (remoteUrl: string) => void
@@ -31,6 +33,9 @@ export function MobileVaultRemotePrompt({
         style={styles.createNoteInput}
         value={remoteUrl}
       />
+      {!hasGitHubOAuthClientId ? (
+        <Text style={styles.createNoteError}>GitHub login needs EXPO_PUBLIC_GITHUB_OAUTH_CLIENT_ID</Text>
+      ) : null}
       {failed ? <Text style={styles.createNoteError}>Enter a valid Git remote URL</Text> : null}
       <View style={styles.createNoteActions}>
         <PromptButton label="Cancel" onPress={onCancel} />

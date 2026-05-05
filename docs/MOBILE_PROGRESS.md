@@ -94,12 +94,13 @@ This file is the resumable working log for Tolaria mobile. The strategy and road
 - Created [ADR-0114](./adr/0114-expo-auth-session-for-mobile-github-oauth.md) for the mobile GitHub OAuth native dependency and redirect scheme.
 - Wired remote-backed mobile sync status actions to credential loading and the GitHub OAuth flow, including visible syncing/failed status states when Connect is tapped.
 - Added a mobile vault remote setup prompt behind the sidebar controls, with persisted remote URL metadata validation and removal by blanking the value.
+- Exposed the missing `EXPO_PUBLIC_GITHUB_OAUTH_CLIENT_ID` requirement inside the mobile remote setup prompt and split the client-id detector away from native AuthSession imports.
 
 ## Next Action
 
 Continue Phase 4 with editor durability:
 
-1. Add a clearer mobile settings/vault-management surface around the remote setup prompt and expose configured/missing GitHub OAuth client ID state.
+1. Add a clearer mobile settings/vault-management surface around the remote setup prompt and consider moving the prompt out of the create-note popover styling.
 2. Continue TenTap Markdown serialization coverage for any editor output observed in simulator QA.
 3. Retry the iOS development-client build after installing an iOS 26.2 simulator runtime in Xcode.
 
@@ -351,6 +352,10 @@ Continue Phase 4 with editor durability:
 - `pnpm --filter @tolaria/mobile typecheck` passed after mobile remote setup.
 - CodeScene after mobile remote setup: `apps/mobile/src/MobileApp.tsx`, `apps/mobile/src/MobileVaultRemotePrompt.tsx`, `apps/mobile/src/mobileVaultRemoteSetup.ts`, `apps/mobile/src/mobileVaultRemoteSetup.test.ts`, `apps/mobile/src/useMobileVaultRemoteSetupFlow.ts`, and `apps/mobile/src/styles/noteCreateStyles.ts` scored `10`.
 - `pnpm --filter @tolaria/mobile exec expo export --platform ios --output-dir /tmp/tolaria-mobile-export` passed after mobile remote setup.
+- `pnpm --filter @tolaria/mobile test -- src/mobileGitHubOAuthEnvironment.test.ts src/mobileVaultRemoteSetup.test.ts src/mobileGitHubOAuth.test.ts` passed after surfacing OAuth client-id state: 39 files / 131 tests.
+- `pnpm --filter @tolaria/mobile typecheck` passed after surfacing OAuth client-id state.
+- CodeScene after surfacing OAuth client-id state: `apps/mobile/src/MobileApp.tsx`, `apps/mobile/src/MobileVaultRemotePrompt.tsx`, `apps/mobile/src/mobileGitHubOAuthClientId.ts`, `apps/mobile/src/mobileGitHubOAuthEnvironment.ts`, and `apps/mobile/src/mobileGitHubOAuthEnvironment.test.ts` scored `10`.
+- `pnpm --filter @tolaria/mobile exec expo export --platform ios --output-dir /tmp/tolaria-mobile-export` passed after surfacing OAuth client-id state.
 
 ## Risks / Watch Items
 
