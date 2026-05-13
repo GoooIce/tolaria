@@ -1,6 +1,6 @@
 # Mobile Progress
 
-Last updated: 2026-05-05
+Last updated: 2026-05-13
 
 This file is the resumable working log for Tolaria mobile. The strategy and roadmap live in [MOBILE_STRATEGY.md](./MOBILE_STRATEGY.md); this file records the current execution state.
 
@@ -479,3 +479,12 @@ Continue Phase 4 as a quality remediation pass before new feature work:
 - `pnpm --filter @tolaria/mobile test` passed: 59 files / 194 tests.
 - `pnpm --filter @tolaria/mobile exec expo install --check --json` passed.
 - `pnpm --filter @tolaria/mobile exec expo export --platform ios --output-dir /tmp/tolaria-mobile-export-quality-pass` passed.
+
+## 2026-05-13 Rich Wikilink Follow-Up
+
+- Added a TenTap bridge extension for mobile wikilink insertion, with the Link bridge configured to preserve `tolaria-note:` links.
+- Added a rich-editor `[[` suggestion overlay backed by the same mobile note suggestion logic used by the raw editor.
+- Split the editor WebView setup, message parser, suggestion UI, and wikilink bridge into focused files so each touched code file stays at CodeScene `10`.
+- `pnpm --filter @tolaria/mobile typecheck` passed.
+- `pnpm --filter @tolaria/mobile test` passed: 59 files / 194 tests.
+- `pnpm --filter @tolaria/mobile exec expo export --platform ios --output-dir /tmp/tolaria-mobile-export-wikilink-pass` passed.

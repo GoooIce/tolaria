@@ -140,8 +140,8 @@ Current state:
 
 - The supported serializer subset is growing and tested.
 - Leading-H1 removal is preserved.
-- Rich wikilinks render and navigate.
-- Rich `[[` autocomplete still needs a proper TenTap extension.
+- Rich wikilinks render, navigate, and insert through a TenTap bridge-backed `[[` suggestion flow.
+- The current rich autocomplete is intentionally minimal; desktop-grade ranking, keyboard navigation, and create-missing-note behavior remain to be added.
 
 ### 4. Properties, Types, And Relationships
 

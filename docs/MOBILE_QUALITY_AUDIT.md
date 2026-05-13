@@ -89,7 +89,7 @@ Desktop reference:
 Mobile current state:
 
 - Raw editor detects `[[` and inserts aliased links, but suggestions are basic and do not share desktop ranking, aliases, keyboard behavior, or relative path semantics.
-- Rich editor now renders persisted wikilinks as colored clickable links and routes taps back to mobile note navigation. Rich `[[` autocomplete is still incomplete and needs a TenTap extension rather than ad hoc DOM overlays.
+- Rich editor renders persisted wikilinks as colored clickable links, routes taps back to mobile note navigation, and inserts selected `[[` suggestions through a TenTap bridge command.
 - Relationship add currently reuses note suggestions but does not guarantee canonical wikilink output.
 
 Required correction:
@@ -185,7 +185,7 @@ Required correction:
 ## Immediate Remediation Order
 
 1. Finish the editor parity slice.
-   - Rich `[[` autocomplete through a TenTap extension.
+   - Rich `[[` autocomplete now exists; upgrade ranking, keyboard control, and create-missing-note behavior to desktop parity.
    - Clickable wikilinks with path/alias resolution matching desktop.
    - Hardware keyboard shortcuts and Tab behavior verified on physical iPad keyboard.
    - No-crash behavior for empty notes, notes without H1, and title changes through breadcrumb.
