@@ -1,99 +1,34 @@
-export type FixtureNote = {
-  created: string
-  date: string
-  favorite: boolean
-  id: string
-  links: number
-  modified: string
-  relationships: FixtureRelationship[]
-  status: string
-  snippet: string
-  tags: string[]
-  title: string
-  type: string
-  typeTone: FixtureTone
-  workspace: string
-}
+import type {
+  MobileEditorBlock,
+  MobileEditorInline,
+  MobileNote,
+  MobileRelationship,
+  MobileRelationshipKind,
+  MobileRelationshipValue,
+  MobileSidebarFolder,
+  MobileSidebarIcon,
+  MobileSidebarItem,
+  MobileSidebarSection,
+  MobileSyncStatus,
+  MobileTone,
+  MobileWorkspaceSnapshot,
+} from '../workspace/mobileWorkspaceModel'
 
-export type FixtureRelationshipKind = 'belongsTo' | 'has' | 'relatedTo' | 'custom'
+export type FixtureNote = MobileNote
+export type FixtureRelationshipKind = MobileRelationshipKind
+export type FixtureRelationship = MobileRelationship
+export type FixtureRelationshipValue = MobileRelationshipValue
+export type FixtureTone = MobileTone
+export type FixtureSidebarIcon = MobileSidebarIcon
+export type FixtureSidebarItem = MobileSidebarItem
+export type FixtureSidebarSection = MobileSidebarSection
+export type FixtureSidebarFolder = MobileSidebarFolder
+export type FixtureSyncStatus = MobileSyncStatus
+export type FixtureEditorInline = MobileEditorInline
+export type FixtureEditorBlock = MobileEditorBlock
 
-export type FixtureRelationship = {
-  kind: FixtureRelationshipKind
-  label?: string
-  values: FixtureRelationshipValue[]
-}
-
-export type FixtureRelationshipValue = {
-  title: string
-  type: string
-  typeTone: FixtureTone
-}
-
-export type FixtureTone = 'green' | 'orange' | 'purple'
-
-export type FixtureSidebarIcon =
-  | 'archive'
-  | 'file'
-  | 'folder'
-  | 'inbox'
-  | 'procedure'
-  | 'star'
-  | 'tag'
-
-export type FixtureSidebarItem = {
-  active?: boolean
-  count?: string
-  icon: FixtureSidebarIcon
-  id: string
-  label: string
-  tone?: FixtureTone
-}
-
-export type FixtureSidebarSection = {
-  count?: string
-  folders?: FixtureSidebarFolder[]
-  id: string
-  items?: FixtureSidebarItem[]
-  label?: string
-}
-
-export type FixtureSidebarFolder = {
-  active?: boolean
-  children: FixtureSidebarFolder[]
-  expanded?: boolean
-  id: string
-  name: string
-}
-
-export type FixtureSyncStatus = {
-  kind: 'conflict' | 'pullRequired' | 'synced'
-  minutesAgo?: number
-}
-
-export type FixtureEditorInline = {
-  bold?: boolean
-  code?: boolean
-  italic?: boolean
-  text: string
-}
-
-export type FixtureEditorBlock =
-  | { content: FixtureEditorInline[]; kind: 'paragraph' }
-  | { kind: 'heading'; level: 2 | 3; text: string }
-  | { items: FixtureEditorInline[][]; kind: 'bullets' }
-  | { content: FixtureEditorInline[]; kind: 'quote' }
-  | { headers: string[]; kind: 'table'; rows: string[][] }
-
-export type WorkspaceScenario = {
-  editorBlocks: FixtureEditorBlock[]
-  editorBullets: string[]
+export type WorkspaceScenario = MobileWorkspaceSnapshot & {
   id: WorkspaceScenarioId
-  noteListSubtitle: string
-  notes: FixtureNote[]
-  searchQuery?: string
-  selectedNoteId?: string
-  sidebarSections: FixtureSidebarSection[]
-  sync: FixtureSyncStatus
 }
 
 export type WorkspaceScenarioId =

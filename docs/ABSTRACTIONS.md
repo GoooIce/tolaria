@@ -73,11 +73,23 @@ Current primitives:
 | `MobileChip` | Type, tag, and relationship labels |
 | `MobilePropertyRow` | Properties panel label/value rows |
 
+Read-only workspace surfaces now sit one level above those primitives:
+
+| Surface | Purpose |
+|---|---|
+| `MobileWorkspaceSnapshot` | Production-shaped read-only data contract for mobile workspace UI |
+| `TabletWorkspace` | Tablet shell that owns selected-note state and panel layout |
+| `MobileWorkspaceSidebar` | Sidebar groups, counts, and folder tree |
+| `MobileNoteListPanel` | Note-list toolbar, rows, chips, and empty state |
+| `TabletEditorPanel` | Read-only editor rendering for title, markdown blocks, quotes, and tables |
+| `MobilePropertiesPanel` | Read-only scalar properties, tags, and typed relationships |
+| `MobileSyncStatusBar` | Bottom sync/status footer |
+
 Mobile UI copy should reuse the localization catalog in `src/lib/locales/en.json` whenever the desktop concept already exists. New mobile-specific copy must be added to that catalog and translated through the normal Lara workflow.
 
-The mobile UI lab uses fixture data until a surface has passed visual and interaction QA. Vault storage, editor, Git, and sync logic should be wired only after the corresponding native shell has a stable fixture state and screenshot target.
+The mobile UI lab uses a fixture-backed read-only repository until a surface has passed visual and interaction QA. Vault storage, editor, Git, and sync mutation logic should be wired only after the corresponding native shell has a stable fixture state and screenshot target.
 
-`docs/MOBILE-UI-PARITY.md` is the working checklist for mobile surface parity. `pnpm mobile:qa:screenshots` is the fast visual QA command for this branch: it exports the Expo web bundle, serves it locally, and captures tablet/phone screenshots for the UI lab without running the full desktop/native Tolaria suite.
+`apps/mobile/docs/ui-parity-inventory.md` is the working checklist for mobile surface parity. `pnpm mobile:qa:screenshots` is the fast visual QA command for this branch: it exports the Expo web bundle, serves it locally, and captures tablet/phone screenshots for the UI lab without running the full desktop/native Tolaria suite.
 
 ### Vault Git Capability
 

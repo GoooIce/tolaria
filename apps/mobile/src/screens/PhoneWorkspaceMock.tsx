@@ -9,37 +9,37 @@ import {
   Info,
   List,
   MagnifyingGlass,
-  StackSimple,
 } from 'phosphor-react-native'
 import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native'
-import type { FixtureNote, FixtureSidebarSection, WorkspaceScenario } from '../fixtures/workspaceFixtures'
 import { Button } from '../components/ui/button'
 import { Text } from '../components/ui/text'
 import { cn } from '../components/ui/utils'
+import { MobileTypeIcon } from '../components/workspace/MobileWorkspaceIcons'
 import { mobileCopy, mobileText } from '../i18n/mobileText'
 import { mobileColors, mobileRadius, mobileSpace, mobileType } from '../ui/tokens'
+import type { MobileNote, MobileSidebarSection, MobileWorkspaceSnapshot } from '../workspace/mobileWorkspaceModel'
 
 export type PhoneWorkspaceState = 'editor' | 'list' | 'sidebar'
 
 export function PhoneWorkspaceMock({
   initialState = 'list',
-  scenario,
+  snapshot,
 }: {
   initialState?: PhoneWorkspaceState
-  scenario: WorkspaceScenario
+  snapshot: MobileWorkspaceSnapshot
 }) {
   const [phoneState, setPhoneState] = useState(initialState)
-  const selectedNote = scenario.notes.find((note) => note.id === scenario.selectedNoteId) ?? scenario.notes[0] ?? null
+  const selectedNote = snapshot.notes.find((note) => note.id === snapshot.selectedNoteId) ?? snapshot.notes[0] ?? null
 
   if (phoneState === 'sidebar') {
-    return <PhoneSidebarDrawer scenario={scenario} onClose={() => setPhoneState('list')} onOpenEditor={() => setPhoneState('editor')} />
+    return <PhoneSidebarDrawer snapshot={snapshot} onClose={() => setPhoneState('list')} onOpenEditor={() => setPhoneState('editor')} />
   }
 
   if (phoneState === 'editor' && selectedNote) {
-    return <PhoneEditor note={selectedNote} bullets={scenario.editorBullets} onBack={() => setPhoneState('list')} />
+    return <PhoneEditor note={selectedNote} bullets={snapshot.editorBullets} onBack={() => setPhoneState('list')} />
   }
 
-  return <PhoneNoteList notes={scenario.notes} onOpenEditor={() => setPhoneState('editor')} onOpenSidebar={() => setPhoneState('sidebar')} />
+  return <PhoneNoteList notes={snapshot.notes} onOpenEditor={() => setPhoneState('editor')} onOpenSidebar={() => setPhoneState('sidebar')} />
 }
 
 function PhoneNoteList({
@@ -47,7 +47,7 @@ function PhoneNoteList({
   onOpenEditor,
   onOpenSidebar,
 }: {
-  notes: FixtureNote[]
+  notes: MobileNote[]
   onOpenEditor: () => void
   onOpenSidebar: () => void
 }) {
@@ -81,13 +81,13 @@ function PhoneNoteRow({
   note,
   onPress,
 }: {
-  note: FixtureNote
+  note: MobileNote
   onPress: () => void
 }) {
   return (
     <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [phoneStyles.noteRow, pressed ? phoneStyles.pressed : null]}>
       <View style={phoneStyles.noteTitleRow}>
-        <TypeIcon note={note} size={20} />
+        <MobileTypeIcon size={20} tone={note.typeTone} type={note.type} />
         <Text numberOfLines={2} style={phoneStyles.noteTitle}>{note.title}</Text>
       </View>
       <Text numberOfLines={2} style={phoneStyles.noteSnippet}>{note.snippet}</Text>
@@ -99,11 +99,11 @@ function PhoneNoteRow({
 function PhoneSidebarDrawer({
   onClose,
   onOpenEditor,
-  scenario,
+  snapshot,
 }: {
   onClose: () => void
   onOpenEditor: () => void
-  scenario: WorkspaceScenario
+  snapshot: MobileWorkspaceSnapshot
 }) {
   const { width } = useWindowDimensions()
   const drawerWidth = Math.min(310, Math.round(width * 0.76))
@@ -111,7 +111,7 @@ function PhoneSidebarDrawer({
   return (
     <View style={phoneStyles.drawerRoot}>
       <View style={[phoneStyles.drawerPreview, { left: drawerWidth, width }]}>
-        <PhoneNoteList notes={scenario.notes} onOpenEditor={onOpenEditor} onOpenSidebar={onClose} />
+        <PhoneNoteList notes={snapshot.notes} onOpenEditor={onOpenEditor} onOpenSidebar={onClose} />
       </View>
       <View style={[phoneStyles.drawerPanel, { width: drawerWidth }]}>
         <CircleButton accessibilityLabel={mobileText('command.group.note')} dark>
@@ -120,7 +120,7 @@ function PhoneSidebarDrawer({
         <View style={phoneStyles.drawerNav}>
           <PhoneSidebarItem active icon={<FileText color={phoneColors.drawerActiveText} size={18} />} label={mobileCopy.inbox} />
           <PhoneSidebarItem icon={<Archive color={phoneColors.drawerMuted} size={18} />} label={mobileCopy.archive} />
-          {scenario.sidebarSections.map((section) => (
+          {snapshot.sidebarSections.map((section) => (
             <PhoneSidebarSection key={section.id} section={section} />
           ))}
         </View>
@@ -129,7 +129,7 @@ function PhoneSidebarDrawer({
   )
 }
 
-function PhoneSidebarSection({ section }: { section: FixtureSidebarSection }) {
+function PhoneSidebarSection({ section }: { section: MobileSidebarSection }) {
   if (section.id !== 'folders') return null
 
   return (
@@ -172,7 +172,7 @@ function PhoneEditor({
   onBack,
 }: {
   bullets: string[]
-  note: FixtureNote
+  note: MobileNote
   onBack: () => void
 }) {
   return (
@@ -227,23 +227,6 @@ function CircleButton({
       {children}
     </Button>
   )
-}
-
-function TypeIcon({ note, size }: { note: FixtureNote; size: number }) {
-  const color = typeColor(note.typeTone)
-  const normalizedType = note.type.toLowerCase()
-
-  if (normalizedType.includes('release')) return <Archive color={color} size={size} />
-  if (normalizedType.includes('procedure')) return <StackSimple color={color} size={size} />
-
-  return <FileText color={color} size={size} />
-}
-
-function typeColor(tone: FixtureNote['typeTone']) {
-  if (tone === 'green') return mobileColors.green
-  if (tone === 'orange') return mobileColors.orange
-
-  return mobileColors.purple
 }
 
 const phoneColors = {

@@ -19,6 +19,19 @@ This inventory is the working source map for the experimental mobile UI foundati
 | `MobileListRow` | `src/components/NoteItem.tsx` | Row padding 14/16, title 13px medium default and semibold only when selected, snippets 12px muted, dates/meta 10-12px muted, type icon only at the row edge. |
 | `MobilePropertyRow` | `src/components/propertyPanelLayout.ts` | Dense rows, 12px muted labels, 12px normal values, no heavy text weight. |
 
+## Read-Only Workspace Components
+
+| Mobile component | Desktop source | Required alignment |
+| --- | --- | --- |
+| `MobileWorkspaceSidebar` | `SidebarGroupHeader.tsx`, `SidebarParts.tsx`, folder tree components | Owns tablet sidebar rendering: top nav, groups, count pills, and folder tree. |
+| `MobileNoteListPanel` | `NoteItem.tsx`, note-list header | Owns tablet note-list chrome and row composition. |
+| `TabletEditorPanel` | `EditorTheme.css`, `theme.json` | Owns read-only tablet editor rendering for H1, paragraphs, headings, bullets, quotes, inline styles, and tables. |
+| `MobilePropertiesPanel` | `propertyPanelLayout.ts`, `RelationshipsPanel.tsx` | Owns read-only properties and relationship display. |
+| `MobileSyncStatusBar` | `StatusBar.tsx` | Owns subtle bottom sync footer display. |
+| `TabletWorkspace` | Desktop four-panel layout | Owns tablet shell layout and selected-note state only. |
+
+The tablet shell consumes `MobileWorkspaceSnapshot` from `src/workspace/mobileWorkspaceModel.ts`. The current repository is fixture-backed for UI lab speed, but the component boundary is read-only and production-shaped so native vault loading can replace the fixture repository without rewriting the tablet surfaces.
+
 ## Tablet Screens
 
 | Surface | Desktop source | Required alignment |
