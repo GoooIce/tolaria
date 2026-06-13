@@ -4,6 +4,7 @@ import { basename, join, relative } from 'node:path'
 import { buildLocalVaultWorkspaceSnapshot, type LocalVaultFile } from '../src/workspace/localVaultSnapshot'
 import type { MobileWorkspaceSnapshot } from '../src/workspace/mobileWorkspaceModel'
 import { HOST_WORKSPACE_SNAPSHOT_STORAGE_KEY } from '../src/workspace/readOnlyWorkspaceRepository'
+import { assertDesktopParitySources } from './mobile-ui-desktopParitySources'
 import { assertTabletDesktopParity } from './mobile-ui-parityAssertions'
 
 type ScreenshotRecord = {
@@ -196,6 +197,13 @@ test.describe('mobile UI lab screenshots', () => {
     await page.goto('/')
 
     await assertTabletDesktopParity(page)
+  })
+
+  test('keeps mobile parity constants synced with desktop token sources', async ({ browserName }, testInfo) => {
+    void browserName
+    test.skip(testInfo.project.name !== 'tablet-landscape', 'Desktop source drift only needs one project run.')
+
+    await assertDesktopParitySources()
   })
 
   test('hides and reveals tablet chrome with horizontal swipe gestures', async ({ page }, testInfo) => {
