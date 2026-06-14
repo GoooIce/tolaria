@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest'
 import { workspaceScenarioForId } from '../fixtures/workspaceFixtures'
 import {
   applyMobileWorkspaceEdit,
+  applyMobileWorkspaceEditWithWrites,
   replaceTrailingWikilinkQuery,
   trailingWikilinkQuery,
 } from './mobileWorkspaceEditing'
+import type { MobileWorkspaceSnapshot } from './mobileWorkspaceModel'
 
 describe('applyMobileWorkspaceEdit', () => {
   it('creates a selected editable note with markdown content', () => {
@@ -99,6 +101,82 @@ describe('applyMobileWorkspaceEdit', () => {
     const updatedNote = withoutRelationship.notes.find((candidate) => candidate.id === 'workflow-orchestration')
     const refs = updatedNote?.relationships.find((candidate) => candidate.key === 'belongs_to')?.values.map((value) => value.ref)
     expect(refs ?? []).not.toContain(ref)
+  })
+
+  it('hydrates metadata-only notes without creating a persistence write', () => {
+    const base = workspaceScenarioForId('default')
+    const metadataOnlyNote = {
+      ...base.notes[1],
+      editorBlocks: undefined,
+      editorBullets: undefined,
+      rawContent: undefined,
+      snippet: 'Old metadata snippet',
+    }
+    const snapshot: MobileWorkspaceSnapshot = {
+      ...base,
+      allNotes: [base.notes[0], metadataOnlyNote],
+      notes: [base.notes[0]],
+      selectedNoteId: metadataOnlyNote.id,
+    }
+
+    const result = applyMobileWorkspaceEditWithWrites(snapshot, {
+      noteId: metadataOnlyNote.id,
+      rawContent: '# Hydrated Procedure\n\nFresh body with [[Workflow Orchestration Essay]].\n',
+      type: 'hydrateNoteContent',
+    })
+    const hydrated = result.snapshot.allNotes?.find((note) => note.id === metadataOnlyNote.id)
+
+    expect(result.writes).toEqual([])
+    expect(hydrated).toMatchObject({
+      rawContent: '# Hydrated Procedure\n\nFresh body with [[Workflow Orchestration Essay]].\n',
+      snippet: 'Fresh body with Workflow Orchestration Essay.',
+      title: 'Hydrated Procedure',
+    })
+    expect(hydrated?.editorBlocks?.[0]).toMatchObject({ kind: 'paragraph' })
+  })
+
+  it('does not inflate untouched metadata-only notes into fallback markdown after edits', () => {
+    const base = workspaceScenarioForId('default')
+    const editableNote = {
+      ...base.notes[0],
+      rawContent: '# Workflow Orchestration Essay\n\nOriginal body.\n',
+    }
+    const metadataOnlyNote = {
+      ...base.notes[1],
+      rawContent: undefined,
+    }
+    const snapshot: MobileWorkspaceSnapshot = {
+      ...base,
+      allNotes: [editableNote, metadataOnlyNote],
+      notes: [editableNote],
+      selectedNoteId: editableNote.id,
+    }
+
+    const result = applyMobileWorkspaceEditWithWrites(snapshot, {
+      content: '# Workflow Orchestration Essay\n\nUpdated body.\n',
+      noteId: editableNote.id,
+      type: 'updateNoteContent',
+    })
+
+    expect(result.snapshot.allNotes?.find((note) => note.id === metadataOnlyNote.id)?.rawContent).toBeUndefined()
+    expect(result.writes).toEqual([{
+      content: '# Workflow Orchestration Essay\n\nUpdated body.\n',
+      kind: 'saveNote',
+      path: editableNote.path,
+    }])
+  })
+
+  it('plans create writes for new notes', () => {
+    const result = applyMobileWorkspaceEditWithWrites(workspaceScenarioForId('default'), {
+      title: 'Mobile Persistence Contract',
+      type: 'createNote',
+    })
+
+    expect(result.writes).toEqual([{
+      content: '# Mobile Persistence Contract\n\n',
+      kind: 'createNote',
+      path: 'mobile-persistence-contract.md',
+    }])
   })
 })
 

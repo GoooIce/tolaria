@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Linking, useWindowDimensions } from 'react-native'
 import { PhoneWorkspaceMock, type PhoneWorkspaceState } from './PhoneWorkspaceMock'
 import { TabletWorkspace } from './TabletWorkspace'
-import { readOnlyWorkspaceRepository } from '../workspace/readOnlyWorkspaceRepository'
+import { readOnlyWorkspaceRepository, type ReadOnlyWorkspaceRequest } from '../workspace/readOnlyWorkspaceRepository'
 
 export function MobileUiLab() {
   const { width } = useWindowDimensions()
@@ -10,15 +10,21 @@ export function MobileUiLab() {
   const searchParams = useMobileUiSearchParams()
   const scenarioId = currentScenarioId(searchParams)
   const source = currentSnapshotSource(searchParams)
+  const repositoryRequest = { scenarioId, source }
   const layoutProbe = layoutProbeEnabled(searchParams)
-  const snapshot = readOnlyWorkspaceRepository.readSnapshot({
-    scenarioId,
-    source,
-  })
+  const snapshot = readOnlyWorkspaceRepository.readSnapshot(repositoryRequest)
   const workspaceKey = mobileWorkspaceKey({ layoutProbe, scenarioId, snapshot, source })
 
   if (isWideEnoughForTablet) {
-    return <TabletWorkspace key={workspaceKey} layoutProbe={layoutProbe} snapshot={snapshot} />
+    return (
+      <TabletWorkspace
+        key={workspaceKey}
+        layoutProbe={layoutProbe}
+        repository={readOnlyWorkspaceRepository}
+        repositoryRequest={repositoryRequest}
+        snapshot={snapshot}
+      />
+    )
   }
 
   return <PhoneWorkspaceMock key={workspaceKey} initialState={currentPhoneState(searchParams)} snapshot={snapshot} />
@@ -36,7 +42,7 @@ function currentPhoneState(searchParams: URLSearchParams): PhoneWorkspaceState {
   return 'list'
 }
 
-function currentSnapshotSource(searchParams: URLSearchParams) {
+function currentSnapshotSource(searchParams: URLSearchParams): NonNullable<ReadOnlyWorkspaceRequest['source']> {
   return searchParams.get('source') === 'host-vault' ? 'host' : 'fixture'
 }
 

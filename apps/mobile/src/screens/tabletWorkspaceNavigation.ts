@@ -48,8 +48,8 @@ export function useTabletWorkspaceNavigation(snapshot: MobileWorkspaceSnapshot, 
   return {
     activeFolderId: sidebarSelection.kind === 'folder' ? sidebarSelection.id : null,
     activeItemId: sidebarSelection.kind === 'item' ? sidebarSelection.id : null,
-    editorBlocks: selectedNote?.editorBlocks ?? snapshot.editorBlocks,
-    editorBullets: selectedNote?.editorBullets ?? snapshot.editorBullets,
+    editorBlocks: editorBlocksForSelection(snapshot, selectedNote),
+    editorBullets: editorBulletsForSelection(snapshot, selectedNote),
     noteListSubtitle: noteListSubtitle(sidebarSelection, snapshot.noteListSubtitle, notes.length, searchQuery),
     noteListTitle: sidebarSelection.label,
     notes,
@@ -197,6 +197,22 @@ function selectedMobileNote(
   notes: MobileNote[],
   selectedNoteId: NoteId | null,
 ) {
-  const workspaceSelectedNote = workspaceNotes(snapshot).find((note) => note.id === selectedNoteId)
-  return notes.find((note) => note.id === selectedNoteId) ?? workspaceSelectedNote ?? notes[0] ?? null
+  const selectedNote = notes.find((note) => note.id === selectedNoteId)
+    ?? workspaceNotes(snapshot).find((note) => note.id === selectedNoteId)
+    ?? notes[0]
+
+  if (!selectedNote) return null
+  return snapshot.notes.find((note) => note.id === selectedNote.id) ?? selectedNote
+}
+
+function editorBlocksForSelection(snapshot: MobileWorkspaceSnapshot, selectedNote: MobileNote | null) {
+  if (!selectedNote) return snapshot.editorBlocks
+  if (selectedNote.editorBlocks) return selectedNote.editorBlocks
+  return snapshot.allNotes ? [] : snapshot.editorBlocks
+}
+
+function editorBulletsForSelection(snapshot: MobileWorkspaceSnapshot, selectedNote: MobileNote | null) {
+  if (!selectedNote) return snapshot.editorBullets
+  if (selectedNote.editorBullets) return selectedNote.editorBullets
+  return snapshot.allNotes ? [] : snapshot.editorBullets
 }

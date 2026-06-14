@@ -36,6 +36,7 @@ export type MobileWorkspaceEdit =
   | { content: MarkdownContent; noteId: NoteId; type: 'updateNoteContent' }
   | { noteId: NoteId; title: NoteTitle; type: 'renameNoteTitle' }
   | { title: NoteTitle; type: 'createNote' }
+  | { noteId: NoteId; rawContent: MarkdownContent; type: 'hydrateNoteContent' }
   | { key: FrontmatterKey; noteId: NoteId; value: MobilePropertyValue; type: 'updateProperty' }
   | { key: FrontmatterKey; noteId: NoteId; type: 'deleteProperty' }
   | { key: FrontmatterKey; noteId: NoteId; targetTitle: NoteTitle; type: 'addRelationship' }
@@ -44,8 +45,17 @@ export type MobileWorkspaceEdit =
   | { archived: boolean; noteId: NoteId; type: 'setArchived' }
 type MobileNoteEdit = Exclude<MobileWorkspaceEdit, { type: 'createNote' }>
 
+export type MobileWorkspaceWrite =
+  | { content: MarkdownContent; kind: 'createNote'; path: string }
+  | { content: MarkdownContent; kind: 'saveNote'; path: string }
+
+export type MobileWorkspaceEditResult = {
+  snapshot: MobileWorkspaceSnapshot
+  writes: MobileWorkspaceWrite[]
+}
+
 type DerivedNote = {
-  note: EditableNoteInput
+  note: MobileNote
   rawRelationships: Record<string, WikilinkRef[]>
 }
 
@@ -64,6 +74,10 @@ const mobileNoteEditHandlers: Record<MobileNoteEdit['type'], MobileNoteEditHandl
   deleteProperty: ({ editableNote }, edit) => {
     if (edit.type !== 'deleteProperty') return editableNote
     return deriveEditedNote(editableNote, writeFrontmatterValue(editableNote.rawContent, edit.key, null))
+  },
+  hydrateNoteContent: ({ editableNote }, edit) => {
+    if (edit.type !== 'hydrateNoteContent') return editableNote
+    return deriveEditedNote(editableNote, edit.rawContent)
   },
   removeRelationship: ({ editableNote }, edit) => {
     if (edit.type !== 'removeRelationship') return editableNote
@@ -95,14 +109,27 @@ export function applyMobileWorkspaceEdit(
   snapshot: MobileWorkspaceSnapshot,
   edit: MobileWorkspaceEdit,
 ): MobileWorkspaceSnapshot {
+  return applyMobileWorkspaceEditWithWrites(snapshot, edit).snapshot
+}
+
+export function applyMobileWorkspaceEditWithWrites(
+  snapshot: MobileWorkspaceSnapshot,
+  edit: MobileWorkspaceEdit,
+): MobileWorkspaceEditResult {
   if (edit.type === 'createNote') {
-    return createMobileNote(snapshot, edit.title)
+    const nextSnapshot = createMobileNote(snapshot, edit.title)
+    return { snapshot: nextSnapshot, writes: createNoteWrites(nextSnapshot) }
   }
 
   const notePool = workspaceNotePool(snapshot)
   const notes = snapshot.notes.map((note) => applyMobileNoteEdit(note, notePool, edit))
   const allNotes = snapshot.allNotes?.map((note) => applyMobileNoteEdit(note, notePool, edit))
-  return rebuildSnapshot({ ...snapshot, allNotes, notes }, notes, allNotes)
+  const nextSnapshot = rebuildSnapshot({ ...snapshot, allNotes, notes }, notes, allNotes)
+
+  return {
+    snapshot: nextSnapshot,
+    writes: saveNoteWrites(snapshot, nextSnapshot, edit),
+  }
 }
 
 export function mobileWikilinkSuggestions(notes: MobileNote[], query: string): MobileNote[] {
@@ -224,11 +251,21 @@ function rebuildSnapshot(
   notes: MobileNote[],
   allNotes = notes,
 ): MobileWorkspaceSnapshot {
-  const derivedAllNotes = allNotes.map(deriveMobileNote)
-  const resolvedAllNotes = derivedAllNotes.map(({ note, rawRelationships }) => ({
-    ...note,
-    relationships: mobileRelationships(rawRelationships, derivedAllNotes),
-  }))
+  const derivedById = new Map(
+    allNotes
+      .map((note) => [note.id, deriveMobileNote(note)] as const)
+      .filter((entry): entry is readonly [NoteId, DerivedNote] => entry[1] !== null),
+  )
+  const relationshipTargets = allNotes.map((note) => derivedById.get(note.id)?.note ?? note)
+  const resolvedAllNotes = allNotes.map((note) => {
+    const derived = derivedById.get(note.id)
+    if (!derived) return note
+
+    return {
+      ...derived.note,
+      relationships: mobileRelationships(derived.rawRelationships, relationshipTargets),
+    }
+  })
   const resolvedNoteById = new Map(resolvedAllNotes.map((note) => [note.id, note]))
   const resolvedNotes = notes.map((note) => resolvedNoteById.get(note.id) ?? note)
   const selectedNote = resolvedNotes.find((note) => note.id === snapshot.selectedNoteId) ?? resolvedNotes[0] ?? null
@@ -244,7 +281,9 @@ function rebuildSnapshot(
   }
 }
 
-function deriveMobileNote(note: MobileNote): DerivedNote {
+function deriveMobileNote(note: MobileNote): DerivedNote | null {
+  if (note.rawContent === undefined) return null
+
   const editable = withEditableContent(note)
   return deriveEditableNote({ fallback: editable, rawContent: editable.rawContent })
 }
@@ -255,6 +294,47 @@ function deriveEditedNote(fallback: EditableNoteInput, rawContent: MarkdownConte
 
 function workspaceNotePool(snapshot: MobileWorkspaceSnapshot): MobileNote[] {
   return snapshot.allNotes ?? snapshot.notes
+}
+
+function workspaceNoteById(snapshot: MobileWorkspaceSnapshot, noteId: NoteId): MobileNote | null {
+  return [
+    ...snapshot.notes,
+    ...(snapshot.allNotes ?? []),
+  ].find((note) => note.id === noteId) ?? null
+}
+
+function createNoteWrites(snapshot: MobileWorkspaceSnapshot): MobileWorkspaceWrite[] {
+  const note = workspaceNoteById(snapshot, snapshot.selectedNoteId ?? '')
+  if (!note?.rawContent) return []
+
+  return [{
+    content: note.rawContent,
+    kind: 'createNote',
+    path: noteWritePath(note),
+  }]
+}
+
+function saveNoteWrites(
+  previousSnapshot: MobileWorkspaceSnapshot,
+  nextSnapshot: MobileWorkspaceSnapshot,
+  edit: MobileNoteEdit,
+): MobileWorkspaceWrite[] {
+  if (edit.type === 'hydrateNoteContent') return []
+
+  const previousNote = workspaceNoteById(previousSnapshot, edit.noteId)
+  const nextNote = workspaceNoteById(nextSnapshot, edit.noteId)
+  if (previousNote?.rawContent === undefined || nextNote?.rawContent === undefined) return []
+  if (previousNote.rawContent === nextNote.rawContent) return []
+
+  return [{
+    content: nextNote.rawContent,
+    kind: 'saveNote',
+    path: noteWritePath(nextNote),
+  }]
+}
+
+function noteWritePath(note: MobileNote): string {
+  return note.path ?? note.id
 }
 
 function deriveEditableNote({
@@ -431,7 +511,7 @@ function replaceMarkdownTitle(content: MarkdownContent, title: NoteTitle): Markd
 
 function mobileRelationships(
   relationships: Record<FrontmatterKey, WikilinkRef[]>,
-  notes: DerivedNote[],
+  notes: MobileNote[],
 ): MobileRelationship[] {
   return Object.entries(relationships).map(([key, values]) => ({
     key,
@@ -441,7 +521,7 @@ function mobileRelationships(
   }))
 }
 
-function relationshipValue(rawValue: WikilinkRef, notes: DerivedNote[]): MobileRelationshipValue {
+function relationshipValue(rawValue: WikilinkRef, notes: MobileNote[]): MobileRelationshipValue {
   const target = wikilinkTarget(rawValue)
   const note = resolveRelationshipTarget(notes, target)
   if (!note) return unresolvedRelationshipValue(rawValue, target)
@@ -464,14 +544,14 @@ function unresolvedRelationshipValue(rawValue: WikilinkRef, target: WikilinkTarg
   }
 }
 
-function resolveRelationshipTarget(notes: DerivedNote[], target: WikilinkTarget): MobileNote | null {
+function resolveRelationshipTarget(notes: MobileNote[], target: WikilinkTarget): MobileNote | null {
   const normalizedTarget = normalizeTarget(target)
-  return notes.find(({ note }) => {
+  return notes.find((note) => {
     const pathStem = note.path?.replace(/\.[^.]+$/, '') ?? note.id.replace(/\.[^.]+$/, '')
     return normalizeTarget(note.title) === normalizedTarget
       || normalizeTarget(note.id.replace(/\.[^.]+$/, '')) === normalizedTarget
       || normalizeTarget(pathStem) === normalizedTarget
-  })?.note ?? null
+  }) ?? null
 }
 
 function relationshipRefForTitle(title: NoteTitle, notes: MobileNote[]): WikilinkRef {

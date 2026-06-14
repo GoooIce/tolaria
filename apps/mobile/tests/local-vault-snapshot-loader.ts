@@ -5,6 +5,7 @@ import { performance } from 'node:perf_hooks'
 import { buildLocalVaultWorkspaceSnapshot, type LocalVaultFile } from '../src/workspace/localVaultSnapshot'
 import type { MobileSidebarFolder, MobileWorkspaceSnapshot } from '../src/workspace/mobileWorkspaceModel'
 import {
+  HOST_WORKSPACE_NOTE_CONTENTS_GLOBAL_KEY,
   HOST_WORKSPACE_SNAPSHOT_GLOBAL_KEY,
   HOST_WORKSPACE_SNAPSHOT_STORAGE_KEY,
 } from '../src/workspace/readOnlyWorkspaceRepository'
@@ -12,6 +13,7 @@ import {
 export type LocalVaultSnapshotState = {
   buildDurationMs: number
   fileCount: number
+  noteContents: Record<string, string>
   readDurationMs: number
   snapshot: MobileWorkspaceSnapshot
   totalDurationMs: number
@@ -28,8 +30,9 @@ export async function installLocalVaultSnapshot(page: Page): Promise<LocalVaultS
   if (!state) return null
 
   await page.addInitScript(
-    ({ globalKey, key, snapshot, value }) => {
+    ({ contentKey, globalKey, key, noteContents, snapshot, value }) => {
       Reflect.set(window, globalKey, snapshot)
+      Reflect.set(window, contentKey, noteContents)
       try {
         window.localStorage.setItem(key, value)
       } catch {
@@ -37,8 +40,10 @@ export async function installLocalVaultSnapshot(page: Page): Promise<LocalVaultS
       }
     },
     {
+      contentKey: HOST_WORKSPACE_NOTE_CONTENTS_GLOBAL_KEY,
       globalKey: HOST_WORKSPACE_SNAPSHOT_GLOBAL_KEY,
       key: HOST_WORKSPACE_SNAPSHOT_STORAGE_KEY,
+      noteContents: state.noteContents,
       snapshot: state.snapshot,
       value: JSON.stringify(state.snapshot),
     },
@@ -89,11 +94,20 @@ async function buildLocalVaultSnapshotState(): Promise<LocalVaultSnapshotState |
   return {
     buildDurationMs: endedAt - readAt,
     fileCount: files.length,
+    noteContents: noteContentMap(files),
     readDurationMs: readAt - startedAt,
     snapshot,
     totalDurationMs: endedAt - startedAt,
     vaultPath: localVaultPath,
   }
+}
+
+function noteContentMap(files: LocalVaultFile[]): Record<string, string> {
+  return Object.fromEntries(
+    files
+      .filter((file) => file.relativePath.endsWith('.md'))
+      .map((file) => [file.relativePath, file.content]),
+  )
 }
 
 async function readLocalVaultFiles(vaultPath: string): Promise<LocalVaultFile[]> {

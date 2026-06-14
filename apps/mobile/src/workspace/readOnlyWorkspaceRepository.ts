@@ -1,5 +1,6 @@
 import { workspaceScenarioForId } from '../fixtures/workspaceFixtures'
-import type { MobileWorkspaceSnapshot } from './mobileWorkspaceModel'
+import type { MobileNote, MobileWorkspaceSnapshot } from './mobileWorkspaceModel'
+import type { MobileWorkspaceWrite } from './mobileWorkspaceEditing'
 
 export type ReadOnlyWorkspaceRequest = {
   scenarioId?: string | null
@@ -7,17 +8,33 @@ export type ReadOnlyWorkspaceRequest = {
 }
 
 export type ReadOnlyWorkspaceRepository = {
+  persistWrites: (writes: MobileWorkspaceWrite[], request?: ReadOnlyWorkspaceRequest) => Promise<void>
+  readNoteContent: (note: MobileNote, request?: ReadOnlyWorkspaceRequest) => Promise<string | null>
   readSnapshot: (request?: ReadOnlyWorkspaceRequest) => MobileWorkspaceSnapshot
 }
 
 export const fixtureReadOnlyWorkspaceRepository: ReadOnlyWorkspaceRepository = {
+  persistWrites: async () => {},
+  readNoteContent: async (note) => note.rawContent ?? null,
   readSnapshot: (request) => workspaceScenarioForId(request?.scenarioId),
 }
 
 export const HOST_WORKSPACE_SNAPSHOT_STORAGE_KEY = 'tolaria:mobile-workspace-snapshot'
 export const HOST_WORKSPACE_SNAPSHOT_GLOBAL_KEY = '__TOLARIA_MOBILE_WORKSPACE_SNAPSHOT__'
+export const HOST_WORKSPACE_NOTE_CONTENTS_GLOBAL_KEY = '__TOLARIA_MOBILE_WORKSPACE_NOTE_CONTENTS__'
+export const HOST_WORKSPACE_WRITES_GLOBAL_KEY = '__TOLARIA_MOBILE_WORKSPACE_WRITES__'
 
 export const readOnlyWorkspaceRepository: ReadOnlyWorkspaceRepository = {
+  persistWrites: async (writes, request) => {
+    if (request?.source !== 'host') return
+    persistHostWrites(writes)
+  },
+  readNoteContent: async (note, request) => {
+    if (note.rawContent !== undefined) return note.rawContent
+    if (request?.source !== 'host') return null
+
+    return hostNoteContent(note)
+  },
   readSnapshot: (request) => {
     if (request?.source === 'host') {
       return readHostWorkspaceSnapshot() ?? fixtureReadOnlyWorkspaceRepository.readSnapshot(request)
@@ -25,6 +42,16 @@ export const readOnlyWorkspaceRepository: ReadOnlyWorkspaceRepository = {
 
     return fixtureReadOnlyWorkspaceRepository.readSnapshot(request)
   },
+}
+
+function persistHostWrites(writes: MobileWorkspaceWrite[]) {
+  const contents = ensureHostNoteContents()
+  const writeLog = ensureHostWriteLog()
+
+  for (const write of writes) {
+    contents[write.path] = write.content
+    writeLog.push(write)
+  }
 }
 
 function readHostWorkspaceSnapshot(): MobileWorkspaceSnapshot | null {
@@ -50,6 +77,41 @@ function hostGlobalSnapshot(): MobileWorkspaceSnapshot | null {
   return isMobileWorkspaceSnapshot(maybeSnapshot) ? maybeSnapshot : null
 }
 
+function hostNoteContent(note: MobileNote): string | null {
+  const contents = hostNoteContents()
+  if (!contents) return null
+
+  return contentForNote(contents, note)
+}
+
+function contentForNote(contents: Record<string, string>, note: MobileNote): string | null {
+  if (note.path && contents[note.path] !== undefined) return contents[note.path]
+  return contents[note.id] ?? null
+}
+
+function hostNoteContents(): Record<string, string> | null {
+  const maybeContents = (globalThis as Record<string, unknown>)[HOST_WORKSPACE_NOTE_CONTENTS_GLOBAL_KEY]
+  return isStringRecord(maybeContents) ? maybeContents : null
+}
+
+function ensureHostNoteContents(): Record<string, string> {
+  const existing = hostNoteContents()
+  if (existing) return existing
+
+  const contents: Record<string, string> = {}
+  Reflect.set(globalThis, HOST_WORKSPACE_NOTE_CONTENTS_GLOBAL_KEY, contents)
+  return contents
+}
+
+function ensureHostWriteLog(): MobileWorkspaceWrite[] {
+  const maybeWrites = (globalThis as Record<string, unknown>)[HOST_WORKSPACE_WRITES_GLOBAL_KEY]
+  if (Array.isArray(maybeWrites)) return maybeWrites as MobileWorkspaceWrite[]
+
+  const writes: MobileWorkspaceWrite[] = []
+  Reflect.set(globalThis, HOST_WORKSPACE_WRITES_GLOBAL_KEY, writes)
+  return writes
+}
+
 function hostStorage(): Pick<Storage, 'getItem'> | null {
   const maybeStorage = (globalThis as { localStorage?: Pick<Storage, 'getItem'> }).localStorage
   return maybeStorage ?? null
@@ -68,4 +130,9 @@ function isMobileWorkspaceSnapshot(value: unknown): value is MobileWorkspaceSnap
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
+}
+
+function isStringRecord(value: unknown): value is Record<string, string> {
+  if (!isRecord(value)) return false
+  return Object.values(value).every((item) => typeof item === 'string')
 }

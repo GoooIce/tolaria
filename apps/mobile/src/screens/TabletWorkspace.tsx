@@ -3,136 +3,41 @@ import { Dimensions, Platform, StyleSheet, useWindowDimensions, View } from 'rea
 import { MobileNoteListPanel } from '../components/workspace/MobileNoteListPanel'
 import { MobilePropertiesPanel } from '../components/workspace/MobilePropertiesPanel'
 import { MobileSyncStatusBar } from '../components/workspace/MobileSyncStatusBar'
-import { MobileWorkspaceActionSheet, type MobileWorkspaceAction } from '../components/workspace/MobileWorkspaceActionSheet'
+import { MobileWorkspaceActionSheet } from '../components/workspace/MobileWorkspaceActionSheet'
 import { MobileWorkspaceSidebar } from '../components/workspace/MobileWorkspaceSidebar'
 import type { MobileNote, MobileWorkspaceSnapshot } from '../workspace/mobileWorkspaceModel'
-import { applyMobileWorkspaceEdit, type MobileWorkspaceEdit } from '../workspace/mobileWorkspaceEditing'
+import {
+  fixtureReadOnlyWorkspaceRepository,
+  type ReadOnlyWorkspaceRepository,
+  type ReadOnlyWorkspaceRequest,
+} from '../workspace/readOnlyWorkspaceRepository'
 import { mobileColors } from '../ui/tokens'
 import { useHorizontalSwipe } from '../ui/useHorizontalSwipe'
 import { TabletEditorPanel } from './TabletEditorPanel'
-import { useTabletWorkspaceNavigation } from './tabletWorkspaceNavigation'
-import type { TabletPanel, TabletReadOnlyForm, TabletWorkspaceChromeProps } from './tabletWorkspaceTypes'
-
-const emptyReadOnlyForm: TabletReadOnlyForm = {
-  createTitle: '',
-  propertyName: '',
-  propertyValue: '',
-  relationshipName: '',
-  relationshipNoteTitle: '',
-}
+import type { TabletPanel, TabletWorkspaceChromeProps } from './tabletWorkspaceTypes'
+import { useTabletWorkspaceController } from './useTabletWorkspaceController'
 
 export function TabletWorkspace({
   layoutProbe = false,
+  repository = fixtureReadOnlyWorkspaceRepository,
+  repositoryRequest,
   snapshot,
 }: {
   layoutProbe?: boolean
+  repository?: ReadOnlyWorkspaceRepository
+  repositoryRequest?: ReadOnlyWorkspaceRequest
   snapshot: MobileWorkspaceSnapshot
 }) {
-  const [workspaceSnapshot, setWorkspaceSnapshot] = useState(snapshot)
-  const [openAction, setOpenAction] = useState<MobileWorkspaceAction | null>(null)
-  const [readOnlyForm, setReadOnlyForm] = useState<TabletReadOnlyForm>(emptyReadOnlyForm)
-  const [searchQuery, setSearchQuery] = useState('')
-  const {
-    activeFolderId,
-    activeItemId,
-    editorBlocks,
-    editorBullets,
-    noteListSubtitle,
-    noteListTitle,
-    notes,
-    selectFolder,
-    selectedNote,
-    selectedNoteId,
-    selectSidebarItem,
-    setSelectedNoteId,
-  } = useTabletWorkspaceNavigation(workspaceSnapshot, searchQuery)
+  const controller = useTabletWorkspaceController({ repository, repositoryRequest, snapshot })
   const { compactTablet, defaultPropertiesVisible } = useTabletScreenMode()
-  const updateReadOnlyForm = useCallback(<Key extends keyof TabletReadOnlyForm,>(key: Key, value: TabletReadOnlyForm[Key]) => {
-    setReadOnlyForm((current) => ({ ...current, [key]: value }))
-  }, [])
-  const resetForm = useCallback(() => setReadOnlyForm(emptyReadOnlyForm), [])
-  const closeAction = useCallback(() => {
-    setOpenAction(null)
-    resetForm()
-  }, [resetForm])
-  const applyEdit = useCallback((edit: MobileWorkspaceEdit) => {
-    setWorkspaceSnapshot((current) => {
-      const next = applyMobileWorkspaceEdit(current, edit)
-      if (next.selectedNoteId) setSelectedNoteId(next.selectedNoteId)
-      return next
-    })
-  }, [setSelectedNoteId])
-  const toggleFavorite = useCallback(() => {
-    if (selectedNote) applyEdit({ noteId: selectedNote.id, type: 'toggleFavorite' })
-  }, [applyEdit, selectedNote])
-  const createNote = useCallback(() => {
-    applyEdit({ title: readOnlyForm.createTitle, type: 'createNote' })
-    closeAction()
-  }, [applyEdit, closeAction, readOnlyForm.createTitle])
-  const saveProperty = useCallback(() => {
-    if (!selectedNote) return
-    applyEdit({
-      key: readOnlyForm.propertyName,
-      noteId: selectedNote.id,
-      type: 'updateProperty',
-      value: readOnlyForm.propertyValue,
-    })
-    closeAction()
-  }, [applyEdit, closeAction, readOnlyForm.propertyName, readOnlyForm.propertyValue, selectedNote])
-  const saveRelationship = useCallback(() => {
-    if (!selectedNote) return
-    applyEdit({
-      key: readOnlyForm.relationshipName,
-      noteId: selectedNote.id,
-      targetTitle: readOnlyForm.relationshipNoteTitle,
-      type: 'addRelationship',
-    })
-    closeAction()
-  }, [applyEdit, closeAction, readOnlyForm.relationshipName, readOnlyForm.relationshipNoteTitle, selectedNote])
 
   return (
     <View style={styles.shellRoot}>
       <TabletWorkspaceChrome
-        activeFolderId={activeFolderId}
-        activeItemId={activeItemId}
         compactTablet={compactTablet}
         defaultPropertiesVisible={defaultPropertiesVisible}
-        editorBlocks={editorBlocks}
-        editorBullets={editorBullets}
         layoutProbe={layoutProbe}
-        noteListSubtitle={noteListSubtitle}
-        noteListTitle={noteListTitle}
-        notes={notes}
-        openAction={openAction}
-        readOnlyForm={readOnlyForm}
-        searchQuery={searchQuery}
-        selectedNote={selectedNote}
-        selectedNoteId={selectedNoteId}
-        snapshot={workspaceSnapshot}
-        onAddProperty={() => setOpenAction('addProperty')}
-        onAddRelationship={() => setOpenAction('addRelationship')}
-        onCloseAction={closeAction}
-        onCreateNote={createNote}
-        onCreateTitleChange={(value) => updateReadOnlyForm('createTitle', value)}
-        onDeleteProperty={(noteId, key) => applyEdit({ key, noteId, type: 'deleteProperty' })}
-        onOpenCreateNote={() => setOpenAction('createNote')}
-        onOpenMoreActions={() => setOpenAction('moreActions')}
-        onOpenSearch={() => setOpenAction('search')}
-        onPropertyNameChange={(value) => updateReadOnlyForm('propertyName', value)}
-        onPropertyValueChange={(value) => updateReadOnlyForm('propertyValue', value)}
-        onRemoveRelationship={(noteId, key, ref) => applyEdit({ key, noteId, ref, type: 'removeRelationship' })}
-        onSaveProperty={saveProperty}
-        onSaveRelationship={saveRelationship}
-        onRelationshipNameChange={(value) => updateReadOnlyForm('relationshipName', value)}
-        onRelationshipNoteTitleChange={(value) => updateReadOnlyForm('relationshipNoteTitle', value)}
-        onSearchQueryChange={setSearchQuery}
-        onSelectFolder={selectFolder}
-        onSelectNote={setSelectedNoteId}
-        onSelectSidebarItem={selectSidebarItem}
-        onToggleFavorite={toggleFavorite}
-        onUpdateNoteContent={(noteId, content) => applyEdit({ content, noteId, type: 'updateNoteContent' })}
-        onUpdateNoteTitle={(noteId, title) => applyEdit({ noteId, title, type: 'renameNoteTitle' })}
-        onUpdateProperty={(noteId, key, value) => applyEdit({ key, noteId, type: 'updateProperty', value })}
+        {...controller}
       />
       <MobileSyncStatusBar sync={snapshot.sync} />
     </View>

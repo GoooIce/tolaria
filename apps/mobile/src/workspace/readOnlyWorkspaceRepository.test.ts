@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest'
 import { workspaceScenarios } from '../fixtures/workspaceFixtures'
 import {
   fixtureReadOnlyWorkspaceRepository,
+  HOST_WORKSPACE_NOTE_CONTENTS_GLOBAL_KEY,
   HOST_WORKSPACE_SNAPSHOT_GLOBAL_KEY,
   HOST_WORKSPACE_SNAPSHOT_STORAGE_KEY,
+  HOST_WORKSPACE_WRITES_GLOBAL_KEY,
   readOnlyWorkspaceRepository,
 } from './readOnlyWorkspaceRepository'
 
@@ -69,5 +71,38 @@ describe('fixtureReadOnlyWorkspaceRepository', () => {
       source: { kind: 'localVault', label: 'Laputa' },
     })
     Reflect.deleteProperty(globalThis, HOST_WORKSPACE_SNAPSHOT_GLOBAL_KEY)
+  })
+
+  it('reads host note content from the injected content map', async () => {
+    Reflect.set(globalThis, HOST_WORKSPACE_NOTE_CONTENTS_GLOBAL_KEY, {
+      'Tolaria/Mobile UI/Hidden Note.md': '# Hidden Note\n\nHydrated body.\n',
+    })
+
+    await expect(readOnlyWorkspaceRepository.readNoteContent({
+      ...workspaceScenarios.default.notes[0],
+      path: 'Tolaria/Mobile UI/Hidden Note.md',
+      rawContent: undefined,
+    }, { source: 'host' })).resolves.toBe('# Hidden Note\n\nHydrated body.\n')
+
+    Reflect.deleteProperty(globalThis, HOST_WORKSPACE_NOTE_CONTENTS_GLOBAL_KEY)
+  })
+
+  it('persists host writes into the injected content map and write log', async () => {
+    const noteContents: Record<string, string> = {}
+    const writes: unknown[] = []
+    Reflect.set(globalThis, HOST_WORKSPACE_NOTE_CONTENTS_GLOBAL_KEY, noteContents)
+    Reflect.set(globalThis, HOST_WORKSPACE_WRITES_GLOBAL_KEY, writes)
+
+    await readOnlyWorkspaceRepository.persistWrites([{
+      content: '# Updated\n',
+      kind: 'saveNote',
+      path: 'updated.md',
+    }], { source: 'host' })
+
+    expect(noteContents).toEqual({ 'updated.md': '# Updated\n' })
+    expect(writes).toEqual([{ content: '# Updated\n', kind: 'saveNote', path: 'updated.md' }])
+
+    Reflect.deleteProperty(globalThis, HOST_WORKSPACE_NOTE_CONTENTS_GLOBAL_KEY)
+    Reflect.deleteProperty(globalThis, HOST_WORKSPACE_WRITES_GLOBAL_KEY)
   })
 })

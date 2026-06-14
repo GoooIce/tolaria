@@ -88,6 +88,7 @@ test.describe('mobile UI lab interactions', () => {
     assertSnapshotBuildBudgets(state)
     await assertLocalVaultRenderBudget(page, state)
     await assertNoteSwitchBudget(page, state)
+    await assertHiddenNoteHydrationAndWrite(page, state)
     await assertSavedViewNavigationBudget(page, state)
     await assertTypeNavigationBudget(page, state)
     await assertFolderNavigationBudget(page, state)
@@ -127,6 +128,34 @@ async function assertNoteSwitchBudget(page: PageLike, state: LocalVaultSnapshotS
     await expect(page.getByTestId('editor-title')).toHaveText(secondNote.title)
   })
   expect(noteSwitchDurationMs).toBeLessThan(700)
+}
+
+async function assertHiddenNoteHydrationAndWrite(page: PageLike, state: LocalVaultSnapshotState) {
+  const hiddenNote = state.snapshot.allNotes?.find((note) => {
+    const visibleIds = new Set(state.snapshot.notes.map((candidate) => candidate.id))
+    return !visibleIds.has(note.id) && note.path && state.noteContents[note.path]
+  })
+  if (!hiddenNote?.path) return
+
+  await page.getByTestId('note-list-search-action').click()
+  await page.getByTestId('workspace-search-input').fill(hiddenNote.path)
+  await page.getByTestId(`workspace-search-result-${hiddenNote.id}`).click()
+  await expect(page.getByTestId('editor-title')).toHaveText(hiddenNote.title)
+  await expect(page.getByText(hiddenNote.snippet).first()).toBeVisible()
+
+  await page.getByTestId('editor-edit-action').click()
+  await page.getByTestId('editor-markdown-input').fill(`# ${hiddenNote.title}\n\nMobile hydration write check.\n`)
+  await page.getByTestId('editor-edit-action').click()
+
+  const writes = await page.evaluate(() => {
+    const globalWrites = (window as unknown as { __TOLARIA_MOBILE_WORKSPACE_WRITES__?: unknown[] }).__TOLARIA_MOBILE_WORKSPACE_WRITES__
+    return globalWrites ?? []
+  })
+  expect(writes).toContainEqual(expect.objectContaining({
+    kind: 'saveNote',
+    path: hiddenNote.path,
+  }))
+  expect(JSON.stringify(writes)).toContain(`# ${hiddenNote.title}\\n\\nMobile hydration write check.`)
 }
 
 async function assertTypeNavigationBudget(page: PageLike, state: LocalVaultSnapshotState) {
