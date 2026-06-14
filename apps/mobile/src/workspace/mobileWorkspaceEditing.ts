@@ -23,6 +23,7 @@ import type {
   MobileRelationshipValue,
   MobileWorkspaceSnapshot,
 } from './mobileWorkspaceModel'
+import { normalizeRelationshipKey } from './mobileWorkspaceSuggestions'
 
 type EditableNoteInput = MobileNote & { rawContent: string }
 type FrontmatterKey = string
@@ -216,7 +217,7 @@ function addRelationship(
   key: FrontmatterKey,
   targetTitle: NoteTitle,
 ): MobileNote {
-  const trimmedKey = key.trim()
+  const trimmedKey = normalizeRelationshipKey(key)
   const trimmedTitle = targetTitle.trim()
   if (!trimmedKey || !trimmedTitle) return note
 

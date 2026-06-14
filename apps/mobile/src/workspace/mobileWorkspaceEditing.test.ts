@@ -103,6 +103,22 @@ describe('applyMobileWorkspaceEdit', () => {
     expect(refs ?? []).not.toContain(ref)
   })
 
+  it('normalizes built-in relationship labels to desktop frontmatter keys', () => {
+    const snapshot = applyMobileWorkspaceEdit(workspaceScenarioForId('default'), {
+      key: 'Related to',
+      noteId: 'workflow-orchestration',
+      targetTitle: 'How I Run an Open Source Project',
+      type: 'addRelationship',
+    })
+
+    const note = snapshot.notes.find((candidate) => candidate.id === 'workflow-orchestration')
+    expect(note?.rawContent).toContain('related_to:')
+    expect(note?.rawContent).not.toContain('Related to:')
+    expect(note?.relationships.find((candidate) => candidate.key === 'related_to')?.values).toContainEqual(
+      expect.objectContaining({ title: 'How I Run an Open Source Project' }),
+    )
+  })
+
   it('hydrates metadata-only notes without creating a persistence write', () => {
     const base = workspaceScenarioForId('default')
     const metadataOnlyNote = {

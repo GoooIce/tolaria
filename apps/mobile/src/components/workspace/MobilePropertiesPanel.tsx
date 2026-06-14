@@ -34,7 +34,7 @@ export function MobilePropertiesPanel({
       <MobileToolbar testID="properties-toolbar">
         <MobileToolbarTitle testID="properties-toolbar-title" title={mobileCopy.properties} variant="inspector" />
       </MobileToolbar>
-      <ScrollView contentContainerStyle={panelStyles.content}>
+      <ScrollView contentContainerStyle={panelStyles.content} keyboardShouldPersistTaps="handled">
         {note ? (
           <NoteProperties
             note={note}

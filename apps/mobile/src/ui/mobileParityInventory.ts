@@ -113,6 +113,13 @@ export const mobileParityInventory = [
     surface: 'Read-only workspace action sheets',
   },
   {
+    assertions: ['property and relationship suggestion user-flow checks'],
+    contracts: ['desktopPropertyParity'],
+    desktopSource: 'RelationshipsPanel note search dropdown and inspector property forms',
+    mobileFile: 'src/components/workspace/MobileWorkspaceSuggestionList.tsx',
+    surface: 'Workspace action-sheet suggestions',
+  },
+  {
     assertions: ['editor computed styles'],
     contracts: ['desktopEditorParity', 'desktopPanelParity', 'desktopToolbarParity'],
     desktopSource: 'EditorTheme.css, theme.json, BreadcrumbBar',

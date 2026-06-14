@@ -12,63 +12,15 @@ test.describe('mobile UI lab interactions', () => {
     test.skip(testInfo.project.name !== 'tablet-landscape', 'Editable action flows use the full-width tablet layout.')
 
     await page.goto('/')
-
-    await page.getByTestId('note-list-search-action').click()
-    await expect(page.getByTestId('workspace-search-input')).toBeVisible()
-    await page.getByTestId('workspace-search-input').fill('Release')
-    await expect(page.getByTestId('workspace-search-result-release-2026-05-02')).toBeVisible()
-    await page.getByTestId('workspace-search-result-release-2026-05-02').click()
-    await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
-    await expect(page.getByTestId('note-list-toolbar-subtitle')).toHaveText('7 open notes')
-    await expect(page.getByTestId('editor-title')).toHaveText('v2026-05-02')
-
-    await page.getByTestId('editor-favorite-action').click()
-    await expect(page.getByLabel('Remove from Favorites')).toBeVisible()
-
-    await page.getByTestId('note-list-create-action').click()
-    await expect(page.getByTestId('workspace-create-note-title-input')).toBeVisible()
-    await page.getByTestId('workspace-create-note-title-input').fill('Mobile QA Draft')
-    await page.getByTestId('workspace-action-sheet-createNote').getByRole('button', { name: 'Create' }).click()
-    await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
-    await expect(page.getByTestId('note-row-mobile-qa-draft.md')).toBeVisible()
-    await expect(page.getByTestId('editor-title')).toHaveText('Mobile QA Draft')
-
-    await page.getByTestId('property-action-add-property').click()
-    await expect(page.getByTestId('workspace-property-name-input')).toBeVisible()
-    await page.getByTestId('workspace-property-name-input').fill('Priority')
-    await page.getByTestId('workspace-property-value-input').fill('High')
-    await page.getByRole('button', { name: 'Save' }).click()
-    await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
-    await expect(page.getByTestId('property-row-priority')).toContainText('High')
-
-    await page.getByTestId('property-action-add-relationship').click()
-    await expect(page.getByTestId('workspace-relationship-name-input')).toBeVisible()
-    await page.getByTestId('workspace-relationship-name-input').fill('Related to')
-    await page.getByTestId('workspace-relationship-note-title-input').fill('Open Source')
-    await expect(page.getByTestId('workspace-relationship-note-suggestion-open-source-project')).toBeVisible()
-    await page.getByTestId('workspace-relationship-note-suggestion-open-source-project').click()
-    await page.getByTestId('workspace-action-sheet-addRelationship').getByRole('button', { name: 'Add' }).click()
-    await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
-    await expect(page.getByTestId('relationship-row-how-i-run-an-open-source-project')).toBeVisible()
-    await page.getByTestId('relationship-row-how-i-run-an-open-source-project').getByLabel('Remove').click()
-    await expect(page.getByTestId('relationship-row-how-i-run-an-open-source-project')).toBeHidden()
-
-    await page.getByTestId('editor-edit-action').click()
-    await expect(page.getByTestId('editor-title-input')).toBeVisible()
-    await page.getByTestId('editor-markdown-input').fill('# Mobile QA Draft Revised\n\nDraft body referencing [[open')
-    await expect(page.getByTestId('editor-wikilink-suggestion-open-source-project')).toBeVisible()
-    await page.getByTestId('editor-wikilink-suggestion-open-source-project').click()
-    await expect(page.getByTestId('editor-markdown-input')).toHaveValue('# Mobile QA Draft Revised\n\nDraft body referencing [[Tolaria/Mobile UI/How I Run an Open Source Project]]')
-    await page.getByTestId('editor-edit-action').click()
-    await expect(page.getByTestId('editor-title')).toHaveText('Mobile QA Draft Revised')
-    await expect(page.getByText('Draft body referencing').first()).toBeVisible()
-
-    await page.getByTestId('editor-more-action').click()
-    await expect(page.getByText('Archive Note')).toBeVisible()
-    await expect(page.getByText('Copy deep link to current item')).toBeVisible()
-    await page.getByTestId('workspace-action-sheet-backdrop').click()
-    await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
+    await searchAndSelectRelease(page)
+    await toggleFavorite(page)
+    await createMobileQaDraft(page)
+    await addDatePropertyFromSuggestion(page)
+    await addRelationshipFromSuggestion(page)
+    await editMarkdownWithWikilink(page)
+    await openMoreActions(page)
   })
+
 
   test('navigates fixture saved views', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'tablet-landscape', 'Saved-view navigation is exercised in the full-width tablet layout.')
@@ -94,6 +46,80 @@ test.describe('mobile UI lab interactions', () => {
     await assertFolderNavigationBudget(page, state)
   })
 })
+
+async function searchAndSelectRelease(page: PageLike) {
+  await page.getByTestId('note-list-search-action').click()
+  await expect(page.getByTestId('workspace-search-input')).toBeVisible()
+  await page.getByTestId('workspace-search-input').fill('Release')
+  await expect(page.getByTestId('workspace-search-result-release-2026-05-02')).toBeVisible()
+  await page.getByTestId('workspace-search-result-release-2026-05-02').click()
+  await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
+  await expect(page.getByTestId('note-list-toolbar-subtitle')).toHaveText('7 open notes')
+  await expect(page.getByTestId('editor-title')).toHaveText('v2026-05-02')
+}
+
+async function toggleFavorite(page: PageLike) {
+  await page.getByTestId('editor-favorite-action').click()
+  await expect(page.getByLabel('Remove from Favorites')).toBeVisible()
+}
+
+async function createMobileQaDraft(page: PageLike) {
+  await page.getByTestId('note-list-create-action').click()
+  await expect(page.getByTestId('workspace-create-note-title-input')).toBeVisible()
+  await page.getByTestId('workspace-create-note-title-input').fill('Mobile QA Draft')
+  await page.getByTestId('workspace-action-sheet-createNote').getByRole('button', { name: 'Create' }).click()
+  await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
+  await expect(page.getByTestId('note-row-mobile-qa-draft.md')).toBeVisible()
+  await expect(page.getByTestId('editor-title')).toHaveText('Mobile QA Draft')
+}
+
+async function addDatePropertyFromSuggestion(page: PageLike) {
+  await page.getByTestId('property-action-add-property').click()
+  await expect(page.getByTestId('workspace-property-name-input')).toBeVisible()
+  await expect(page.getByTestId('workspace-property-key-suggestion-date')).toBeVisible()
+  await page.getByTestId('workspace-property-key-suggestion-date').click()
+  await expect(page.getByTestId('workspace-property-name-input')).toHaveValue('Date')
+  await page.getByTestId('workspace-property-value-input').fill('2026-06-14')
+  await page.getByRole('button', { name: 'Save' }).click()
+  await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
+  await expect(page.getByTestId('property-row-date')).toContainText('2026-06-14')
+}
+
+async function addRelationshipFromSuggestion(page: PageLike) {
+  await page.getByTestId('property-action-add-relationship').click()
+  await expect(page.getByTestId('workspace-relationship-name-input')).toBeVisible()
+  await expect(page.getByTestId('workspace-relationship-key-suggestion-related-to')).toBeVisible()
+  await page.getByTestId('workspace-relationship-key-suggestion-related-to').click()
+  await expect(page.getByTestId('workspace-relationship-name-input')).toHaveValue('related_to')
+  await page.getByTestId('workspace-relationship-note-title-input').fill('Open Source')
+  await expect(page.getByTestId('workspace-relationship-note-suggestion-open-source-project')).toBeVisible()
+  await page.getByTestId('workspace-relationship-note-suggestion-open-source-project').click()
+  await page.getByTestId('workspace-action-sheet-addRelationship').getByRole('button', { name: 'Add' }).click()
+  await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
+  await expect(page.getByTestId('relationship-row-how-i-run-an-open-source-project')).toBeVisible()
+  await page.getByTestId('relationship-row-how-i-run-an-open-source-project').getByLabel('Remove').click()
+  await expect(page.getByTestId('relationship-row-how-i-run-an-open-source-project')).toBeHidden()
+}
+
+async function editMarkdownWithWikilink(page: PageLike) {
+  await page.getByTestId('editor-edit-action').click()
+  await expect(page.getByTestId('editor-title-input')).toBeVisible()
+  await page.getByTestId('editor-markdown-input').fill('# Mobile QA Draft Revised\n\nDraft body referencing [[open')
+  await expect(page.getByTestId('editor-wikilink-suggestion-open-source-project')).toBeVisible()
+  await page.getByTestId('editor-wikilink-suggestion-open-source-project').click()
+  await expect(page.getByTestId('editor-markdown-input')).toHaveValue('# Mobile QA Draft Revised\n\nDraft body referencing [[Tolaria/Mobile UI/How I Run an Open Source Project]]')
+  await page.getByTestId('editor-edit-action').click()
+  await expect(page.getByTestId('editor-title')).toHaveText('Mobile QA Draft Revised')
+  await expect(page.getByText('Draft body referencing').first()).toBeVisible()
+}
+
+async function openMoreActions(page: PageLike) {
+  await page.getByTestId('editor-more-action').click()
+  await expect(page.getByText('Archive Note')).toBeVisible()
+  await expect(page.getByText('Copy deep link to current item')).toBeVisible()
+  await page.getByTestId('workspace-action-sheet-backdrop').click()
+  await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
+}
 
 async function installRequiredLocalVaultSnapshot(page: PageLike): Promise<LocalVaultSnapshotState> {
   const state = await installLocalVaultSnapshot(page)

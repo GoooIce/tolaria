@@ -11,7 +11,13 @@ import { MobileTextInput } from '../../ui/MobileTextInput'
 import { desktopPanelParity, desktopToolbarActionParity } from '../../ui/desktopParity'
 import { mobileColors, mobileSpace, mobileType } from '../../ui/tokens'
 import type { MobileNote } from '../../workspace/mobileWorkspaceModel'
+import {
+  mobilePropertyKeySuggestions,
+  mobilePropertyValueSuggestions,
+  mobileRelationshipKeySuggestions,
+} from '../../workspace/mobileWorkspaceSuggestions'
 import { MobileTypeIcon } from './MobileWorkspaceIcons'
+import { MobileWorkspaceSuggestionList } from './MobileWorkspaceSuggestionList'
 import { chipTone, statusTone, tagTone } from './mobileWorkspaceTone'
 
 export type MobileWorkspaceAction =
@@ -198,13 +204,18 @@ function CreateNoteContent({
 }
 
 function AddPropertyContent({
+  notes,
   onClose,
   onPropertyNameChange,
   onPropertyValueChange,
   onSaveProperty,
   propertyName,
   propertyValue,
+  selectedNote,
 }: MobileWorkspaceActionSheetProps) {
+  const keySuggestions = mobilePropertyKeySuggestions(notes, selectedNote, propertyName)
+  const valueSuggestions = mobilePropertyValueSuggestions(notes, propertyName, propertyValue)
+
   return (
     <View style={styles.content}>
       <MobileTextInput
@@ -215,12 +226,24 @@ function AddPropertyContent({
         value={propertyName}
         onChangeText={onPropertyNameChange}
       />
+      <MobileWorkspaceSuggestionList
+        labels={keySuggestions}
+        testID="workspace-property-key-suggestions"
+        testIDPrefix="workspace-property-key-suggestion"
+        onSelect={onPropertyNameChange}
+      />
       <MobileTextInput
         label={mobileText('inspector.properties.valuePlaceholder')}
         placeholder={mobileText('inspector.properties.valuePlaceholder')}
         testID="workspace-property-value-input"
         value={propertyValue}
         onChangeText={onPropertyValueChange}
+      />
+      <MobileWorkspaceSuggestionList
+        labels={valueSuggestions}
+        testID="workspace-property-value-suggestions"
+        testIDPrefix="workspace-property-value-suggestion"
+        onSelect={onPropertyValueChange}
       />
       <SheetFooter>
         <MobileButton label={mobileText('common.cancel')} variant="ghost" onPress={onClose} />
@@ -239,6 +262,7 @@ function AddRelationshipContent({
   relationshipName,
   relationshipNoteTitle,
 }: MobileWorkspaceActionSheetProps) {
+  const keySuggestions = mobileRelationshipKeySuggestions(notes, relationshipName)
   const suggestions = relationshipSuggestions(notes, relationshipNoteTitle)
 
   return (
@@ -250,6 +274,12 @@ function AddRelationshipContent({
         testID="workspace-relationship-name-input"
         value={relationshipName}
         onChangeText={onRelationshipNameChange}
+      />
+      <MobileWorkspaceSuggestionList
+        labels={keySuggestions}
+        testID="workspace-relationship-key-suggestions"
+        testIDPrefix="workspace-relationship-key-suggestion"
+        onSelect={onRelationshipNameChange}
       />
       <MobileTextInput
         label={mobileText('inspector.relationship.noteTitle')}
