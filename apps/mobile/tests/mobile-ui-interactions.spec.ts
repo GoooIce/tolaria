@@ -7,6 +7,8 @@ import {
   type LocalVaultSnapshotState,
 } from './local-vault-snapshot-loader'
 
+const mobileClipboardAttemptsGlobalKey = '__TOLARIA_MOBILE_CLIPBOARD_ATTEMPTS__'
+
 test.describe('mobile UI lab interactions', () => {
   test('exercises editable tablet workspace flows', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'tablet-landscape', 'Editable action flows use the full-width tablet layout.')
@@ -163,6 +165,15 @@ async function archiveAndUnarchiveSelectedNote(page: PageLike) {
   await page.getByTestId('editor-more-action').click()
   await expect(page.getByText('Archive Note')).toBeVisible()
   await expect(page.getByText('Copy deep link to current item')).toBeVisible()
+  await page.getByTestId('workspace-action-copy-deep-link').click()
+  await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
+  await expect(page.evaluate((key) => {
+    const attempts = (window as unknown as Record<string, unknown>)[key]
+    return Array.isArray(attempts) ? attempts.at(-1) : null
+  }, mobileClipboardAttemptsGlobalKey)).resolves.toBe('tolaria://tolaria-vault/mobile-qa-draft.md')
+
+  await page.getByTestId('editor-more-action').click()
+  await expect(page.getByText('Archive Note')).toBeVisible()
   await page.getByTestId('workspace-action-archive-note').click()
   await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
   await expect(page.getByTestId('note-row-mobile-qa-draft.md')).toBeHidden()

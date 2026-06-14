@@ -37,6 +37,7 @@ type MobileWorkspaceActionSheetProps = {
   onClose: () => void
   onCreateNote: () => void
   onCreateTitleChange: (value: string) => void
+  onCopyDeepLink: () => void
   onCreateView: () => void
   onDeleteView: () => void
   onPropertyNameChange: (value: string) => void
@@ -81,6 +82,7 @@ export function MobileWorkspaceActionSheet({
   onClose,
   onCreateNote,
   onCreateTitleChange,
+  onCopyDeepLink,
   onCreateView,
   onDeleteView,
   onPropertyNameChange,
@@ -120,6 +122,7 @@ export function MobileWorkspaceActionSheet({
           onClose={onClose}
           onCreateNote={onCreateNote}
           onCreateTitleChange={onCreateTitleChange}
+          onCopyDeepLink={onCopyDeepLink}
           onCreateView={onCreateView}
           onDeleteView={onDeleteView}
           onPropertyNameChange={onPropertyNameChange}
@@ -161,7 +164,14 @@ function ActionContent(props: MobileWorkspaceActionSheetProps) {
     case 'search':
       return <SearchContent {...props} />
     default:
-      return <MoreActionsContent note={props.selectedNote} onClose={props.onClose} onSetArchived={props.onSetArchived} />
+      return (
+        <MoreActionsContent
+          note={props.selectedNote}
+          onClose={props.onClose}
+          onCopyDeepLink={props.onCopyDeepLink}
+          onSetArchived={props.onSetArchived}
+        />
+      )
   }
 }
 
@@ -431,10 +441,12 @@ function AddRelationshipContent({
 function MoreActionsContent({
   note,
   onClose,
+  onCopyDeepLink,
   onSetArchived,
 }: {
   note: MobileNote | null
   onClose: () => void
+  onCopyDeepLink: () => void
   onSetArchived: (archived: boolean) => void
 }) {
   const archiveLabel = mobileText(note?.archived ? 'command.note.unarchiveNote' : 'command.note.archiveNote')
@@ -453,7 +465,15 @@ function MoreActionsContent({
           }}
         />
       ) : null}
-      <ActionRow icon={<LinkSimple color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />} label={mobileText('command.note.copyDeepLink')} onPress={onClose} />
+      <ActionRow
+        icon={<LinkSimple color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />}
+        label={mobileText('command.note.copyDeepLink')}
+        testID="workspace-action-copy-deep-link"
+        onPress={() => {
+          onCopyDeepLink()
+          onClose()
+        }}
+      />
       <ActionRow icon={<FilePlus color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />} label={mobileText('command.note.exportPdf')} onPress={onClose} />
     </View>
   )

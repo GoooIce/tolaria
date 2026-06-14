@@ -156,6 +156,7 @@ function TabletWorkspaceChrome(props: TabletWorkspaceChromeProps) {
 function WorkspaceActionSheetHost(props: TabletWorkspaceChromeProps & { suggestionNotes: MobileNote[] }) {
   const {
     onCloseAction,
+    onCopyDeepLink,
     onCreateNote,
     onCreateTitleChange,
     onCreateView,
@@ -193,6 +194,7 @@ function WorkspaceActionSheetHost(props: TabletWorkspaceChromeProps & { suggesti
       selectedNote={selectedNote}
       viewFilters={readOnlyForm.viewFilters}
       onClose={onCloseAction}
+      onCopyDeepLink={onCopyDeepLink}
       onCreateNote={onCreateNote}
       onCreateTitleChange={onCreateTitleChange}
       onCreateView={onCreateView}

@@ -94,6 +94,8 @@ The mobile UI lab uses a fixture-backed repository until a surface has passed vi
 
 The tablet workspace owns temporary interaction state: selected sidebar scope, selected note, search query, action-sheet form values, and an editable snapshot derived by `mobileWorkspaceEditing.ts`. The repository boundary owns persistence. Visual components must continue to receive callbacks and snapshots rather than importing Expo or filesystem APIs directly.
 
+Mobile deep-link copying follows the same boundary. `mobileDeepLinks.ts` owns URL construction from `MobileWorkspaceSnapshot.source` and the selected note path, and `mobileClipboard.ts` owns the Expo Clipboard call plus deterministic QA logging. Components such as `MobileWorkspaceActionSheet` receive `onCopyDeepLink` and do not import clipboard or URL-building modules directly.
+
 `apps/mobile/docs/ui-parity-inventory.md` is the working checklist for mobile surface parity. `pnpm mobile:qa:screenshots` is the fast visual QA command for this branch: it exports the Expo web bundle, serves it locally, and captures tablet/phone screenshots for the UI lab without running the full desktop/native Tolaria suite. The harness uses `$HOME/Laputa` as the default representative large-vault path when available; set `MOBILE_QA_VAULT_PATH` to override it. The local-vault pass scans that vault read-only, adds local-vault screenshots, and checks snapshot load/render/navigation budgets without committing vault content.
 
 ### Vault Git Capability

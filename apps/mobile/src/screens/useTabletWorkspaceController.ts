@@ -17,6 +17,8 @@ import type {
   ReadOnlyWorkspaceRepository,
   ReadOnlyWorkspaceRequest,
 } from '../workspace/readOnlyWorkspaceRepository'
+import { writeMobileClipboardText } from '../workspace/mobileClipboard'
+import { buildMobileDeepLinkForNote } from '../workspace/mobileDeepLinks'
 import { useTabletWorkspaceNavigation } from './tabletWorkspaceNavigation'
 import type { TabletReadOnlyForm } from './tabletWorkspaceTypes'
 import type { TabletSidebarSelection } from './tabletWorkspaceNavigation'
@@ -71,7 +73,12 @@ export function useTabletWorkspaceController({
   })
   const propertyActions = propertyWorkspaceActions({ applyEdit, readOnlyForm, saveSelectedEdit, updateReadOnlyForm })
   const relationshipActions = relationshipWorkspaceActions({ applyEdit, readOnlyForm, saveSelectedEdit, updateReadOnlyForm })
-  const editorActions = editorWorkspaceActions({ applyEdit, selectedNote })
+  const editorActions = editorWorkspaceActions({
+    applyEdit,
+    repositoryRequest,
+    selectedNote,
+    workspaceSnapshot,
+  })
   const actionSheetActions = actionSheetWorkspaceActions({
     closeAction,
     navigation,
@@ -378,12 +385,28 @@ function relationshipWorkspaceActions({
 
 function editorWorkspaceActions({
   applyEdit,
+  repositoryRequest,
   selectedNote,
+  workspaceSnapshot,
 }: {
   applyEdit: ApplyWorkspaceEdit
+  repositoryRequest?: ReadOnlyWorkspaceRequest
   selectedNote: MobileNote | null
+  workspaceSnapshot: MobileWorkspaceSnapshot
 }) {
   return {
+    onCopyDeepLink: () => {
+      const result = buildMobileDeepLinkForNote({
+        note: selectedNote,
+        source: workspaceSnapshot.source,
+        vaultRootUri: repositoryRequest?.vaultRootUri,
+      })
+      if (!result.ok) return
+
+      void writeMobileClipboardText(result.url).catch((error) => {
+        console.warn('[mobile-deep-link] Failed to copy deep link:', error)
+      })
+    },
     onSetArchived: (archived: boolean) => {
       if (selectedNote) applyEdit({ archived, noteId: selectedNote.id, type: 'setArchived' })
     },

@@ -162,6 +162,8 @@ The first mobile surface is a UI lab with real workspace semantics behind a fast
 
 Tablet editing is reducer-owned and repository-persisted. `apps/mobile/src/workspace/mobileWorkspaceEditing.ts` applies note creation, title/body edits, frontmatter scalar property changes, relationship add/remove, archive, and favorite changes against the current `MobileWorkspaceSnapshot`. The reducer preserves frontmatter while the markdown editor edits body content, derives snippets/blocks/links back from Markdown, resolves wikilink relationship targets against the snapshot, and returns write plans. The repository boundary decides whether those writes are no-ops for fixtures, host-injected QA logs, or native Expo filesystem writes. Visual components do not import filesystem APIs directly.
 
+Mobile note deep-link copy mirrors the desktop URL contract without importing desktop React DOM modules. `apps/mobile/src/workspace/mobileDeepLinks.ts` builds `tolaria://<vault-slug>/<relative-path-with-extension>` URLs from the mobile snapshot source and selected note path, while `apps/mobile/src/workspace/mobileClipboard.ts` writes through Expo Clipboard. The action is exposed through the tablet controller/action-sheet callback boundary so visual rows remain platform-agnostic.
+
 ## System Overview
 
 ```mermaid

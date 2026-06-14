@@ -88,6 +88,7 @@ export function buildLocalVaultWorkspaceSnapshot({
   files,
   maxNotes = DEFAULT_MAX_NOTES,
   vaultLabel,
+  vaultPath,
 }: LocalVaultSnapshotOptions): MobileWorkspaceSnapshot {
   const entries = applyTypeDefinitionTones(files.filter(isMarkdownFile).map(parseLocalVaultEntry))
   const noteEntries = entries.filter((entry) => entry.type !== 'Type')
@@ -112,6 +113,7 @@ export function buildLocalVaultWorkspaceSnapshot({
       kind: 'localVault',
       label: vaultLabel,
       totalNotes: noteEntries.length,
+      vaultPath,
       visibleNotes: notes.length,
     },
     sync: { kind: 'synced', minutesAgo: 0 },

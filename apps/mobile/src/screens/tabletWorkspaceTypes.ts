@@ -45,6 +45,7 @@ export type TabletWorkspaceChromeProps = {
   onAddProperty: () => void
   onAddRelationship: () => void
   onCloseAction: () => void
+  onCopyDeepLink: () => void
   onCreateNote: () => void
   onCreateTitleChange: (value: ReadOnlyFormValue) => void
   onCreateView: () => void

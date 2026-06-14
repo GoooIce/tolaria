@@ -152,5 +152,6 @@ export type MobileWorkspaceSource = {
   kind: 'fixture' | 'localVault'
   label: string
   totalNotes: number
+  vaultPath?: string
   visibleNotes: number
 }
