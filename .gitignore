@@ -10,6 +10,7 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+.expo/
 site/.vitepress/cache/
 site/.vitepress/dist/
 _site/
