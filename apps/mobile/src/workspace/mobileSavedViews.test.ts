@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { evaluateMobileSavedView, parseMobileSavedViewFile } from './mobileSavedViews'
+import {
+  createMobileSavedViewFilename,
+  evaluateMobileSavedView,
+  parseMobileSavedViewFile,
+  serializeMobileSavedViewDefinition,
+} from './mobileSavedViews'
 import type { MobileNote } from './mobileWorkspaceModel'
 
 describe('mobile saved views', () => {
@@ -78,6 +83,41 @@ filters:
         ],
       }),
     ]).map((candidate) => candidate.id)).toEqual(['match'])
+  })
+
+  it('serializes desktop-compatible saved-view YAML that can be parsed back', () => {
+    const content = serializeMobileSavedViewDefinition({
+      color: 'purple',
+      filters: {
+        all: [
+          { field: 'type', op: 'equals', value: 'Procedure' },
+          { field: 'status', op: 'any_of', value: ['Active', 'Draft'] },
+        ],
+      },
+      icon: null,
+      name: 'Active Procedures',
+      sort: 'modified:desc',
+    })
+    const parsed = parseMobileSavedViewFile({ content, relativePath: 'views/active-procedures.yml' }, 0)
+
+    expect(content).toContain('name: "Active Procedures"')
+    expect(content).toContain('filters:')
+    expect(parsed?.definition).toMatchObject({
+      color: 'purple',
+      filters: {
+        all: [
+          { field: 'type', op: 'equals', value: 'Procedure' },
+          { field: 'status', op: 'any_of', value: ['Active', 'Draft'] },
+        ],
+      },
+      name: 'Active Procedures',
+      sort: 'modified:desc',
+    })
+  })
+
+  it('creates desktop-style unique view filenames', () => {
+    expect(createMobileSavedViewFilename('Active Procedures', ['active-procedures.yml'])).toBe('active-procedures-2.yml')
+    expect(createMobileSavedViewFilename('CON', [])).toBe('con-view.yml')
   })
 })
 

@@ -5,6 +5,7 @@ import {
   FileText,
   FolderOpen,
   Funnel,
+  Plus,
   SidebarSimple,
   StackSimple,
   Star,
@@ -43,6 +44,7 @@ export function MobileWorkspaceSidebar({
   activeFolderId,
   activeItemId,
   layoutProbe: layoutProbeEnabled = false,
+  onCreateView,
   onSelectFolder,
   onSelectItem,
   sections,
@@ -50,6 +52,7 @@ export function MobileWorkspaceSidebar({
 }: {
   activeFolderId?: string | null
   activeItemId?: string | null
+  onCreateView?: () => void
   onSelectFolder?: (selection: MobileSidebarFolderSelection) => void
   onSelectItem?: (selection: MobileSidebarItemSelection) => void
   layoutProbe?: boolean
@@ -68,54 +71,123 @@ export function MobileWorkspaceSidebar({
       </MobileToolbar>
       <ScrollView {...layoutProbe.probe('sidebar.scroll')} contentContainerStyle={styles.content}>
         {sections.map((section) => (
-          <View
+          <SidebarSection
+            activeFolderId={activeFolderId}
+            activeItemId={activeItemId}
             key={section.id}
-            style={[styles.section, section.id === 'primary' ? styles.primarySection : styles.groupSection]}
-            testID={`sidebar-section-${section.id}`}
-          >
-            {section.label ? <SectionTitle count={section.count} label={sidebarSectionLabel(section.id, section.label)} layoutProbe={layoutProbe.probe} sectionId={section.id} /> : null}
-            {section.items?.map((item) => {
-              const active = activeItemId ? item.id === activeItemId : item.active
-              const label = sidebarLabel(item.id, item.label)
-              const activeColor = sidebarActiveColor(item.tone)
-              const metricId = `sidebar.item.${item.id}`
-
-              return (
-                <SidebarItem
-                  active={active}
-                  activeBackgroundColor={sidebarActiveBackgroundColor(item.tone)}
-                  activeColor={activeColor}
-                  count={item.count}
-                  icon={sidebarIcon(item.icon, active ? item.tone ?? 'primary' : item.tone)}
-                  key={item.id}
-                  label={label}
-                  layoutProbe={layoutProbe.probe}
-                  metricId={metricId}
-                  slug={item.id}
-                  onPress={() => onSelectItem?.({
-                    count: item.count,
-                    id: item.id,
-                    label,
-                    sectionId: section.id,
-                    viewId: item.viewId,
-                  })}
-                />
-              )
-            })}
-            {section.folders ? (
-              <FolderTree
-                activeFolderId={activeFolderId}
-                folders={section.folders}
-                layoutProbe={layoutProbe.probe}
-                onSelectFolder={onSelectFolder}
-              />
-            ) : null}
-          </View>
+            layoutProbe={layoutProbe.probe}
+            section={section}
+            onCreateView={onCreateView}
+            onSelectFolder={onSelectFolder}
+            onSelectItem={onSelectItem}
+          />
         ))}
       </ScrollView>
       {layoutProbeEnabled ? <MobileLayoutProbeReadout metrics={layoutProbe.metrics} testID="sidebar-layout-metrics" /> : null}
     </MobilePanel>
   )
+}
+
+function SidebarSection({
+  activeFolderId,
+  activeItemId,
+  layoutProbe,
+  onCreateView,
+  onSelectFolder,
+  onSelectItem,
+  section,
+}: {
+  activeFolderId?: string | null
+  activeItemId?: string | null
+  layoutProbe: MobileLayoutProbe
+  onCreateView?: () => void
+  onSelectFolder?: (selection: MobileSidebarFolderSelection) => void
+  onSelectItem?: (selection: MobileSidebarItemSelection) => void
+  section: MobileSidebarSection
+}) {
+  return (
+    <View
+      style={[styles.section, section.id === 'primary' ? styles.primarySection : styles.groupSection]}
+      testID={`sidebar-section-${section.id}`}
+    >
+      <SidebarSectionTitle layoutProbe={layoutProbe} section={section} onCreateView={onCreateView} />
+      <SidebarSectionItems
+        activeItemId={activeItemId}
+        layoutProbe={layoutProbe}
+        section={section}
+        onSelectItem={onSelectItem}
+      />
+      {section.folders ? (
+        <FolderTree
+          activeFolderId={activeFolderId}
+          folders={section.folders}
+          layoutProbe={layoutProbe}
+          onSelectFolder={onSelectFolder}
+        />
+      ) : null}
+    </View>
+  )
+}
+
+function SidebarSectionTitle({
+  layoutProbe,
+  onCreateView,
+  section,
+}: {
+  layoutProbe: MobileLayoutProbe
+  onCreateView?: () => void
+  section: MobileSidebarSection
+}) {
+  if (!section.label) return null
+
+  return (
+    <SectionTitle
+      count={section.count}
+      label={sidebarSectionLabel(section.id, section.label)}
+      layoutProbe={layoutProbe}
+      sectionId={section.id}
+      onCreate={section.id === 'views' ? onCreateView : undefined}
+    />
+  )
+}
+
+function SidebarSectionItems({
+  activeItemId,
+  layoutProbe,
+  onSelectItem,
+  section,
+}: {
+  activeItemId?: string | null
+  layoutProbe: MobileLayoutProbe
+  onSelectItem?: (selection: MobileSidebarItemSelection) => void
+  section: MobileSidebarSection
+}) {
+  return section.items?.map((item) => {
+    const active = activeItemId ? item.id === activeItemId : item.active
+    const label = sidebarLabel(item.id, item.label)
+
+    return (
+      <SidebarItem
+        active={active}
+        activeBackgroundColor={sidebarActiveBackgroundColor(item.tone)}
+        activeColor={sidebarActiveColor(item.tone)}
+        count={item.count}
+        icon={sidebarIcon(item.icon, active ? item.tone ?? 'primary' : item.tone)}
+        key={item.id}
+        label={label}
+        layoutProbe={layoutProbe}
+        metricId={`sidebar.item.${item.id}`}
+        slug={item.id}
+        onPress={() => onSelectItem?.({
+          count: item.count,
+          id: item.id,
+          label,
+          sectionId: section.id,
+          viewId: item.viewId,
+        })}
+      />
+    )
+  }) ?? null
 }
 
 function SidebarItem({
@@ -180,11 +252,13 @@ function SectionTitle({
   count,
   label,
   layoutProbe,
+  onCreate,
   sectionId,
 }: {
   count?: string
   label: string
   layoutProbe?: MobileLayoutProbe
+  onCreate?: () => void
   sectionId: string
 }) {
   const metricId = `sidebar.section.${sectionId}`
@@ -204,6 +278,15 @@ function SectionTitle({
         {label}
       </Text>
       {count ? <MobileSidebarCountPill compact testID={`sidebar-section-count-${sectionId}`} value={count} /> : null}
+      {onCreate ? (
+        <MobileIconButton
+          accessibilityLabel={mobileText('sidebar.action.createView')}
+          testID={`sidebar-section-create-${sectionId}`}
+          onPress={onCreate}
+        >
+          <Plus color={mobileColors.textMuted} size={12} />
+        </MobileIconButton>
+      ) : null}
     </View>
   )
 }

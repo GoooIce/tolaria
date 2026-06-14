@@ -25,6 +25,7 @@ export type TabletReadOnlyForm = {
   propertyValue: ReadOnlyFormValue
   relationshipName: ReadOnlyFormValue
   relationshipNoteTitle: ReadOnlyFormValue
+  viewName: ReadOnlyFormValue
 }
 
 export type TabletWorkspaceChromeProps = {
@@ -43,8 +44,10 @@ export type TabletWorkspaceChromeProps = {
   onCloseAction: () => void
   onCreateNote: () => void
   onCreateTitleChange: (value: ReadOnlyFormValue) => void
+  onCreateView: () => void
   onDeleteProperty: (noteId: NoteId, key: string) => void
   onOpenCreateNote: () => void
+  onOpenCreateView: () => void
   onOpenMoreActions: () => void
   onOpenSearch: () => void
   onRemoveRelationship: (noteId: NoteId, key: string, ref: string) => void
@@ -53,6 +56,7 @@ export type TabletWorkspaceChromeProps = {
   onUpdateNoteContent: (noteId: NoteId, content: string) => void
   onUpdateNoteTitle: (noteId: NoteId, title: string) => void
   onUpdateProperty: (noteId: NoteId, key: string, value: MobilePropertyValue) => void
+  onViewNameChange: (value: ReadOnlyFormValue) => void
   onPropertyNameChange: (value: ReadOnlyFormValue) => void
   onPropertyValueChange: (value: ReadOnlyFormValue) => void
   onRelationshipNameChange: (value: ReadOnlyFormValue) => void

@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { MobileWorkspaceAction } from '../components/workspace/MobileWorkspaceActionSheet'
-import type { MobileNote, MobilePropertyValue, MobileWorkspaceSnapshot } from '../workspace/mobileWorkspaceModel'
+import type {
+  MobileNote,
+  MobilePropertyValue,
+  MobileViewDefinition,
+  MobileViewFilterGroup,
+  MobileViewFilterNode,
+  MobileWorkspaceSnapshot,
+} from '../workspace/mobileWorkspaceModel'
 import {
   applyMobileWorkspaceEditWithWrites,
   type MobileWorkspaceEdit,
@@ -11,6 +18,7 @@ import type {
 } from '../workspace/readOnlyWorkspaceRepository'
 import { useTabletWorkspaceNavigation } from './tabletWorkspaceNavigation'
 import type { TabletReadOnlyForm } from './tabletWorkspaceTypes'
+import type { TabletSidebarSelection } from './tabletWorkspaceNavigation'
 
 const emptyReadOnlyForm: TabletReadOnlyForm = {
   createTitle: '',
@@ -18,7 +26,14 @@ const emptyReadOnlyForm: TabletReadOnlyForm = {
   propertyValue: '',
   relationshipName: '',
   relationshipNoteTitle: '',
+  viewName: '',
 }
+
+type ApplyWorkspaceEdit = (edit: MobileWorkspaceEdit) => void
+type ReadOnlyFormUpdater = <Key extends keyof TabletReadOnlyForm>(key: Key, value: TabletReadOnlyForm[Key]) => void
+type SaveSelectedEdit = (toEdit: (noteId: string) => MobileWorkspaceEdit) => void
+type SetOpenAction = (action: MobileWorkspaceAction | null) => void
+type TabletWorkspaceNavigation = ReturnType<typeof useTabletWorkspaceNavigation>
 
 export function useTabletWorkspaceController({
   repository,
@@ -39,25 +54,36 @@ export function useTabletWorkspaceController({
   const [searchQuery, setSearchQuery] = useState('')
   const navigation = useTabletWorkspaceNavigation(workspaceSnapshot, searchQuery)
   const { selectedNote, setSelectedNoteId } = navigation
-  const applyEdit = useCallback((edit: MobileWorkspaceEdit) => {
-    const result = applyWorkspaceEdit(edit)
-    if (edit.type === 'createNote' && result.snapshot.selectedNoteId) {
-      setSelectedNoteId(result.snapshot.selectedNoteId)
-    }
-  }, [applyWorkspaceEdit, setSelectedNoteId])
-  const closeAction = useCallback(() => {
-    setOpenAction(null)
-    resetForm()
-  }, [resetForm])
-  const saveSelectedEdit = useCallback((toEdit: (noteId: string) => MobileWorkspaceEdit) => {
-    if (!selectedNote) return
-    applyEdit(toEdit(selectedNote.id))
-    closeAction()
-  }, [applyEdit, closeAction, selectedNote])
+  const applyEdit = useControllerApplyEdit({ applyWorkspaceEdit, navigation, setSelectedNoteId })
+  const closeAction = useCloseWorkspaceAction({ resetForm, setOpenAction })
+  const saveSelectedEdit = useSaveSelectedEdit({ applyEdit, closeAction, selectedNote })
+  const createActions = createWorkspaceActions({
+    applyEdit,
+    closeAction,
+    navigation,
+    readOnlyForm,
+    selectedNote,
+    updateReadOnlyForm,
+    workspaceSnapshot,
+  })
+  const propertyActions = propertyWorkspaceActions({ applyEdit, readOnlyForm, saveSelectedEdit, updateReadOnlyForm })
+  const relationshipActions = relationshipWorkspaceActions({ applyEdit, readOnlyForm, saveSelectedEdit, updateReadOnlyForm })
+  const editorActions = editorWorkspaceActions({ applyEdit, selectedNote })
+  const actionSheetActions = actionSheetWorkspaceActions({
+    closeAction,
+    noteListTitle: navigation.noteListTitle,
+    setOpenAction,
+    updateReadOnlyForm,
+  })
   useHydrateSelectedNote({ applyEdit, repository, repositoryRequest, selectedNote })
 
   return {
+    ...actionSheetActions,
     ...navigation,
+    ...createActions,
+    ...editorActions,
+    ...propertyActions,
+    ...relationshipActions,
     openAction,
     readOnlyForm,
     searchQuery,
@@ -65,30 +91,65 @@ export function useTabletWorkspaceController({
     onSelectFolder: navigation.selectFolder,
     onSelectNote: navigation.setSelectedNoteId,
     onSelectSidebarItem: navigation.selectSidebarItem,
-    onAddProperty: () => setOpenAction('addProperty' as const),
-    onAddRelationship: () => setOpenAction('addRelationship' as const),
-    onCloseAction: closeAction,
-    onCreateNote: () => createNote({ applyEdit, closeAction, title: readOnlyForm.createTitle }),
-    onCreateTitleChange: (value: string) => updateReadOnlyForm('createTitle', value),
-    onDeleteProperty: (noteId: string, key: string) => applyEdit({ key, noteId, type: 'deleteProperty' }),
-    onOpenCreateNote: () => setOpenAction('createNote' as const),
-    onOpenMoreActions: () => setOpenAction('moreActions' as const),
-    onOpenSearch: () => setOpenAction('search' as const),
-    onPropertyNameChange: (value: string) => updateReadOnlyForm('propertyName', value),
-    onPropertyValueChange: (value: string) => updateReadOnlyForm('propertyValue', value),
-    onRelationshipNameChange: (value: string) => updateReadOnlyForm('relationshipName', value),
-    onRelationshipNoteTitleChange: (value: string) => updateReadOnlyForm('relationshipNoteTitle', value),
-    onRemoveRelationship: (noteId: string, key: string, ref: string) => applyEdit({ key, noteId, ref, type: 'removeRelationship' }),
-    onSaveProperty: () => saveSelectedEdit((noteId) => propertyEdit(readOnlyForm, noteId)),
-    onSaveRelationship: () => saveSelectedEdit((noteId) => relationshipEdit(readOnlyForm, noteId)),
     onSearchQueryChange: setSearchQuery,
-    onToggleFavorite: () => {
-      if (selectedNote) applyEdit({ noteId: selectedNote.id, type: 'toggleFavorite' })
-    },
-    onUpdateNoteContent: (noteId: string, content: string) => applyEdit({ content, noteId, type: 'updateNoteContent' }),
-    onUpdateNoteTitle: (noteId: string, title: string) => applyEdit({ noteId, title, type: 'renameNoteTitle' }),
-    onUpdateProperty: (noteId: string, key: string, value: MobilePropertyValue) => applyEdit({ key, noteId, type: 'updateProperty', value }),
   }
+}
+
+function useControllerApplyEdit({
+  applyWorkspaceEdit,
+  navigation,
+  setSelectedNoteId,
+}: {
+  applyWorkspaceEdit: (edit: MobileWorkspaceEdit) => ReturnType<typeof applyMobileWorkspaceEditWithWrites>
+  navigation: TabletWorkspaceNavigation
+  setSelectedNoteId: (noteId: string | null) => void
+}) {
+  return useCallback((edit: MobileWorkspaceEdit) => {
+    const result = applyWorkspaceEdit(edit)
+    if (edit.type === 'createNote' && result.snapshot.selectedNoteId) {
+      setSelectedNoteId(result.snapshot.selectedNoteId)
+    } else if (edit.type === 'createView') {
+      selectCreatedView(edit, result.snapshot, navigation)
+    }
+  }, [applyWorkspaceEdit, navigation, setSelectedNoteId])
+}
+
+function useCloseWorkspaceAction({
+  resetForm,
+  setOpenAction,
+}: {
+  resetForm: () => void
+  setOpenAction: SetOpenAction
+}) {
+  return useCallback(() => {
+    setOpenAction(null)
+    resetForm()
+  }, [resetForm, setOpenAction])
+}
+
+function useSaveSelectedEdit({
+  applyEdit,
+  closeAction,
+  selectedNote,
+}: {
+  applyEdit: ApplyWorkspaceEdit
+  closeAction: () => void
+  selectedNote: MobileNote | null
+}) {
+  return useCallback((toEdit: (noteId: string) => MobileWorkspaceEdit) => {
+    if (!selectedNote) return
+    applyEdit(toEdit(selectedNote.id))
+    closeAction()
+  }, [applyEdit, closeAction, selectedNote])
+}
+
+function selectCreatedView(
+  edit: Extract<MobileWorkspaceEdit, { type: 'createView' }>,
+  snapshot: MobileWorkspaceSnapshot,
+  navigation: TabletWorkspaceNavigation,
+) {
+  const createdView = snapshot.views?.find((view) => view.definition.name === edit.definition.name)
+  if (createdView) navigation.selectSavedView(createdView, snapshot)
 }
 
 function useWorkspaceEditPipeline({
@@ -159,6 +220,129 @@ function useHydrateSelectedNote({
   }, [applyEdit, repository, repositoryRequest, selectedNote])
 }
 
+function actionSheetWorkspaceActions({
+  closeAction,
+  noteListTitle,
+  setOpenAction,
+  updateReadOnlyForm,
+}: {
+  closeAction: () => void
+  noteListTitle: string
+  setOpenAction: SetOpenAction
+  updateReadOnlyForm: ReadOnlyFormUpdater
+}) {
+  return {
+    onAddProperty: () => setOpenAction('addProperty'),
+    onAddRelationship: () => setOpenAction('addRelationship'),
+    onCloseAction: closeAction,
+    onOpenCreateNote: () => setOpenAction('createNote'),
+    onOpenCreateView: () => openCreateView({ noteListTitle, setOpenAction, updateReadOnlyForm }),
+    onOpenMoreActions: () => setOpenAction('moreActions'),
+    onOpenSearch: () => setOpenAction('search'),
+  }
+}
+
+function createWorkspaceActions({
+  applyEdit,
+  closeAction,
+  navigation,
+  readOnlyForm,
+  selectedNote,
+  updateReadOnlyForm,
+  workspaceSnapshot,
+}: {
+  applyEdit: ApplyWorkspaceEdit
+  closeAction: () => void
+  navigation: TabletWorkspaceNavigation
+  readOnlyForm: TabletReadOnlyForm
+  selectedNote: MobileNote | null
+  updateReadOnlyForm: ReadOnlyFormUpdater
+  workspaceSnapshot: MobileWorkspaceSnapshot
+}) {
+  return {
+    onCreateNote: () => createNote({ applyEdit, closeAction, title: readOnlyForm.createTitle }),
+    onCreateTitleChange: (value: string) => updateReadOnlyForm('createTitle', value),
+    onCreateView: () => createView({
+      applyEdit,
+      closeAction,
+      name: readOnlyForm.viewName,
+      notes: navigation.notes,
+      selectedNote,
+      selection: navigation.sidebarSelection,
+      views: workspaceSnapshot.views ?? [],
+    }),
+    onViewNameChange: (value: string) => updateReadOnlyForm('viewName', value),
+  }
+}
+
+function propertyWorkspaceActions({
+  applyEdit,
+  readOnlyForm,
+  saveSelectedEdit,
+  updateReadOnlyForm,
+}: {
+  applyEdit: ApplyWorkspaceEdit
+  readOnlyForm: TabletReadOnlyForm
+  saveSelectedEdit: SaveSelectedEdit
+  updateReadOnlyForm: ReadOnlyFormUpdater
+}) {
+  return {
+    onDeleteProperty: (noteId: string, key: string) => applyEdit({ key, noteId, type: 'deleteProperty' }),
+    onPropertyNameChange: (value: string) => updateReadOnlyForm('propertyName', value),
+    onPropertyValueChange: (value: string) => updateReadOnlyForm('propertyValue', value),
+    onSaveProperty: () => saveSelectedEdit((noteId) => propertyEdit(readOnlyForm, noteId)),
+    onUpdateProperty: (noteId: string, key: string, value: MobilePropertyValue) => applyEdit({ key, noteId, type: 'updateProperty', value }),
+  }
+}
+
+function relationshipWorkspaceActions({
+  applyEdit,
+  readOnlyForm,
+  saveSelectedEdit,
+  updateReadOnlyForm,
+}: {
+  applyEdit: ApplyWorkspaceEdit
+  readOnlyForm: TabletReadOnlyForm
+  saveSelectedEdit: SaveSelectedEdit
+  updateReadOnlyForm: ReadOnlyFormUpdater
+}) {
+  return {
+    onRelationshipNameChange: (value: string) => updateReadOnlyForm('relationshipName', value),
+    onRelationshipNoteTitleChange: (value: string) => updateReadOnlyForm('relationshipNoteTitle', value),
+    onRemoveRelationship: (noteId: string, key: string, ref: string) => applyEdit({ key, noteId, ref, type: 'removeRelationship' }),
+    onSaveRelationship: () => saveSelectedEdit((noteId) => relationshipEdit(readOnlyForm, noteId)),
+  }
+}
+
+function editorWorkspaceActions({
+  applyEdit,
+  selectedNote,
+}: {
+  applyEdit: ApplyWorkspaceEdit
+  selectedNote: MobileNote | null
+}) {
+  return {
+    onToggleFavorite: () => {
+      if (selectedNote) applyEdit({ noteId: selectedNote.id, type: 'toggleFavorite' })
+    },
+    onUpdateNoteContent: (noteId: string, content: string) => applyEdit({ content, noteId, type: 'updateNoteContent' }),
+    onUpdateNoteTitle: (noteId: string, title: string) => applyEdit({ noteId, title, type: 'renameNoteTitle' }),
+  }
+}
+
+function openCreateView({
+  noteListTitle,
+  setOpenAction,
+  updateReadOnlyForm,
+}: {
+  noteListTitle: string
+  setOpenAction: SetOpenAction
+  updateReadOnlyForm: ReadOnlyFormUpdater
+}) {
+  updateReadOnlyForm('viewName', defaultViewName(noteListTitle))
+  setOpenAction('createView')
+}
+
 function createNote({
   applyEdit,
   closeAction,
@@ -170,6 +354,117 @@ function createNote({
 }) {
   applyEdit({ title, type: 'createNote' })
   closeAction()
+}
+
+function createView({
+  applyEdit,
+  closeAction,
+  name,
+  notes,
+  selectedNote,
+  selection,
+  views,
+}: {
+  applyEdit: (edit: MobileWorkspaceEdit) => void
+  closeAction: () => void
+  name: string
+  notes: MobileNote[]
+  selectedNote: MobileNote | null
+  selection: TabletSidebarSelection
+  views: NonNullable<MobileWorkspaceSnapshot['views']>
+}) {
+  const trimmedName = name.trim()
+  if (!trimmedName) return
+
+  applyEdit({
+    definition: {
+      color: viewColorForSelection(selection, selectedNote),
+      filters: viewFiltersForSelection(selection, notes, selectedNote, views),
+      icon: null,
+      name: trimmedName,
+      sort: 'modified:desc',
+    },
+    type: 'createView',
+  })
+  closeAction()
+}
+
+function defaultViewName(title: string) {
+  return title.trim() || 'New View'
+}
+
+function viewFiltersForSelection(
+  selection: TabletSidebarSelection,
+  notes: MobileNote[],
+  selectedNote: MobileNote | null,
+  views: NonNullable<MobileWorkspaceSnapshot['views']>,
+): MobileViewFilterGroup {
+  if (selection.kind === 'folder') return allFilters([{ field: 'path', op: 'contains', value: selection.label }])
+
+  return itemViewFiltersForSelection(selection, notes, selectedNote, views)
+}
+
+function itemViewFiltersForSelection(
+  selection: Extract<TabletSidebarSelection, { kind: 'item' }>,
+  notes: MobileNote[],
+  selectedNote: MobileNote | null,
+  views: NonNullable<MobileWorkspaceSnapshot['views']>,
+): MobileViewFilterGroup {
+  const sectionFilters = sectionViewFilters(selection, selectedNote, views)
+  if (sectionFilters) return sectionFilters
+  return primaryViewFilters(selection, notes)
+}
+
+function sectionViewFilters(
+  selection: Extract<TabletSidebarSelection, { kind: 'item' }>,
+  selectedNote: MobileNote | null,
+  views: NonNullable<MobileWorkspaceSnapshot['views']>,
+): MobileViewFilterGroup | null {
+  if (selection.sectionId === 'views') return existingViewFilters(selection, views)
+  if (selection.sectionId === 'types') return typeViewFilters(selection, selectedNote)
+  if (selection.sectionId === 'favorites') return allFilters([{ field: 'favorite', op: 'equals', value: true }])
+  return null
+}
+
+function primaryViewFilters(
+  selection: Extract<TabletSidebarSelection, { kind: 'item' }>,
+  notes: MobileNote[],
+): MobileViewFilterGroup {
+  if (selection.id === 'archive') return allFilters([{ field: 'archived', op: 'equals', value: true }])
+  if (selection.id === 'all-notes') return allFilters([{ field: 'archived', op: 'equals', value: false }])
+  if (selection.id === 'inbox') return allFilters([
+    { field: 'archived', op: 'equals', value: false },
+    { field: 'organized', op: 'equals', value: false },
+  ])
+
+  return allFilters([{ field: 'title', op: 'contains', value: notes[0]?.title ?? selection.label }])
+}
+
+function typeViewFilters(
+  selection: Extract<TabletSidebarSelection, { kind: 'item' }>,
+  selectedNote: MobileNote | null,
+): MobileViewFilterGroup {
+  return allFilters([{ field: 'type', op: 'equals', value: selectedNote?.type ?? singularLabel(selection.label) }])
+}
+
+function existingViewFilters(
+  selection: Extract<TabletSidebarSelection, { kind: 'item' }>,
+  views: NonNullable<MobileWorkspaceSnapshot['views']>,
+): MobileViewFilterGroup {
+  return views.find((view) => view.id === selection.viewId || view.id === selection.id)?.definition.filters ?? allFilters([])
+}
+
+function allFilters(filters: MobileViewFilterNode[]): MobileViewFilterGroup {
+  return { all: filters }
+}
+
+function singularLabel(label: string) {
+  return label.replace(/s$/u, '')
+}
+
+function viewColorForSelection(selection: TabletSidebarSelection, selectedNote: MobileNote | null): MobileViewDefinition['color'] {
+  if (selection.kind === 'item' && selection.sectionId === 'types') return selectedNote?.typeTone ?? 'gray'
+  return selectedNote?.typeTone ?? 'gray'
 }
 
 function propertyEdit(form: TabletReadOnlyForm, noteId: string): MobileWorkspaceEdit {

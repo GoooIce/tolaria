@@ -21,8 +21,20 @@ import type {
   MobileRelationship,
   MobileRelationshipKind,
   MobileRelationshipValue,
+  MobileSavedView,
+  MobileSidebarSection,
+  MobileTone,
+  MobileViewDefinition,
   MobileWorkspaceSnapshot,
 } from './mobileWorkspaceModel'
+import {
+  createMobileSavedViewFilename,
+  evaluateMobileSavedView,
+  mobileSavedViewId,
+  mobileSavedViewPath,
+  orderedMobileSavedViews,
+  serializeMobileSavedViewDefinition,
+} from './mobileSavedViews'
 import { normalizeRelationshipKey } from './mobileWorkspaceSuggestions'
 
 type EditableNoteInput = MobileNote & { rawContent: string }
@@ -44,11 +56,13 @@ export type MobileWorkspaceEdit =
   | { key: FrontmatterKey; noteId: NoteId; ref: WikilinkRef; type: 'removeRelationship' }
   | { noteId: NoteId; type: 'toggleFavorite' }
   | { archived: boolean; noteId: NoteId; type: 'setArchived' }
-type MobileNoteEdit = Exclude<MobileWorkspaceEdit, { type: 'createNote' }>
+  | { definition: MobileViewDefinition; type: 'createView' }
+type MobileNoteEdit = Exclude<MobileWorkspaceEdit, { type: 'createNote' | 'createView' }>
 
 export type MobileWorkspaceWrite =
   | { content: MarkdownContent; kind: 'createNote'; path: string }
   | { content: MarkdownContent; kind: 'saveNote'; path: string }
+  | { content: MarkdownContent; kind: 'saveView'; path: string }
 
 export type MobileWorkspaceEditResult = {
   snapshot: MobileWorkspaceSnapshot
@@ -120,6 +134,9 @@ export function applyMobileWorkspaceEditWithWrites(
   if (edit.type === 'createNote') {
     const nextSnapshot = createMobileNote(snapshot, edit.title)
     return { snapshot: nextSnapshot, writes: createNoteWrites(nextSnapshot) }
+  }
+  if (edit.type === 'createView') {
+    return createMobileView(snapshot, edit.definition)
   }
 
   const notePool = workspaceNotePool(snapshot)
@@ -279,6 +296,7 @@ function rebuildSnapshot(
     noteListSubtitle: noteListSubtitle(resolvedNotes),
     notes: resolvedNotes,
     selectedNoteId: selectedNote?.id,
+    sidebarSections: rebuildViewSidebarSection(snapshot.sidebarSections, snapshot.views, resolvedAllNotes),
   }
 }
 
@@ -313,6 +331,89 @@ function createNoteWrites(snapshot: MobileWorkspaceSnapshot): MobileWorkspaceWri
     kind: 'createNote',
     path: noteWritePath(note),
   }]
+}
+
+function createMobileView(
+  snapshot: MobileWorkspaceSnapshot,
+  definition: MobileViewDefinition,
+): MobileWorkspaceEditResult {
+  const existingViews = snapshot.views ?? []
+  const filename = createMobileSavedViewFilename(definition.name, existingViews.map((view) => view.filename))
+  const view: MobileSavedView = {
+    definition,
+    filename,
+    id: mobileSavedViewId(filename),
+  }
+  const views = orderedMobileSavedViews([...existingViews, view])
+  const nextSnapshot = {
+    ...snapshot,
+    sidebarSections: rebuildViewSidebarSection(snapshot.sidebarSections, views, workspaceNotePool(snapshot)),
+    views,
+  }
+
+  return {
+    snapshot: nextSnapshot,
+    writes: [{
+      content: serializeMobileSavedViewDefinition(definition),
+      kind: 'saveView',
+      path: mobileSavedViewPath(filename),
+    }],
+  }
+}
+
+function rebuildViewSidebarSection(
+  sections: MobileSidebarSection[],
+  views: MobileSavedView[] | undefined,
+  notes: MobileNote[],
+): MobileSidebarSection[] {
+  if (!views?.length) return sections.filter((section) => section.id !== 'views')
+
+  const nextViewsSection = viewsSidebarSection(views, notes)
+  const existingIndex = sections.findIndex((section) => section.id === 'views')
+  if (existingIndex !== -1) return sections.map((section) => section.id === 'views' ? nextViewsSection : section)
+
+  const insertIndex = sections.findIndex((section) => section.id === 'types')
+  if (insertIndex === -1) return [...sections, nextViewsSection]
+
+  return [
+    ...sections.slice(0, insertIndex),
+    nextViewsSection,
+    ...sections.slice(insertIndex),
+  ]
+}
+
+function viewsSidebarSection(views: MobileSavedView[], notes: MobileNote[]): MobileSidebarSection {
+  return {
+    id: 'views',
+    items: views.map((view) => ({
+      count: countText(evaluateMobileSavedView(view, notes).length),
+      icon: 'view',
+      id: view.id,
+      label: view.definition.name,
+      tone: toneFromViewColor(view.definition.color),
+      viewId: view.id,
+    })),
+    label: 'Views',
+  }
+}
+
+function toneFromViewColor(color: string | null): MobileTone {
+  if (isMobileTone(color)) return color
+  return 'gray'
+}
+
+function isMobileTone(value: string | null): value is MobileTone {
+  return value === 'blue'
+    || value === 'gray'
+    || value === 'green'
+    || value === 'orange'
+    || value === 'purple'
+    || value === 'red'
+    || value === 'yellow'
+}
+
+function countText(count: number): string {
+  return count.toLocaleString()
 }
 
 function saveNoteWrites(

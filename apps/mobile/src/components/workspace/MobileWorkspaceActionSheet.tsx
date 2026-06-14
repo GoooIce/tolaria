@@ -24,6 +24,7 @@ export type MobileWorkspaceAction =
   | 'addProperty'
   | 'addRelationship'
   | 'createNote'
+  | 'createView'
   | 'moreActions'
   | 'search'
 
@@ -34,6 +35,7 @@ type MobileWorkspaceActionSheetProps = {
   onClose: () => void
   onCreateNote: () => void
   onCreateTitleChange: (value: string) => void
+  onCreateView: () => void
   onPropertyNameChange: (value: string) => void
   onPropertyValueChange: (value: string) => void
   onRelationshipNameChange: (value: string) => void
@@ -42,12 +44,14 @@ type MobileWorkspaceActionSheetProps = {
   onSaveRelationship: () => void
   onSearchQueryChange: (value: string) => void
   onSelectNote: (noteId: string) => void
+  onViewNameChange: (value: string) => void
   propertyName: string
   propertyValue: string
   relationshipName: string
   relationshipNoteTitle: string
   searchQuery: string
   selectedNote: MobileNote | null
+  viewName: string
 }
 
 export function MobileWorkspaceActionSheet({
@@ -57,6 +61,7 @@ export function MobileWorkspaceActionSheet({
   onClose,
   onCreateNote,
   onCreateTitleChange,
+  onCreateView,
   onPropertyNameChange,
   onPropertyValueChange,
   onRelationshipNameChange,
@@ -65,12 +70,14 @@ export function MobileWorkspaceActionSheet({
   onSaveRelationship,
   onSearchQueryChange,
   onSelectNote,
+  onViewNameChange,
   propertyName,
   propertyValue,
   relationshipName,
   relationshipNoteTitle,
   searchQuery,
   selectedNote,
+  viewName,
 }: MobileWorkspaceActionSheetProps) {
   return (
     <View style={styles.overlay} testID="workspace-action-sheet">
@@ -88,6 +95,7 @@ export function MobileWorkspaceActionSheet({
           onClose={onClose}
           onCreateNote={onCreateNote}
           onCreateTitleChange={onCreateTitleChange}
+          onCreateView={onCreateView}
           onPropertyNameChange={onPropertyNameChange}
           onPropertyValueChange={onPropertyValueChange}
           onRelationshipNameChange={onRelationshipNameChange}
@@ -96,12 +104,14 @@ export function MobileWorkspaceActionSheet({
           onSaveRelationship={onSaveRelationship}
           onSearchQueryChange={onSearchQueryChange}
           onSelectNote={onSelectNote}
+          onViewNameChange={onViewNameChange}
           propertyName={propertyName}
           propertyValue={propertyValue}
           relationshipName={relationshipName}
           relationshipNoteTitle={relationshipNoteTitle}
           searchQuery={searchQuery}
           selectedNote={selectedNote}
+          viewName={viewName}
         />
       </MobilePanel>
     </View>
@@ -110,7 +120,9 @@ export function MobileWorkspaceActionSheet({
 
 function ActionContent(props: MobileWorkspaceActionSheetProps) {
   if (props.action === 'search') return <SearchContent {...props} />
-  if (props.action === 'createNote') return <CreateNoteContent {...props} />
+  if (props.action === 'createNote' || props.action === 'createView') {
+    return <SingleTextFieldContent {...singleTextFieldConfig(props)} />
+  }
   if (props.action === 'addProperty') return <AddPropertyContent {...props} />
   if (props.action === 'addRelationship') return <AddRelationshipContent {...props} />
   return <MoreActionsContent note={props.selectedNote} onClose={props.onClose} />
@@ -179,28 +191,63 @@ function searchText(note: MobileNote) {
   ].join(' ').toLowerCase()
 }
 
-function CreateNoteContent({
-  createTitle,
-  onClose,
-  onCreateNote,
-  onCreateTitleChange,
-}: MobileWorkspaceActionSheetProps) {
+function SingleTextFieldContent({
+  inputLabel,
+  inputPlaceholder,
+  inputTestId,
+  inputValue,
+  onCancel,
+  onChangeText,
+  onSubmit,
+}: {
+  inputLabel: string
+  inputPlaceholder: string
+  inputTestId: string
+  inputValue: string
+  onCancel: () => void
+  onChangeText: (value: string) => void
+  onSubmit: () => void
+}) {
   return (
     <View style={styles.content}>
       <MobileTextInput
         autoFocus
-        label={mobileText('command.note.newNote')}
-        placeholder={mobileText('noteList.createNote')}
-        testID="workspace-create-note-title-input"
-        value={createTitle}
-        onChangeText={onCreateTitleChange}
+        label={inputLabel}
+        placeholder={inputPlaceholder}
+        testID={inputTestId}
+        value={inputValue}
+        onChangeText={onChangeText}
       />
       <SheetFooter>
-        <MobileButton label={mobileText('common.cancel')} variant="ghost" onPress={onClose} />
-        <MobileButton disabled={createTitle.trim().length === 0} label={mobileText('common.create')} variant="primary" onPress={onCreateNote} />
+        <MobileButton label={mobileText('common.cancel')} variant="ghost" onPress={onCancel} />
+        <MobileButton disabled={inputValue.trim().length === 0} label={mobileText('common.create')} variant="primary" onPress={onSubmit} />
       </SheetFooter>
     </View>
   )
+}
+
+function singleTextFieldConfig(props: MobileWorkspaceActionSheetProps) {
+  if (props.action === 'createView') {
+    return {
+      inputLabel: mobileText('viewDialog.nameLabel'),
+      inputPlaceholder: mobileText('viewDialog.namePlaceholder'),
+      inputTestId: 'workspace-create-view-name-input',
+      inputValue: props.viewName,
+      onCancel: props.onClose,
+      onChangeText: props.onViewNameChange,
+      onSubmit: props.onCreateView,
+    }
+  }
+
+  return {
+    inputLabel: mobileText('command.note.newNote'),
+    inputPlaceholder: mobileText('noteList.createNote'),
+    inputTestId: 'workspace-create-note-title-input',
+    inputValue: props.createTitle,
+    onCancel: props.onClose,
+    onChangeText: props.onCreateTitleChange,
+    onSubmit: props.onCreateNote,
+  }
 }
 
 function AddPropertyContent({
@@ -398,6 +445,7 @@ function relationshipSuggestions(notes: MobileNote[], query: string) {
 function actionTitle(action: MobileWorkspaceAction) {
   if (action === 'search') return mobileText('noteList.searchAction')
   if (action === 'createNote') return mobileText('command.note.newNote')
+  if (action === 'createView') return mobileText('viewDialog.title.create')
   if (action === 'addProperty') return mobileText('inspector.properties.addProperty')
   if (action === 'addRelationship') return mobileText('inspector.relationship.addRelationship').replace(/^\+\s*/, '')
   return mobileText('editor.toolbar.moreActions')

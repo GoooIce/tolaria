@@ -38,6 +38,34 @@ type ViewFilename = string
 type ViewIndex = number
 type ViewPath = string
 type YamlText = string
+type YamlScalar = string | number | boolean | null
+
+const viewFilenameExtension = '.yml'
+const fallbackViewFilenameStem = 'view'
+const windowsReservedDeviceNames = new Set([
+  'CON',
+  'PRN',
+  'AUX',
+  'NUL',
+  'COM1',
+  'COM2',
+  'COM3',
+  'COM4',
+  'COM5',
+  'COM6',
+  'COM7',
+  'COM8',
+  'COM9',
+  'LPT1',
+  'LPT2',
+  'LPT3',
+  'LPT4',
+  'LPT5',
+  'LPT6',
+  'LPT7',
+  'LPT8',
+  'LPT9',
+])
 
 const supportedFilterOps = new Set<MobileViewFilterOp>([
   'equals',
@@ -60,6 +88,8 @@ const builtInFieldResolvers: Record<string, BuiltInFieldResolver> = {
   filename: (note) => scalarField(note.path?.split('/').at(-1) ?? note.id),
   isa: (note) => scalarField(note.type),
   modified: (note) => scalarField(note.modifiedAt ?? note.modified),
+  organized: (note) => scalarField(note.organized === true),
+  path: (note) => scalarField(note.path ?? note.id),
   status: (note) => scalarField(note.status),
   tags: (note) => arrayField(note.tags),
   title: (note) => scalarField(note.title),
@@ -91,6 +121,44 @@ export function evaluateMobileSavedView(view: MobileSavedView, notes: MobileNote
 
 export function mobileSavedViewId(filename: string) {
   return `view-${slugify(filename.replace(/\.[^.]+$/, ''))}`
+}
+
+export function createMobileSavedViewFilename(name: string, existingFilenames: string[] = []): string {
+  const baseStem = slugifyViewFilenameStem(name)
+  const usedFilenames = new Set(existingFilenames.map((filename) => filename.toLocaleLowerCase()))
+  let candidateStem = baseStem
+  let suffix = 2
+
+  while (usedFilenames.has(viewFilenameFromStem(candidateStem).toLocaleLowerCase())) {
+    candidateStem = `${baseStem}-${suffix}`
+    suffix += 1
+  }
+
+  return viewFilenameFromStem(candidateStem)
+}
+
+export function mobileSavedViewPath(filename: ViewFilename): ViewPath {
+  return `views/${filename}`
+}
+
+export function serializeMobileSavedViewDefinition(definition: MobileViewDefinition): string {
+  const lines = [
+    `name: ${yamlScalar(definition.name)}`,
+    `icon: ${yamlScalar(definition.icon)}`,
+    `color: ${yamlScalar(definition.color)}`,
+    `sort: ${yamlScalar(definition.sort)}`,
+  ]
+
+  if (typeof definition.order === 'number') lines.push(`order: ${definition.order}`)
+  if (definition.listPropertiesDisplay?.length) {
+    lines.push('listPropertiesDisplay:')
+    lines.push(...definition.listPropertiesDisplay.map((item) => `  - ${yamlScalar(item)}`))
+  }
+
+  lines.push('filters:')
+  lines.push(...serializedFilterGroup(definition.filters, 2))
+
+  return `${lines.join('\n')}\n`
 }
 
 function isViewFile(path: ViewPath) {
@@ -490,6 +558,91 @@ function fallbackViewName(filename: ViewFilename, index: ViewIndex) {
 
 function titleCase(value: YamlText) {
   return value.replace(/\b\w/gu, (char) => char.toUpperCase())
+}
+
+function slugifyViewFilenameStem(name: string): string {
+  const stem = name
+    .normalize('NFKC')
+    .toLocaleLowerCase()
+    .trim()
+    .replace(/[^\p{Letter}\p{Number}]+/gu, '-')
+    .replace(/(^-+|-+$)/gu, '')
+
+  return avoidReservedDeviceName(stem || fallbackViewFilenameStem)
+}
+
+function viewFilenameFromStem(stem: string): ViewFilename {
+  return `${stem}${viewFilenameExtension}`
+}
+
+function avoidReservedDeviceName(stem: string): string {
+  return windowsReservedDeviceNames.has(stem.toLocaleUpperCase()) ? `${stem}-view` : stem
+}
+
+function serializedFilterGroup(group: MobileViewFilterGroup, indent: number): string[] {
+  const kind = 'any' in group ? 'any' : 'all'
+  const nodes = 'any' in group ? group.any : group.all
+  const prefix = spaces(indent)
+
+  return [
+    `${prefix}${kind}:`,
+    ...nodes.flatMap((node) => serializedFilterNode(node, indent + 2)),
+  ]
+}
+
+function serializedFilterNode(node: MobileViewFilterNode, indent: number): string[] {
+  if (isFilterGroup(node)) return serializedNestedFilterGroup(node, indent)
+  return serializedFilterCondition(node, indent)
+}
+
+function serializedNestedFilterGroup(group: MobileViewFilterGroup, indent: number): string[] {
+  const kind = 'any' in group ? 'any' : 'all'
+  const nodes = 'any' in group ? group.any : group.all
+  const prefix = spaces(indent)
+
+  return [
+    `${prefix}- ${kind}:`,
+    ...nodes.flatMap((node) => serializedFilterNode(node, indent + 4)),
+  ]
+}
+
+function serializedFilterCondition(condition: MobileViewFilterCondition, indent: number): string[] {
+  const prefix = spaces(indent)
+  const childPrefix = spaces(indent + 2)
+  const lines = [
+    `${prefix}- field: ${yamlScalar(condition.field)}`,
+    `${childPrefix}op: ${yamlScalar(condition.op)}`,
+  ]
+
+  if (condition.regex === true) lines.push(`${childPrefix}regex: true`)
+  if (condition.value !== undefined) lines.push(...serializedYamlValue('value', condition.value, indent + 2))
+
+  return lines
+}
+
+function serializedYamlValue(key: string, value: unknown, indent: number): string[] {
+  const prefix = spaces(indent)
+  if (!Array.isArray(value)) return [`${prefix}${key}: ${yamlScalar(yamlSerializableScalar(value))}`]
+
+  return [
+    `${prefix}${key}:`,
+    ...value.map((item) => `${spaces(indent + 2)}- ${yamlScalar(yamlSerializableScalar(item))}`),
+  ]
+}
+
+function yamlSerializableScalar(value: unknown): YamlScalar {
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean' || value === null) return value
+  return String(value)
+}
+
+function yamlScalar(value: YamlScalar): string {
+  if (value === null) return 'null'
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value)
+  return JSON.stringify(value)
+}
+
+function spaces(count: number) {
+  return ' '.repeat(count)
 }
 
 function compareSavedViews(left: MobileSavedView, right: MobileSavedView) {

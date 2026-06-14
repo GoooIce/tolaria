@@ -194,6 +194,34 @@ describe('applyMobileWorkspaceEdit', () => {
       path: 'mobile-persistence-contract.md',
     }])
   })
+
+  it('creates saved-view YAML writes and updates the sidebar view section', () => {
+    const result = applyMobileWorkspaceEditWithWrites(workspaceScenarioForId('default'), {
+      definition: {
+        color: 'purple',
+        filters: { all: [{ field: 'type', op: 'equals', value: 'Procedure' }] },
+        icon: null,
+        name: 'Procedures',
+        sort: 'modified:desc',
+      },
+      type: 'createView',
+    })
+
+    expect(result.writes).toEqual([{
+      content: expect.stringContaining('name: "Procedures"'),
+      kind: 'saveView',
+      path: 'views/procedures.yml',
+    }])
+    expect(result.snapshot.views?.map((view) => view.definition.name)).toContain('Procedures')
+    expect(result.snapshot.sidebarSections.find((section) => section.id === 'views')?.items).toContainEqual(
+      expect.objectContaining({
+        count: '1',
+        id: 'view-procedures',
+        label: 'Procedures',
+        viewId: 'view-procedures',
+      }),
+    )
+  })
 })
 
 describe('mobile wikilink editing helpers', () => {

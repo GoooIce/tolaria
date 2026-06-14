@@ -23,7 +23,7 @@ export function FolderTree({
   onSelectFolder?: (selection: MobileSidebarFolderSelection) => void
 }) {
   return (
-    <View style={folderTreeStyles.tree}>
+    <View {...probeProps(layoutProbe, 'sidebar.folderTree.root')} style={folderTreeStyles.tree}>
       {folders.map((folder) => (
         <FolderTreeRow
           activeFolderId={activeFolderId}

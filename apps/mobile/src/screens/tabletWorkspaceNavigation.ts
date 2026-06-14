@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import type {
   MobileNote,
+  MobileSavedView,
   MobileSidebarItem,
   MobileWorkspaceSnapshot,
 } from '../workspace/mobileWorkspaceModel'
@@ -39,8 +40,8 @@ export function useTabletWorkspaceNavigation(snapshot: MobileWorkspaceSnapshot, 
   const notes = useMemo(() => filterNotesBySearch(sidebarNotes, searchQuery), [searchQuery, sidebarNotes])
   const selectedNote = selectedMobileNote(snapshot, notes, selectedNoteId)
 
-  const selectSidebarSelection = useCallback((selection: TabletSidebarSelection) => {
-    const nextNotes = filterNotesBySearch(notesForSidebarSelection(snapshot, selection), searchQuery)
+  const selectSidebarSelection = useCallback((selection: TabletSidebarSelection, sourceSnapshot = snapshot) => {
+    const nextNotes = filterNotesBySearch(notesForSidebarSelection(sourceSnapshot, selection), searchQuery)
     setSidebarSelection(selection)
     setSelectedNoteId(nextNotes[0]?.id ?? null)
   }, [searchQuery, snapshot])
@@ -53,6 +54,18 @@ export function useTabletWorkspaceNavigation(snapshot: MobileWorkspaceSnapshot, 
     noteListSubtitle: noteListSubtitle(sidebarSelection, snapshot.noteListSubtitle, notes.length, searchQuery),
     noteListTitle: sidebarSelection.label,
     notes,
+    sidebarSelection,
+    selectSavedView: useCallback((view: MobileSavedView, sourceSnapshot = snapshot) => {
+      const matchingNotes = evaluateMobileSavedView(view, workspaceNotes(sourceSnapshot))
+      selectSidebarSelection({
+        count: matchingNotes.length.toLocaleString(),
+        id: view.id,
+        kind: 'item',
+        label: view.definition.name,
+        sectionId: 'views',
+        viewId: view.id,
+      }, sourceSnapshot)
+    }, [selectSidebarSelection, snapshot]),
     selectFolder: useCallback((selection: MobileSidebarFolderSelection) => {
       selectSidebarSelection({
         id: selection.id,

@@ -15,6 +15,7 @@ test.describe('mobile UI lab interactions', () => {
     await searchAndSelectRelease(page)
     await toggleFavorite(page)
     await createMobileQaDraft(page)
+    await createSavedViewFromSidebar(page)
     await addDatePropertyFromSuggestion(page)
     await addRelationshipFromSuggestion(page)
     await editMarkdownWithWikilink(page)
@@ -71,6 +72,17 @@ async function createMobileQaDraft(page: PageLike) {
   await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
   await expect(page.getByTestId('note-row-mobile-qa-draft.md')).toBeVisible()
   await expect(page.getByTestId('editor-title')).toHaveText('Mobile QA Draft')
+}
+
+async function createSavedViewFromSidebar(page: PageLike) {
+  await page.getByTestId('sidebar-section-create-views').click()
+  await expect(page.getByTestId('workspace-create-view-name-input')).toBeVisible()
+  await expect(page.getByTestId('workspace-create-view-name-input')).toHaveValue('Inbox')
+  await page.getByTestId('workspace-create-view-name-input').fill('Mobile Inbox View')
+  await page.getByTestId('workspace-action-sheet-createView').getByRole('button', { name: 'Create' }).click()
+  await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
+  await expect(page.getByRole('button', { name: 'Mobile Inbox View' })).toBeVisible()
+  await expect(page.getByTestId('note-list-toolbar-title')).toHaveText('Mobile Inbox View')
 }
 
 async function addDatePropertyFromSuggestion(page: PageLike) {

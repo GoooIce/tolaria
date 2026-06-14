@@ -33,6 +33,7 @@ export const nativeSidebarMetricContract = {
     withCount: { bottom: 6, left: 12, right: 8, top: 6 },
   },
   sectionHorizontalPadding: 6,
+  sectionTitleMinHeight: 30,
 } as const
 
 export function parseNativeLayoutMetrics(logText: string): NativeLayoutMetric[] {
@@ -60,11 +61,56 @@ export function assertNativeSidebarLayoutMetrics(metrics: NativeLayoutMetricMap)
     ...assertSidebarItemLayout(metrics, 'sidebar.item.all-notes', nativeSidebarMetricContract.itemPadding.withCount),
     ...assertSidebarItemLayout(metrics, 'sidebar.item.personal-journal', nativeSidebarMetricContract.itemPadding.regular),
     ...assertSidebarItemLayout(metrics, 'sidebar.item.essays', nativeSidebarMetricContract.itemPadding.withCount),
+    ...assertStackedRows(metrics, ['sidebar.item.inbox', 'sidebar.item.all-notes', 'sidebar.item.archive']),
+    ...assertSectionTitleLayout(metrics, 'favorites', 'sidebar.item.personal-journal.row'),
+    ...assertSectionTitleLayout(metrics, 'types', 'sidebar.item.essays.row'),
+    ...assertSectionTitleLayout(metrics, 'folders', 'sidebar.folderTree.root'),
     ...assertFolderLayout(metrics, 'sidebar.folder.writing', nativeSidebarMetricContract.folderRowContentInset),
     ...assertFolderLayout(
       metrics,
       'sidebar.folder.tolaria-mobile',
       nativeSidebarMetricContract.folderRowContentInset + nativeSidebarMetricContract.folderRowIndent,
+    ),
+  ]
+}
+
+function assertStackedRows(metrics: NativeLayoutMetricMap, ids: string[]): NativeLayoutAssertionFailure[] {
+  return ids.slice(1).flatMap((id, index) => {
+    const previous = metrics[`${ids[index]}.row`]
+    const current = metrics[`${id}.row`]
+
+    return [
+      ...expectMetric(previous, ids[index], 'previous row is captured before checking sidebar row stacking'),
+      ...expectMetric(current, id, 'row is captured before checking sidebar row stacking'),
+      ...expectAtLeast(
+        previous && current ? current.y - previous.y - previous.height : null,
+        0,
+        id,
+        'row starts after the previous sidebar row',
+      ),
+    ]
+  })
+}
+
+function assertSectionTitleLayout(
+  metrics: NativeLayoutMetricMap,
+  sectionId: string,
+  firstContentMetricId: string,
+): NativeLayoutAssertionFailure[] {
+  const id = `sidebar.section.${sectionId}`
+  const titleRow = metrics[`${id}.row`]
+  const firstContent = metrics[firstContentMetricId]
+
+  return [
+    ...expectMetric(titleRow, id, 'section title row is captured before checking native sidebar spacing'),
+    ...expectMetric(firstContent, firstContentMetricId, 'first section content is captured before checking native sidebar spacing'),
+    ...expectClose(titleRow?.x ?? null, nativeSidebarMetricContract.sectionHorizontalPadding, id, 'section title keeps desktop section inset'),
+    ...expectAtLeast(titleRow?.height ?? null, nativeSidebarMetricContract.sectionTitleMinHeight, id, 'section title keeps desktop header height'),
+    ...expectAtLeast(
+      titleRow && firstContent ? firstContent.y - titleRow.y - titleRow.height : null,
+      0,
+      firstContentMetricId,
+      'first row starts after the sidebar section title',
     ),
   ]
 }
@@ -157,29 +203,32 @@ function expectAtLeast(
 function parseMetric(rawJson: string): NativeLayoutMetric | null {
   try {
     const value: unknown = JSON.parse(rawJson)
-    if (!isRecord(value)) return null
-
-    const id = value.id
-    const platform = value.platform
-    const height = value.height
-    const width = value.width
-    const x = value.x
-    const y = value.y
-    if (
-      typeof id !== 'string'
-      || typeof platform !== 'string'
-      || typeof height !== 'number'
-      || typeof width !== 'number'
-      || typeof x !== 'number'
-      || typeof y !== 'number'
-    ) {
-      return null
-    }
-
-    return { height, id, platform, width, x, y }
+    return nativeLayoutMetricFromJson(value)
   } catch {
     return null
   }
+}
+
+function nativeLayoutMetricFromJson(value: unknown): NativeLayoutMetric | null {
+  if (!isRecord(value)) return null
+
+  const id = stringValue(value.id)
+  const platform = stringValue(value.platform)
+  const height = numberValue(value.height)
+  const width = numberValue(value.width)
+  const x = numberValue(value.x)
+  const y = numberValue(value.y)
+  if (!id || !platform || height === null || width === null || x === null || y === null) return null
+
+  return { height, id, platform, width, x, y }
+}
+
+function stringValue(value: unknown): string | null {
+  return typeof value === 'string' ? value : null
+}
+
+function numberValue(value: unknown): number | null {
+  return typeof value === 'number' ? value : null
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

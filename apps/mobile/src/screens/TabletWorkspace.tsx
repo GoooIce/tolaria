@@ -72,6 +72,7 @@ function TabletWorkspaceChrome(props: TabletWorkspaceChromeProps) {
     onAddRelationship,
     onDeleteProperty,
     onOpenCreateNote,
+    onOpenCreateView,
     onOpenMoreActions,
     onOpenSearch,
     onRemoveRelationship,
@@ -100,6 +101,7 @@ function TabletWorkspaceChrome(props: TabletWorkspaceChromeProps) {
             layoutProbe={layoutProbe}
             sections={snapshot.sidebarSections}
             title={snapshot.source?.label}
+            onCreateView={onOpenCreateView}
             onSelectFolder={onSelectFolder}
             onSelectItem={onSelectSidebarItem}
           />
@@ -154,6 +156,7 @@ function WorkspaceActionSheetHost(props: TabletWorkspaceChromeProps & { suggesti
     onCloseAction,
     onCreateNote,
     onCreateTitleChange,
+    onCreateView,
     onPropertyNameChange,
     onPropertyValueChange,
     onRelationshipNameChange,
@@ -162,6 +165,7 @@ function WorkspaceActionSheetHost(props: TabletWorkspaceChromeProps & { suggesti
     onSaveRelationship,
     onSearchQueryChange,
     onSelectNote,
+    onViewNameChange,
     openAction,
     readOnlyForm,
     searchQuery,
@@ -184,6 +188,7 @@ function WorkspaceActionSheetHost(props: TabletWorkspaceChromeProps & { suggesti
       onClose={onCloseAction}
       onCreateNote={onCreateNote}
       onCreateTitleChange={onCreateTitleChange}
+      onCreateView={onCreateView}
       onPropertyNameChange={onPropertyNameChange}
       onPropertyValueChange={onPropertyValueChange}
       onRelationshipNameChange={onRelationshipNameChange}
@@ -192,6 +197,8 @@ function WorkspaceActionSheetHost(props: TabletWorkspaceChromeProps & { suggesti
       onSaveRelationship={onSaveRelationship}
       onSearchQueryChange={onSearchQueryChange}
       onSelectNote={onSelectNote}
+      onViewNameChange={onViewNameChange}
+      viewName={readOnlyForm.viewName}
     />
   )
 }

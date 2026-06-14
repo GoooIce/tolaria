@@ -16,6 +16,7 @@ describe('native layout metrics', () => {
       folderRowIndent: desktopSidebarParity.folderRowIndent,
       itemPadding: desktopSidebarParity.itemPadding,
       sectionHorizontalPadding: desktopSidebarParity.sectionHorizontalPadding,
+      sectionTitleMinHeight: 30,
     })
   })
 
@@ -40,10 +41,15 @@ describe('native layout metrics', () => {
   it('accepts native sidebar metrics that match desktop spacing tokens', () => {
     const metrics = latestNativeLayoutMetrics([
       itemMetric('sidebar.item.inbox', { hasCount: true }),
-      itemMetric('sidebar.item.all-notes', { hasCount: true }),
-      itemMetric('sidebar.item.personal-journal', { hasCount: false }),
-      itemMetric('sidebar.item.essays', { hasCount: true }),
-      folderMetric('sidebar.folder.writing', 12),
+      itemMetric('sidebar.item.all-notes', { hasCount: true, y: 32 }),
+      itemMetric('sidebar.item.archive', { hasCount: true, y: 64 }),
+      sectionMetric('favorites'),
+      itemMetric('sidebar.item.personal-journal', { hasCount: false, y: 30 }),
+      sectionMetric('types'),
+      itemMetric('sidebar.item.essays', { hasCount: true, y: 30 }),
+      sectionMetric('folders'),
+      folderTreeRootMetric(30),
+      folderMetric('sidebar.folder.writing', 12, 30),
       folderMetric('sidebar.folder.tolaria-mobile', 37),
     ].flat())
 
@@ -53,10 +59,15 @@ describe('native layout metrics', () => {
   it('reports native sidebar rows that lose horizontal or vertical padding', () => {
     const metrics = latestNativeLayoutMetrics([
       itemMetric('sidebar.item.inbox', { hasCount: true, rowHeight: 22, rowX: 0 }),
-      itemMetric('sidebar.item.all-notes', { hasCount: true }),
-      itemMetric('sidebar.item.personal-journal', { hasCount: false }),
-      itemMetric('sidebar.item.essays', { hasCount: true }),
-      folderMetric('sidebar.folder.writing', 0),
+      itemMetric('sidebar.item.all-notes', { hasCount: true, y: 10 }),
+      itemMetric('sidebar.item.archive', { hasCount: true, y: 64 }),
+      sectionMetric('favorites', 18),
+      itemMetric('sidebar.item.personal-journal', { hasCount: false, y: 16 }),
+      sectionMetric('types'),
+      itemMetric('sidebar.item.essays', { hasCount: true, y: 30 }),
+      sectionMetric('folders'),
+      folderTreeRootMetric(30),
+      folderMetric('sidebar.folder.writing', 0, 30),
       folderMetric('sidebar.folder.tolaria-mobile', 37),
     ].flat())
 
@@ -66,6 +77,9 @@ describe('native layout metrics', () => {
     expect(formatted).toContain('sidebar.item.inbox: row keeps desktop section inset')
     expect(formatted).toContain('sidebar.item.inbox: row keeps desktop vertical padding')
     expect(formatted).toContain('sidebar.folder.writing: folder content keeps desktop indentation')
+    expect(formatted).toContain('sidebar.section.favorites: section title keeps desktop header height')
+    expect(formatted).toContain('sidebar.item.personal-journal.row: first row starts after the sidebar section title')
+    expect(formatted).toContain('sidebar.item.all-notes: row starts after the previous sidebar row')
   })
 })
 
@@ -75,10 +89,12 @@ function itemMetric(
     hasCount,
     rowHeight = hasCount ? 32 : 30,
     rowX = 6,
+    y = 0,
   }: {
     hasCount: boolean
     rowHeight?: number
     rowX?: number
+    y?: number
   },
 ): NativeLayoutMetric[] {
   const contentHeight = hasCount ? 20 : 18
@@ -92,7 +108,7 @@ function itemMetric(
       platform: 'ios',
       width: rowWidth,
       x: rowX,
-      y: 0,
+      y,
     },
     {
       height: contentHeight,
@@ -105,7 +121,7 @@ function itemMetric(
   ]
 }
 
-function folderMetric(id: string, contentX: number): NativeLayoutMetric[] {
+function folderMetric(id: string, contentX: number, y = 0): NativeLayoutMetric[] {
   return [
     {
       height: 30,
@@ -113,7 +129,7 @@ function folderMetric(id: string, contentX: number): NativeLayoutMetric[] {
       platform: 'ios',
       width: 247.5,
       x: 0,
-      y: 0,
+      y,
     },
     {
       height: 18,
@@ -124,4 +140,26 @@ function folderMetric(id: string, contentX: number): NativeLayoutMetric[] {
       y: 6,
     },
   ]
+}
+
+function folderTreeRootMetric(y: number): NativeLayoutMetric[] {
+  return [{
+    height: 120,
+    id: 'sidebar.folderTree.root',
+    platform: 'ios',
+    width: 247.5,
+    x: 0,
+    y,
+  }]
+}
+
+function sectionMetric(sectionId: string, rowHeight = 30): NativeLayoutMetric[] {
+  return [{
+    height: rowHeight,
+    id: `sidebar.section.${sectionId}.row`,
+    platform: 'ios',
+    width: 247.5,
+    x: 6,
+    y: 0,
+  }]
 }
