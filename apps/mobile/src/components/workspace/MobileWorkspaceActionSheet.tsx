@@ -25,6 +25,7 @@ export type MobileWorkspaceAction =
   | 'addRelationship'
   | 'createNote'
   | 'createView'
+  | 'editView'
   | 'moreActions'
   | 'search'
 
@@ -36,12 +37,14 @@ type MobileWorkspaceActionSheetProps = {
   onCreateNote: () => void
   onCreateTitleChange: (value: string) => void
   onCreateView: () => void
+  onDeleteView: () => void
   onPropertyNameChange: (value: string) => void
   onPropertyValueChange: (value: string) => void
   onRelationshipNameChange: (value: string) => void
   onRelationshipNoteTitleChange: (value: string) => void
   onSaveProperty: () => void
   onSaveRelationship: () => void
+  onSaveView: () => void
   onSearchQueryChange: (value: string) => void
   onSelectNote: (noteId: string) => void
   onViewNameChange: (value: string) => void
@@ -54,6 +57,18 @@ type MobileWorkspaceActionSheetProps = {
   viewName: string
 }
 
+type SingleTextFieldConfig = {
+  inputLabel: string
+  inputPlaceholder: string
+  inputTestId: string
+  inputValue: string
+  onCancel: () => void
+  onChangeText: (value: string) => void
+  onSubmit: () => void
+  submitLabel: string
+  secondaryAction?: ReactNode
+}
+
 export function MobileWorkspaceActionSheet({
   action,
   createTitle,
@@ -62,12 +77,14 @@ export function MobileWorkspaceActionSheet({
   onCreateNote,
   onCreateTitleChange,
   onCreateView,
+  onDeleteView,
   onPropertyNameChange,
   onPropertyValueChange,
   onRelationshipNameChange,
   onRelationshipNoteTitleChange,
   onSaveProperty,
   onSaveRelationship,
+  onSaveView,
   onSearchQueryChange,
   onSelectNote,
   onViewNameChange,
@@ -96,12 +113,14 @@ export function MobileWorkspaceActionSheet({
           onCreateNote={onCreateNote}
           onCreateTitleChange={onCreateTitleChange}
           onCreateView={onCreateView}
+          onDeleteView={onDeleteView}
           onPropertyNameChange={onPropertyNameChange}
           onPropertyValueChange={onPropertyValueChange}
           onRelationshipNameChange={onRelationshipNameChange}
           onRelationshipNoteTitleChange={onRelationshipNoteTitleChange}
           onSaveProperty={onSaveProperty}
           onSaveRelationship={onSaveRelationship}
+          onSaveView={onSaveView}
           onSearchQueryChange={onSearchQueryChange}
           onSelectNote={onSelectNote}
           onViewNameChange={onViewNameChange}
@@ -119,13 +138,20 @@ export function MobileWorkspaceActionSheet({
 }
 
 function ActionContent(props: MobileWorkspaceActionSheetProps) {
-  if (props.action === 'search') return <SearchContent {...props} />
-  if (props.action === 'createNote' || props.action === 'createView') {
-    return <SingleTextFieldContent {...singleTextFieldConfig(props)} />
+  switch (props.action) {
+    case 'addProperty':
+      return <AddPropertyContent {...props} />
+    case 'addRelationship':
+      return <AddRelationshipContent {...props} />
+    case 'createNote':
+    case 'createView':
+    case 'editView':
+      return <SingleTextFieldContent config={singleTextFieldConfig(props)} />
+    case 'search':
+      return <SearchContent {...props} />
+    default:
+      return <MoreActionsContent note={props.selectedNote} onClose={props.onClose} />
   }
-  if (props.action === 'addProperty') return <AddPropertyContent {...props} />
-  if (props.action === 'addRelationship') return <AddRelationshipContent {...props} />
-  return <MoreActionsContent note={props.selectedNote} onClose={props.onClose} />
 }
 
 function SearchContent({
@@ -191,23 +217,9 @@ function searchText(note: MobileNote) {
   ].join(' ').toLowerCase()
 }
 
-function SingleTextFieldContent({
-  inputLabel,
-  inputPlaceholder,
-  inputTestId,
-  inputValue,
-  onCancel,
-  onChangeText,
-  onSubmit,
-}: {
-  inputLabel: string
-  inputPlaceholder: string
-  inputTestId: string
-  inputValue: string
-  onCancel: () => void
-  onChangeText: (value: string) => void
-  onSubmit: () => void
-}) {
+function SingleTextFieldContent({ config }: { config: SingleTextFieldConfig }) {
+  const { inputLabel, inputPlaceholder, inputTestId, inputValue, onCancel, onChangeText, onSubmit, secondaryAction, submitLabel } = config
+
   return (
     <View style={styles.content}>
       <MobileTextInput
@@ -219,14 +231,29 @@ function SingleTextFieldContent({
         onChangeText={onChangeText}
       />
       <SheetFooter>
+        {secondaryAction}
         <MobileButton label={mobileText('common.cancel')} variant="ghost" onPress={onCancel} />
-        <MobileButton disabled={inputValue.trim().length === 0} label={mobileText('common.create')} variant="primary" onPress={onSubmit} />
+        <MobileButton disabled={inputValue.trim().length === 0} label={submitLabel} variant="primary" onPress={onSubmit} />
       </SheetFooter>
     </View>
   )
 }
 
 function singleTextFieldConfig(props: MobileWorkspaceActionSheetProps) {
+  if (props.action === 'editView') {
+    return {
+      inputLabel: mobileText('viewDialog.nameLabel'),
+      inputPlaceholder: mobileText('viewDialog.namePlaceholder'),
+      inputTestId: 'workspace-edit-view-name-input',
+      inputValue: props.viewName,
+      onCancel: props.onClose,
+      onChangeText: props.onViewNameChange,
+      onSubmit: props.onSaveView,
+      secondaryAction: <DeleteViewButton onPress={props.onDeleteView} />,
+      submitLabel: mobileText('common.save'),
+    }
+  }
+
   if (props.action === 'createView') {
     return {
       inputLabel: mobileText('viewDialog.nameLabel'),
@@ -236,6 +263,7 @@ function singleTextFieldConfig(props: MobileWorkspaceActionSheetProps) {
       onCancel: props.onClose,
       onChangeText: props.onViewNameChange,
       onSubmit: props.onCreateView,
+      submitLabel: mobileText('common.create'),
     }
   }
 
@@ -247,7 +275,22 @@ function singleTextFieldConfig(props: MobileWorkspaceActionSheetProps) {
     onCancel: props.onClose,
     onChangeText: props.onCreateTitleChange,
     onSubmit: props.onCreateNote,
+    submitLabel: mobileText('common.create'),
   }
+}
+
+function DeleteViewButton({ onPress }: { onPress: () => void }) {
+  return (
+    <Pressable
+      accessibilityLabel={mobileText('sidebar.action.deleteView')}
+      accessibilityRole="button"
+      style={({ pressed }) => [styles.deleteViewButton, pressed ? styles.suggestionRowPressed : null]}
+      testID="workspace-delete-view-action"
+      onPress={onPress}
+    >
+      <Text style={styles.deleteViewText}>{mobileText('sidebar.action.deleteView')}</Text>
+    </Pressable>
+  )
 }
 
 function AddPropertyContent({
@@ -446,6 +489,7 @@ function actionTitle(action: MobileWorkspaceAction) {
   if (action === 'search') return mobileText('noteList.searchAction')
   if (action === 'createNote') return mobileText('command.note.newNote')
   if (action === 'createView') return mobileText('viewDialog.title.create')
+  if (action === 'editView') return mobileText('viewDialog.title.edit')
   if (action === 'addProperty') return mobileText('inspector.properties.addProperty')
   if (action === 'addRelationship') return mobileText('inspector.relationship.addRelationship').replace(/^\+\s*/, '')
   return mobileText('editor.toolbar.moreActions')
@@ -498,6 +542,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'flex-end',
     gap: mobileSpace.sm,
+  },
+  deleteViewButton: {
+    marginRight: 'auto',
+    borderRadius: 6,
+    paddingHorizontal: mobileSpace.sm,
+    paddingVertical: mobileSpace.xs,
+  },
+  deleteViewText: {
+    color: mobileColors.red,
+    fontSize: mobileType.body,
+    fontWeight: '500',
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,

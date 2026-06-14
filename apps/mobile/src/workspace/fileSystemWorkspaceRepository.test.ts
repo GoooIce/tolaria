@@ -74,12 +74,31 @@ type: Project
       content: '# New Note\n\n',
       kind: 'createNote',
       path: 'New Note.md',
+    }, {
+      content: 'name: Mobile View\nfilters:\n  all: []\n',
+      kind: 'saveView',
+      path: 'views/mobile-view.yml',
     }], { source: 'native', vaultRootUri: 'file:///vault' })
 
     expect(fileSystem.files()).toMatchObject({
       'New Note.md': '# New Note\n\n',
       'Writing/Workflow.md': '# Workflow\n\nUpdated body.\n',
+      'views/mobile-view.yml': 'name: Mobile View\nfilters:\n  all: []\n',
     })
+  })
+
+  it('deletes saved-view files through relative vault paths', async () => {
+    const fileSystem = fakeWorkspaceFileSystem({
+      'views/mobile-view.yml': 'name: Mobile View\nfilters:\n  all: []\n',
+    })
+    const repository = createFileSystemWorkspaceRepository(fileSystem)
+
+    await repository.persistWrites([{
+      kind: 'deleteView',
+      path: 'views/mobile-view.yml',
+    }], { source: 'native', vaultRootUri: 'file:///vault' })
+
+    expect(fileSystem.files()).toEqual({})
   })
 
   it('rejects absolute and parent-traversal write paths', async () => {
@@ -107,6 +126,9 @@ function fakeWorkspaceFileSystem(initialFiles: Record<string, string>): Workspac
 
   return {
     defaultRootUri: () => 'file:///default-vault',
+    deleteTextFile: (_rootUri, relativePath) => {
+      files.delete(relativePath)
+    },
     files: () => Object.fromEntries(files),
     readTextFile: (_rootUri, relativePath) => files.get(relativePath) ?? null,
     readVaultFiles: (rootUri) => [...files.entries()].map(([relativePath, content], index) => localVaultFile(rootUri, relativePath, content, index)),

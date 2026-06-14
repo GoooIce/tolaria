@@ -20,6 +20,13 @@ export const expoWorkspaceFileSystem: WorkspaceFileSystem = {
     const { Directory, Paths } = expoFileSystem()
     return new Directory(Paths.document, 'Tolaria Vault').uri
   },
+  deleteTextFile: (rootUri, relativePath) => {
+    const normalizedPath = normalizedWorkspaceRelativePath(relativePath)
+    if (!normalizedPath) return
+
+    const file = workspaceFile(expoFileSystem(), rootUri, normalizedPath)
+    if (file.exists) file.delete()
+  },
   readTextFile: (rootUri, relativePath) => {
     const normalizedPath = normalizedWorkspaceRelativePath(relativePath)
     if (!normalizedPath) return null

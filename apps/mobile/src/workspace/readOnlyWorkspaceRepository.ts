@@ -64,7 +64,11 @@ function persistHostWrites(writes: MobileWorkspaceWrite[]) {
   const writeLog = ensureHostWriteLog()
 
   for (const write of writes) {
-    contents[write.path] = write.content
+    if (write.kind === 'deleteView') {
+      Reflect.deleteProperty(contents, write.path)
+    } else {
+      contents[write.path] = write.content
+    }
     writeLog.push(write)
   }
 }

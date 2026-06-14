@@ -32,6 +32,7 @@ test.describe('mobile UI lab interactions', () => {
     await expect(page.getByTestId('note-list-toolbar-title')).toHaveText('Active Procedures')
     await expect(page.getByText('How I Run an Open Source Project').first()).toBeVisible()
     await expect(page.getByText('Workflow Orchestration Essay').first()).toBeHidden()
+    await editAndDeleteSavedView(page)
   })
 
   test('keeps large local-vault read-only interactions within tablet budgets', async ({ page }, testInfo) => {
@@ -83,6 +84,34 @@ async function createSavedViewFromSidebar(page: PageLike) {
   await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
   await expect(page.getByRole('button', { name: 'Mobile Inbox View' })).toBeVisible()
   await expect(page.getByTestId('note-list-toolbar-title')).toHaveText('Mobile Inbox View')
+}
+
+async function editAndDeleteSavedView(page: PageLike) {
+  await longPress(page, 'sidebar-item-view-active-procedures')
+  await expect(page.getByTestId('workspace-edit-view-name-input')).toBeVisible()
+  await expect(page.getByTestId('workspace-edit-view-name-input')).toHaveValue('Active Procedures')
+  await page.getByTestId('workspace-edit-view-name-input').fill('Active Workflows')
+  await page.getByTestId('workspace-action-sheet-editView').getByRole('button', { name: 'Save' }).click()
+  await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
+  await expect(page.getByRole('button', { name: 'Active Workflows' })).toBeVisible()
+  await expect(page.getByTestId('note-list-toolbar-title')).toHaveText('Active Workflows')
+
+  await longPress(page, 'sidebar-item-view-active-procedures')
+  await page.getByTestId('workspace-delete-view-action').click()
+  await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
+  await expect(page.getByRole('button', { name: 'Active Workflows' })).toBeHidden()
+  await expect(page.getByTestId('note-list-toolbar-title')).toHaveText('Inbox')
+}
+
+async function longPress(page: PageLike, testId: string) {
+  const target = page.getByTestId(testId)
+  const box = await target.boundingBox()
+  if (!box) throw new Error(`Cannot long-press missing target: ${testId}`)
+
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+  await page.mouse.down()
+  await page.waitForTimeout(360)
+  await page.mouse.up()
 }
 
 async function addDatePropertyFromSuggestion(page: PageLike) {

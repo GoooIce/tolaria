@@ -21,6 +21,7 @@ export type TabletPanel = 'noteList' | 'properties' | 'sidebar'
 
 export type TabletReadOnlyForm = {
   createTitle: ReadOnlyFormValue
+  editingViewId: ReadOnlyFormValue
   propertyName: ReadOnlyFormValue
   propertyValue: ReadOnlyFormValue
   relationshipName: ReadOnlyFormValue
@@ -45,9 +46,11 @@ export type TabletWorkspaceChromeProps = {
   onCreateNote: () => void
   onCreateTitleChange: (value: ReadOnlyFormValue) => void
   onCreateView: () => void
+  onDeleteView: () => void
   onDeleteProperty: (noteId: NoteId, key: string) => void
   onOpenCreateNote: () => void
   onOpenCreateView: () => void
+  onOpenViewActions: (selection: MobileSidebarItemSelection) => void
   onOpenMoreActions: () => void
   onOpenSearch: () => void
   onRemoveRelationship: (noteId: NoteId, key: string, ref: string) => void
@@ -57,6 +60,7 @@ export type TabletWorkspaceChromeProps = {
   onUpdateNoteTitle: (noteId: NoteId, title: string) => void
   onUpdateProperty: (noteId: NoteId, key: string, value: MobilePropertyValue) => void
   onViewNameChange: (value: ReadOnlyFormValue) => void
+  onSaveView: () => void
   onPropertyNameChange: (value: ReadOnlyFormValue) => void
   onPropertyValueChange: (value: ReadOnlyFormValue) => void
   onRelationshipNameChange: (value: ReadOnlyFormValue) => void

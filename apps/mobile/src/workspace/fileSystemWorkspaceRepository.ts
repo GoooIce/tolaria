@@ -5,6 +5,7 @@ import type { ReadOnlyWorkspaceRepository, ReadOnlyWorkspaceRequest } from './re
 
 export type WorkspaceFileSystem = {
   defaultRootUri: () => string | null
+  deleteTextFile: (rootUri: string, relativePath: string) => void
   readTextFile: (rootUri: string, relativePath: string) => string | null
   readVaultFiles: (rootUri: string) => LocalVaultFile[]
   writeTextFile: (rootUri: string, relativePath: string, content: string) => void
@@ -49,6 +50,11 @@ function persistWorkspaceWrite(
 ) {
   const relativePath = normalizedWorkspaceRelativePath(write.path)
   if (!relativePath) return
+
+  if (write.kind === 'deleteView') {
+    fileSystem.deleteTextFile(rootUri, relativePath)
+    return
+  }
 
   fileSystem.writeTextFile(rootUri, relativePath, write.content)
 }

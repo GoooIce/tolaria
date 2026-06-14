@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { MobileWorkspaceAction } from '../components/workspace/MobileWorkspaceActionSheet'
+import type { MobileSidebarItemSelection } from '../components/workspace/MobileWorkspaceSidebar'
 import type {
   MobileNote,
   MobilePropertyValue,
@@ -22,6 +23,7 @@ import type { TabletSidebarSelection } from './tabletWorkspaceNavigation'
 
 const emptyReadOnlyForm: TabletReadOnlyForm = {
   createTitle: '',
+  editingViewId: '',
   propertyName: '',
   propertyValue: '',
   relationshipName: '',
@@ -110,6 +112,10 @@ function useControllerApplyEdit({
       setSelectedNoteId(result.snapshot.selectedNoteId)
     } else if (edit.type === 'createView') {
       selectCreatedView(edit, result.snapshot, navigation)
+    } else if (edit.type === 'updateView') {
+      selectUpdatedView(edit.viewId, result.snapshot, navigation)
+    } else if (edit.type === 'deleteView') {
+      selectAfterDeletedView(edit.viewId, result.snapshot, navigation)
     }
   }, [applyWorkspaceEdit, navigation, setSelectedNoteId])
 }
@@ -150,6 +156,32 @@ function selectCreatedView(
 ) {
   const createdView = snapshot.views?.find((view) => view.definition.name === edit.definition.name)
   if (createdView) navigation.selectSavedView(createdView, snapshot)
+}
+
+function selectUpdatedView(
+  viewId: string,
+  snapshot: MobileWorkspaceSnapshot,
+  navigation: TabletWorkspaceNavigation,
+) {
+  const updatedView = snapshot.views?.find((view) => view.id === viewId)
+  if (!updatedView) return
+  if (!isSelectedView(navigation.sidebarSelection, viewId)) return
+
+  navigation.selectSavedView(updatedView, snapshot)
+}
+
+function selectAfterDeletedView(
+  viewId: string,
+  snapshot: MobileWorkspaceSnapshot,
+  navigation: TabletWorkspaceNavigation,
+) {
+  if (navigation.sidebarSelection.kind !== 'item' || navigation.sidebarSelection.viewId !== viewId) return
+  navigation.selectDefaultSidebarItem(snapshot)
+}
+
+function isSelectedView(selection: TabletSidebarSelection, viewId: string) {
+  if (selection.kind !== 'item') return false
+  return selection.viewId === viewId
 }
 
 function useWorkspaceEditPipeline({
@@ -239,6 +271,7 @@ function actionSheetWorkspaceActions({
     onOpenCreateView: () => openCreateView({ noteListTitle, setOpenAction, updateReadOnlyForm }),
     onOpenMoreActions: () => setOpenAction('moreActions'),
     onOpenSearch: () => setOpenAction('search'),
+    onOpenViewActions: (selection: MobileSidebarItemSelection) => openViewActions({ selection, setOpenAction, updateReadOnlyForm }),
   }
 }
 
@@ -269,6 +302,14 @@ function createWorkspaceActions({
       notes: navigation.notes,
       selectedNote,
       selection: navigation.sidebarSelection,
+      views: workspaceSnapshot.views ?? [],
+    }),
+    onDeleteView: () => deleteView({ applyEdit, closeAction, viewId: readOnlyForm.editingViewId }),
+    onSaveView: () => updateView({
+      applyEdit,
+      closeAction,
+      name: readOnlyForm.viewName,
+      viewId: readOnlyForm.editingViewId,
       views: workspaceSnapshot.views ?? [],
     }),
     onViewNameChange: (value: string) => updateReadOnlyForm('viewName', value),
@@ -343,6 +384,21 @@ function openCreateView({
   setOpenAction('createView')
 }
 
+function openViewActions({
+  selection,
+  setOpenAction,
+  updateReadOnlyForm,
+}: {
+  selection: MobileSidebarItemSelection
+  setOpenAction: SetOpenAction
+  updateReadOnlyForm: ReadOnlyFormUpdater
+}) {
+  if (selection.sectionId !== 'views') return
+  updateReadOnlyForm('editingViewId', selection.viewId ?? selection.id)
+  updateReadOnlyForm('viewName', selection.label)
+  setOpenAction('editView')
+}
+
 function createNote({
   applyEdit,
   closeAction,
@@ -386,6 +442,45 @@ function createView({
     },
     type: 'createView',
   })
+  closeAction()
+}
+
+function updateView({
+  applyEdit,
+  closeAction,
+  name,
+  viewId,
+  views,
+}: {
+  applyEdit: (edit: MobileWorkspaceEdit) => void
+  closeAction: () => void
+  name: string
+  viewId: string
+  views: NonNullable<MobileWorkspaceSnapshot['views']>
+}) {
+  const view = views.find((candidate) => candidate.id === viewId)
+  const trimmedName = name.trim()
+  if (!view || !trimmedName) return
+
+  applyEdit({
+    definition: { ...view.definition, name: trimmedName },
+    type: 'updateView',
+    viewId,
+  })
+  closeAction()
+}
+
+function deleteView({
+  applyEdit,
+  closeAction,
+  viewId,
+}: {
+  applyEdit: (edit: MobileWorkspaceEdit) => void
+  closeAction: () => void
+  viewId: string
+}) {
+  if (!viewId) return
+  applyEdit({ type: 'deleteView', viewId })
   closeAction()
 }
 

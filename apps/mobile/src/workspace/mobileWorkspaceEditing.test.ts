@@ -222,6 +222,45 @@ describe('applyMobileWorkspaceEdit', () => {
       }),
     )
   })
+
+  it('updates saved-view YAML without changing the filename', () => {
+    const result = applyMobileWorkspaceEditWithWrites(workspaceScenarioForId('default'), {
+      definition: {
+        color: 'purple',
+        filters: { all: [{ field: 'status', op: 'equals', value: 'Active' }] },
+        icon: null,
+        name: 'Active Workflows',
+        sort: 'modified:desc',
+      },
+      type: 'updateView',
+      viewId: 'view-active-procedures',
+    })
+
+    expect(result.writes).toEqual([{
+      content: expect.stringContaining('name: "Active Workflows"'),
+      kind: 'saveView',
+      path: 'views/active-procedures.yml',
+    }])
+    expect(result.snapshot.views?.[0]?.definition.name).toBe('Active Workflows')
+    expect(result.snapshot.sidebarSections.find((section) => section.id === 'views')?.items?.[0]).toMatchObject({
+      id: 'view-active-procedures',
+      label: 'Active Workflows',
+    })
+  })
+
+  it('deletes saved views and removes the sidebar section when none remain', () => {
+    const result = applyMobileWorkspaceEditWithWrites(workspaceScenarioForId('default'), {
+      type: 'deleteView',
+      viewId: 'view-active-procedures',
+    })
+
+    expect(result.writes).toEqual([{
+      kind: 'deleteView',
+      path: 'views/active-procedures.yml',
+    }])
+    expect(result.snapshot.views).toEqual([])
+    expect(result.snapshot.sidebarSections.some((section) => section.id === 'views')).toBe(false)
+  })
 })
 
 describe('mobile wikilink editing helpers', () => {

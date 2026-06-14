@@ -55,6 +55,9 @@ export function useTabletWorkspaceNavigation(snapshot: MobileWorkspaceSnapshot, 
     noteListTitle: sidebarSelection.label,
     notes,
     sidebarSelection,
+    selectDefaultSidebarItem: useCallback((sourceSnapshot = snapshot) => {
+      selectSidebarSelection(initialSidebarSelection(sourceSnapshot), sourceSnapshot)
+    }, [selectSidebarSelection, snapshot]),
     selectSavedView: useCallback((view: MobileSavedView, sourceSnapshot = snapshot) => {
       const matchingNotes = evaluateMobileSavedView(view, workspaceNotes(sourceSnapshot))
       selectSidebarSelection({

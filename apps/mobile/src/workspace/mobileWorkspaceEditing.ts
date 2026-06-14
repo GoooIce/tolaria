@@ -57,12 +57,16 @@ export type MobileWorkspaceEdit =
   | { noteId: NoteId; type: 'toggleFavorite' }
   | { archived: boolean; noteId: NoteId; type: 'setArchived' }
   | { definition: MobileViewDefinition; type: 'createView' }
-type MobileNoteEdit = Exclude<MobileWorkspaceEdit, { type: 'createNote' | 'createView' }>
+  | { definition: MobileViewDefinition; viewId: string; type: 'updateView' }
+  | { viewId: string; type: 'deleteView' }
+type MobileViewEdit = Extract<MobileWorkspaceEdit, { type: 'createView' | 'deleteView' | 'updateView' }>
+type MobileNoteEdit = Exclude<MobileWorkspaceEdit, MobileViewEdit | { type: 'createNote' }>
 
 export type MobileWorkspaceWrite =
   | { content: MarkdownContent; kind: 'createNote'; path: string }
   | { content: MarkdownContent; kind: 'saveNote'; path: string }
   | { content: MarkdownContent; kind: 'saveView'; path: string }
+  | { kind: 'deleteView'; path: string }
 
 export type MobileWorkspaceEditResult = {
   snapshot: MobileWorkspaceSnapshot
@@ -137,6 +141,12 @@ export function applyMobileWorkspaceEditWithWrites(
   }
   if (edit.type === 'createView') {
     return createMobileView(snapshot, edit.definition)
+  }
+  if (edit.type === 'updateView') {
+    return updateMobileView(snapshot, edit.viewId, edit.definition)
+  }
+  if (edit.type === 'deleteView') {
+    return deleteMobileView(snapshot, edit.viewId)
   }
 
   const notePool = workspaceNotePool(snapshot)
@@ -358,6 +368,60 @@ function createMobileView(
       kind: 'saveView',
       path: mobileSavedViewPath(filename),
     }],
+  }
+}
+
+function updateMobileView(
+  snapshot: MobileWorkspaceSnapshot,
+  viewId: string,
+  definition: MobileViewDefinition,
+): MobileWorkspaceEditResult {
+  const existingView = findMobileView(snapshot.views, viewId)
+  if (!existingView) return { snapshot, writes: [] }
+
+  const view = { ...existingView, definition }
+  const views = orderedMobileSavedViews((snapshot.views ?? []).map((candidate) => candidate.id === view.id ? view : candidate))
+
+  return {
+    snapshot: snapshotWithViews(snapshot, views),
+    writes: [{
+      content: serializeMobileSavedViewDefinition(definition),
+      kind: 'saveView',
+      path: mobileSavedViewPath(existingView.filename),
+    }],
+  }
+}
+
+function deleteMobileView(
+  snapshot: MobileWorkspaceSnapshot,
+  viewId: string,
+): MobileWorkspaceEditResult {
+  const existingView = findMobileView(snapshot.views, viewId)
+  if (!existingView) return { snapshot, writes: [] }
+
+  const views = orderedMobileSavedViews((snapshot.views ?? []).filter((view) => view.id !== existingView.id))
+
+  return {
+    snapshot: snapshotWithViews(snapshot, views),
+    writes: [{
+      kind: 'deleteView',
+      path: mobileSavedViewPath(existingView.filename),
+    }],
+  }
+}
+
+function findMobileView(views: MobileSavedView[] | undefined, viewId: string): MobileSavedView | null {
+  return views?.find((view) => view.id === viewId || view.filename === viewId) ?? null
+}
+
+function snapshotWithViews(
+  snapshot: MobileWorkspaceSnapshot,
+  views: MobileSavedView[],
+): MobileWorkspaceSnapshot {
+  return {
+    ...snapshot,
+    sidebarSections: rebuildViewSidebarSection(snapshot.sidebarSections, views, workspaceNotePool(snapshot)),
+    views,
   }
 }
 

@@ -24,6 +24,7 @@ import { mobileColors, mobileSpace, mobileType } from '../../ui/tokens'
 import type {
   MobileNote,
   MobileSidebarIcon,
+  MobileSidebarItem,
   MobileSidebarSection,
 } from '../../workspace/mobileWorkspaceModel'
 import { MobileSidebarCountPill } from './MobileSidebarCountPill'
@@ -40,25 +41,50 @@ export type MobileSidebarItemSelection = {
   viewId?: string
 }
 
-export function MobileWorkspaceSidebar({
-  activeFolderId,
-  activeItemId,
-  layoutProbe: layoutProbeEnabled = false,
-  onCreateView,
-  onSelectFolder,
-  onSelectItem,
-  sections,
-  title = 'Tolaria Vault',
-}: {
+type SidebarDisplayLabel = string
+type SidebarItemId = string
+type SidebarMetricId = string
+type SidebarSectionId = string
+type SidebarSlug = string
+
+type MobileWorkspaceSidebarProps = {
   activeFolderId?: string | null
   activeItemId?: string | null
+  layoutProbe?: boolean
   onCreateView?: () => void
+  onOpenViewActions?: (selection: MobileSidebarItemSelection) => void
   onSelectFolder?: (selection: MobileSidebarFolderSelection) => void
   onSelectItem?: (selection: MobileSidebarItemSelection) => void
-  layoutProbe?: boolean
   sections: MobileSidebarSection[]
   title?: string
-}) {
+}
+
+type SidebarItemProps = {
+  active?: boolean
+  activeBackgroundColor?: string
+  activeColor?: string
+  count?: string
+  icon: ReactNode
+  label: SidebarDisplayLabel
+  layoutProbe?: MobileLayoutProbe
+  metricId: SidebarMetricId
+  onLongPress?: () => void
+  onPress?: () => void
+  slug: SidebarSlug
+}
+
+export function MobileWorkspaceSidebar(props: MobileWorkspaceSidebarProps) {
+  const {
+    activeFolderId,
+    activeItemId,
+    layoutProbe: layoutProbeEnabled = false,
+    onCreateView,
+    onOpenViewActions,
+    onSelectFolder,
+    onSelectItem,
+    sections,
+    title = 'Tolaria Vault',
+  } = props
   const layoutProbe = useMobileLayoutProbe(layoutProbeEnabled)
 
   return (
@@ -78,6 +104,7 @@ export function MobileWorkspaceSidebar({
             layoutProbe={layoutProbe.probe}
             section={section}
             onCreateView={onCreateView}
+            onOpenViewActions={onOpenViewActions}
             onSelectFolder={onSelectFolder}
             onSelectItem={onSelectItem}
           />
@@ -93,6 +120,7 @@ function SidebarSection({
   activeItemId,
   layoutProbe,
   onCreateView,
+  onOpenViewActions,
   onSelectFolder,
   onSelectItem,
   section,
@@ -101,6 +129,7 @@ function SidebarSection({
   activeItemId?: string | null
   layoutProbe: MobileLayoutProbe
   onCreateView?: () => void
+  onOpenViewActions?: (selection: MobileSidebarItemSelection) => void
   onSelectFolder?: (selection: MobileSidebarFolderSelection) => void
   onSelectItem?: (selection: MobileSidebarItemSelection) => void
   section: MobileSidebarSection
@@ -115,6 +144,7 @@ function SidebarSection({
         activeItemId={activeItemId}
         layoutProbe={layoutProbe}
         section={section}
+        onOpenViewActions={onOpenViewActions}
         onSelectItem={onSelectItem}
       />
       {section.folders ? (
@@ -155,16 +185,19 @@ function SidebarSectionItems({
   activeItemId,
   layoutProbe,
   onSelectItem,
+  onOpenViewActions,
   section,
 }: {
   activeItemId?: string | null
   layoutProbe: MobileLayoutProbe
   onSelectItem?: (selection: MobileSidebarItemSelection) => void
+  onOpenViewActions?: (selection: MobileSidebarItemSelection) => void
   section: MobileSidebarSection
 }) {
   return section.items?.map((item) => {
     const active = activeItemId ? item.id === activeItemId : item.active
     const label = sidebarLabel(item.id, item.label)
+    const selection = sidebarItemSelection(item, label, section.id)
 
     return (
       <SidebarItem
@@ -178,46 +211,49 @@ function SidebarSectionItems({
         layoutProbe={layoutProbe}
         metricId={`sidebar.item.${item.id}`}
         slug={item.id}
-        onPress={() => onSelectItem?.({
-          count: item.count,
-          id: item.id,
-          label,
-          sectionId: section.id,
-          viewId: item.viewId,
-        })}
+        onLongPress={section.id === 'views' ? () => onOpenViewActions?.(selection) : undefined}
+        onPress={() => onSelectItem?.(selection)}
       />
     )
   }) ?? null
 }
 
-function SidebarItem({
-  active = false,
-  activeBackgroundColor = mobileColors.primarySoft,
-  activeColor = mobileColors.primary,
-  count,
-  icon,
-  label,
-  layoutProbe,
-  metricId,
-  onPress,
-  slug,
-}: {
-  active?: boolean
-  activeBackgroundColor?: string
-  activeColor?: string
-  count?: string
-  icon: ReactNode
-  label: string
-  layoutProbe?: MobileLayoutProbe
-  metricId: string
-  onPress?: () => void
-  slug: string
-}) {
+function sidebarItemSelection(
+  item: MobileSidebarItem,
+  label: SidebarDisplayLabel,
+  sectionId: SidebarSectionId,
+): MobileSidebarItemSelection {
+  return {
+    count: item.count,
+    id: item.id,
+    label,
+    sectionId,
+    viewId: item.viewId,
+  }
+}
+
+function SidebarItem(props: SidebarItemProps) {
+  const {
+    active = false,
+    activeBackgroundColor = mobileColors.primarySoft,
+    activeColor = mobileColors.primary,
+    count,
+    icon,
+    label,
+    layoutProbe,
+    metricId,
+    onLongPress,
+    onPress,
+    slug,
+  } = props
+
   return (
     <Pressable
       {...probeProps(layoutProbe, `${metricId}.row`)}
       accessibilityLabel={label}
       accessibilityRole="button"
+      delayLongPress={300}
+      onLongPress={onLongPress}
       onPress={onPress}
       style={[
         styles.item,
@@ -256,10 +292,10 @@ function SectionTitle({
   sectionId,
 }: {
   count?: string
-  label: string
+  label: SidebarDisplayLabel
   layoutProbe?: MobileLayoutProbe
   onCreate?: () => void
-  sectionId: string
+  sectionId: SidebarSectionId
 }) {
   const metricId = `sidebar.section.${sectionId}`
 
@@ -320,7 +356,7 @@ function sidebarActiveBackgroundColor(tone?: MobileNote['typeTone']) {
   return tone ? noteTypeSoftColor(tone) : mobileColors.primarySoft
 }
 
-function sidebarLabel(id: string, fallback: string) {
+function sidebarLabel(id: SidebarItemId, fallback: SidebarDisplayLabel) {
   if (id === 'all-notes') return mobileCopy.allNotes
   if (id === 'archive') return mobileCopy.archive
   if (id === 'inbox') return mobileCopy.inbox
@@ -328,7 +364,7 @@ function sidebarLabel(id: string, fallback: string) {
   return fallback
 }
 
-function sidebarSectionLabel(id: string, fallback: string) {
+function sidebarSectionLabel(id: SidebarSectionId, fallback: SidebarDisplayLabel) {
   if (id === 'folders') return mobileText('sidebar.group.folders')
   if (id === 'favorites') return mobileCopy.favorites
   if (id === 'types') return mobileCopy.types
