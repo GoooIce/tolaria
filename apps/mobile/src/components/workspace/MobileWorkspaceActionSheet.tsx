@@ -29,6 +29,7 @@ export type MobileWorkspaceAction =
   | 'changeNoteType'
   | 'createNote'
   | 'createView'
+  | 'editProperty'
   | 'editView'
   | 'moreActions'
   | 'moveNoteToFolder'
@@ -131,7 +132,7 @@ export function MobileWorkspaceActionSheet({
       <Pressable accessibilityLabel={mobileText('common.cancel')} style={styles.backdrop} testID="workspace-action-sheet-backdrop" onPress={onClose} />
       <MobilePanel style={styles.sheet} testID={`workspace-action-sheet-${action}`}>
         <MobileToolbar testID="workspace-action-sheet-toolbar">
-          <MobileToolbarTitle title={actionTitle(action)} />
+          <MobileToolbarTitle title={actionTitle(action, propertyName)} />
           <MobileToolbarSpacer />
           <MobileButton label={mobileText('common.cancel')} variant="ghost" onPress={onClose} />
         </MobileToolbar>
@@ -180,33 +181,29 @@ export function MobileWorkspaceActionSheet({
 }
 
 function ActionContent(props: MobileWorkspaceActionSheetProps) {
-  switch (props.action) {
-    case 'addProperty':
-      return <AddPropertyContent {...props} />
-    case 'addRelationship':
-      return <AddRelationshipContent {...props} />
-    case 'changeNoteType':
-      return <ChangeNoteTypeContent {...props} />
-    case 'createNote':
-    case 'createView':
-    case 'editView':
-      return <SingleTextFieldContent config={singleTextFieldConfig(props)} />
-    case 'moveNoteToFolder':
-      return <MoveNoteToFolderContent {...props} />
-    case 'search':
-      return <SearchContent {...props} />
-    default:
-      return (
-        <MoreActionsContent
-          note={props.selectedNote}
-          onClose={props.onClose}
-          onCopyDeepLink={props.onCopyDeepLink}
-          onOpenChangeNoteType={props.onOpenChangeNoteType}
-          onOpenMoveNoteToFolder={props.onOpenMoveNoteToFolder}
-          onSetArchived={props.onSetArchived}
-        />
-      )
-  }
+  return actionContentByAction[props.action](props)
+}
+
+const actionContentByAction: Record<MobileWorkspaceAction, (props: MobileWorkspaceActionSheetProps) => ReactNode> = {
+  addProperty: (props) => <AddPropertyContent {...props} />,
+  addRelationship: (props) => <AddRelationshipContent {...props} />,
+  changeNoteType: (props) => <ChangeNoteTypeContent {...props} />,
+  createNote: (props) => <SingleTextFieldContent config={singleTextFieldConfig(props)} />,
+  createView: (props) => <SingleTextFieldContent config={singleTextFieldConfig(props)} />,
+  editProperty: (props) => <AddPropertyContent {...props} />,
+  editView: (props) => <SingleTextFieldContent config={singleTextFieldConfig(props)} />,
+  moreActions: (props) => (
+    <MoreActionsContent
+      note={props.selectedNote}
+      onClose={props.onClose}
+      onCopyDeepLink={props.onCopyDeepLink}
+      onOpenChangeNoteType={props.onOpenChangeNoteType}
+      onOpenMoveNoteToFolder={props.onOpenMoveNoteToFolder}
+      onSetArchived={props.onSetArchived}
+    />
+  ),
+  moveNoteToFolder: (props) => <MoveNoteToFolderContent {...props} />,
+  search: (props) => <SearchContent {...props} />,
 }
 
 function SearchContent({
@@ -362,6 +359,7 @@ function DeleteViewButton({ onPress }: { onPress: () => void }) {
 }
 
 function AddPropertyContent({
+  action,
   notes,
   onClose,
   onPropertyNameChange,
@@ -371,7 +369,8 @@ function AddPropertyContent({
   propertyValue,
   selectedNote,
 }: MobileWorkspaceActionSheetProps) {
-  const keySuggestions = mobilePropertyKeySuggestions(notes, selectedNote, propertyName)
+  const editingProperty = action === 'editProperty'
+  const keySuggestions = editingProperty ? [] : mobilePropertyKeySuggestions(notes, selectedNote, propertyName)
   const valueSuggestions = mobilePropertyValueSuggestions(notes, propertyName, propertyValue)
 
   return (
@@ -382,14 +381,17 @@ function AddPropertyContent({
         placeholder={mobileText('inspector.properties.propertyName')}
         testID="workspace-property-name-input"
         value={propertyName}
+        editable={!editingProperty}
         onChangeText={onPropertyNameChange}
       />
-      <MobileWorkspaceSuggestionList
-        labels={keySuggestions}
-        testID="workspace-property-key-suggestions"
-        testIDPrefix="workspace-property-key-suggestion"
-        onSelect={onPropertyNameChange}
-      />
+      {keySuggestions.length > 0 ? (
+        <MobileWorkspaceSuggestionList
+          labels={keySuggestions}
+          testID="workspace-property-key-suggestions"
+          testIDPrefix="workspace-property-key-suggestion"
+          onSelect={onPropertyNameChange}
+        />
+      ) : null}
       <MobileTextInput
         label={mobileText('inspector.properties.valuePlaceholder')}
         placeholder={mobileText('inspector.properties.valuePlaceholder')}
@@ -667,7 +669,8 @@ function relationshipSuggestions(notes: MobileNote[], query: string) {
     .slice(0, 6)
 }
 
-function actionTitle(action: MobileWorkspaceAction) {
+function actionTitle(action: MobileWorkspaceAction, propertyName: string) {
+  if (action === 'editProperty' && propertyName.trim()) return propertyName.trim()
   return actionTitleByAction[action]()
 }
 
@@ -677,6 +680,7 @@ const actionTitleByAction: Record<MobileWorkspaceAction, () => string> = {
   changeNoteType: () => mobileText('command.note.changeType'),
   createNote: () => mobileText('command.note.newNote'),
   createView: () => mobileText('viewDialog.title.create'),
+  editProperty: () => mobileText('inspector.title.properties'),
   editView: () => mobileText('viewDialog.title.edit'),
   moreActions: () => mobileText('editor.toolbar.moreActions'),
   moveNoteToFolder: () => mobileText('command.note.moveToFolder'),

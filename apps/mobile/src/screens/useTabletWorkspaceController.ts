@@ -73,7 +73,13 @@ export function useTabletWorkspaceController({
     updateReadOnlyForm,
     workspaceSnapshot,
   })
-  const propertyActions = propertyWorkspaceActions({ applyEdit, readOnlyForm, saveSelectedEdit, updateReadOnlyForm })
+  const propertyActions = propertyWorkspaceActions({
+    applyEdit,
+    readOnlyForm,
+    saveSelectedEdit,
+    setOpenAction,
+    updateReadOnlyForm,
+  })
   const relationshipActions = relationshipWorkspaceActions({ applyEdit, readOnlyForm, saveSelectedEdit, updateReadOnlyForm })
   const retargetActions = retargetWorkspaceActions({ readOnlyForm, saveSelectedEdit, updateReadOnlyForm })
   const editorActions = editorWorkspaceActions({
@@ -360,19 +366,23 @@ function propertyWorkspaceActions({
   applyEdit,
   readOnlyForm,
   saveSelectedEdit,
+  setOpenAction,
   updateReadOnlyForm,
 }: {
   applyEdit: ApplyWorkspaceEdit
   readOnlyForm: TabletReadOnlyForm
   saveSelectedEdit: SaveSelectedEdit
+  setOpenAction: SetOpenAction
   updateReadOnlyForm: ReadOnlyFormUpdater
 }) {
   return {
     onDeleteProperty: (noteId: string, key: string) => applyEdit({ key, noteId, type: 'deleteProperty' }),
+    onEditProperty: (_noteId: string, key: string, value: MobilePropertyValue) => {
+      openEditProperty({ key, setOpenAction, updateReadOnlyForm, value })
+    },
     onPropertyNameChange: (value: string) => updateReadOnlyForm('propertyName', value),
     onPropertyValueChange: (value: string) => updateReadOnlyForm('propertyValue', value),
     onSaveProperty: () => saveSelectedEdit((noteId) => propertyEdit(readOnlyForm, noteId)),
-    onUpdateProperty: (noteId: string, key: string, value: MobilePropertyValue) => applyEdit({ key, noteId, type: 'updateProperty', value }),
   }
 }
 
@@ -475,6 +485,22 @@ function openMoveNoteToFolder({
 }) {
   updateReadOnlyForm('folderPath', '')
   setOpenAction('moveNoteToFolder')
+}
+
+function openEditProperty({
+  key,
+  setOpenAction,
+  updateReadOnlyForm,
+  value,
+}: {
+  key: string
+  setOpenAction: SetOpenAction
+  updateReadOnlyForm: ReadOnlyFormUpdater
+  value: MobilePropertyValue
+}) {
+  updateReadOnlyForm('propertyName', key)
+  updateReadOnlyForm('propertyValue', propertyValueFormText(value))
+  setOpenAction('editProperty')
 }
 
 function openCreateView({
@@ -682,6 +708,11 @@ function cloneFilterNode(node: MobileViewFilterNode): MobileViewFilterNode {
 
 function singularLabel(label: string) {
   return label.replace(/s$/u, '')
+}
+
+function propertyValueFormText(value: MobilePropertyValue): string {
+  if (Array.isArray(value)) return value.join(', ')
+  return String(value)
 }
 
 function viewColorForSelection(selection: TabletSidebarSelection, selectedNote: MobileNote | null): MobileViewDefinition['color'] {

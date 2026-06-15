@@ -18,16 +18,16 @@ export function MobilePropertiesPanel({
   onAddProperty,
   onAddRelationship,
   onDeleteProperty,
+  onEditProperty,
   onRemoveRelationship,
-  onUpdateProperty,
 }: {
   compact: boolean
   note: MobileNote | null
   onAddProperty: () => void
   onAddRelationship: () => void
   onDeleteProperty: (noteId: string, key: string) => void
+  onEditProperty: (noteId: string, key: string, value: MobilePropertyValue) => void
   onRemoveRelationship: (noteId: string, key: string, ref: string) => void
-  onUpdateProperty: (noteId: string, key: string, value: MobilePropertyValue) => void
 }) {
   return (
     <MobilePanel style={[panelStyles.panel, compact ? panelStyles.panelCompact : null]} testID="properties-panel">
@@ -41,8 +41,8 @@ export function MobilePropertiesPanel({
             onAddProperty={onAddProperty}
             onAddRelationship={onAddRelationship}
             onDeleteProperty={onDeleteProperty}
+            onEditProperty={onEditProperty}
             onRemoveRelationship={onRemoveRelationship}
-            onUpdateProperty={onUpdateProperty}
           />
         ) : <PropertiesEmptyState />}
       </ScrollView>
@@ -55,15 +55,15 @@ function NoteProperties({
   onAddProperty,
   onAddRelationship,
   onDeleteProperty,
+  onEditProperty,
   onRemoveRelationship,
-  onUpdateProperty,
 }: {
   note: MobileNote
   onAddProperty: () => void
   onAddRelationship: () => void
   onDeleteProperty: (noteId: string, key: string) => void
+  onEditProperty: (noteId: string, key: string, value: MobilePropertyValue) => void
   onRemoveRelationship: (noteId: string, key: string, ref: string) => void
-  onUpdateProperty: (noteId: string, key: string, value: MobilePropertyValue) => void
 }) {
   return (
     <>
@@ -82,7 +82,7 @@ function NoteProperties({
           noteId={note.id}
           property={property}
           onDeleteProperty={onDeleteProperty}
-          onUpdateProperty={onUpdateProperty}
+          onEditProperty={onEditProperty}
         />
       ))}
       {note.relationships.map((relationship) => (
@@ -107,25 +107,28 @@ function NoteProperties({
 function EditablePropertyRow({
   noteId,
   onDeleteProperty,
-  onUpdateProperty,
+  onEditProperty,
   property,
 }: {
   noteId: string
   onDeleteProperty: (noteId: string, key: string) => void
-  onUpdateProperty: (noteId: string, key: string, value: MobilePropertyValue) => void
+  onEditProperty: (noteId: string, key: string, value: MobilePropertyValue) => void
   property: MobileProperty
 }) {
+  const testId = `property-row-${testIdSegment(property.key)}`
+
   return (
     <MobilePropertyRow
       label={property.label}
-      testID={`property-row-${testIdSegment(property.key)}`}
+      testID={testId}
       value={(
         <Pressable
           accessibilityLabel={`${property.label}: ${propertyValueText(property.value)}`}
           accessibilityRole="button"
           style={({ pressed }) => [propertyStyles.editableValue, pressed ? propertyStyles.editableValuePressed : null]}
+          testID={`${testId}-edit`}
           onLongPress={() => onDeleteProperty(noteId, property.key)}
-          onPress={() => onUpdateProperty(noteId, property.key, property.value)}
+          onPress={() => onEditProperty(noteId, property.key, property.value)}
         >
           <Text numberOfLines={1} style={propertyStyles.editableText}>{propertyValueText(property.value)}</Text>
           <Pressable

@@ -71,6 +71,7 @@ function TabletWorkspaceChrome(props: TabletWorkspaceChromeProps) {
     onAddProperty,
     onAddRelationship,
     onDeleteProperty,
+    onEditProperty,
     onOpenCreateNote,
     onOpenCreateView,
     onOpenMoreActions,
@@ -83,7 +84,6 @@ function TabletWorkspaceChrome(props: TabletWorkspaceChromeProps) {
     onToggleFavorite,
     onUpdateNoteContent,
     onUpdateNoteTitle,
-    onUpdateProperty,
     searchQuery,
     selectedNote,
     selectedNoteId,
@@ -143,8 +143,8 @@ function TabletWorkspaceChrome(props: TabletWorkspaceChromeProps) {
             onAddProperty={onAddProperty}
             onAddRelationship={onAddRelationship}
             onDeleteProperty={onDeleteProperty}
+            onEditProperty={onEditProperty}
             onRemoveRelationship={onRemoveRelationship}
-            onUpdateProperty={onUpdateProperty}
           />
         </View>
       ) : <SwipeRail edge="right" swipeHandlers={gestures.propertiesRevealSwipe} />}
