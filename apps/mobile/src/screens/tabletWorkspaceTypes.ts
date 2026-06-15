@@ -62,6 +62,8 @@ export type TabletReadOnlyForm = {
 export type TabletWorkspaceChromeProps = {
   activeFolderId: string | null
   activeItemId: string | null
+  canMoveTypeDown: boolean
+  canMoveTypeUp: boolean
   canMoveViewDown: boolean
   canMoveViewUp: boolean
   compactTablet: boolean
@@ -93,6 +95,8 @@ export type TabletWorkspaceChromeProps = {
   onFolderNameChange: (value: ReadOnlyFormValue) => void
   onFolderPathChange: (value: ReadOnlyFormValue) => void
   onMoveNoteToFolder: () => void
+  onMoveTypeDown: () => void
+  onMoveTypeUp: () => void
   onMoveViewDown: () => void
   onMoveViewUp: () => void
   onOpenChangeNoteType: () => void

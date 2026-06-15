@@ -42,6 +42,7 @@ import { MobileBooleanPropertyValuePicker, MobilePropertyValueKindPicker } from 
 import { MobileTypeSectionEditor } from './MobileTypeSectionEditor'
 import { MobileViewDisplayPropertiesPicker } from './MobileViewDisplayPropertiesPicker'
 import { MobileViewFilterBuilder } from './MobileViewFilterBuilder'
+import { MobileSavedViewActions, MobileTypeSectionActions } from './MobileWorkspaceMoveActions'
 import { MobileWorkspaceSuggestionList } from './MobileWorkspaceSuggestionList'
 import { chipTone, noteTypeColor, noteTypeSoftColor, statusTone, tagTone } from './mobileWorkspaceTone'
 
@@ -63,6 +64,8 @@ export type MobileWorkspaceAction =
 
 type MobileWorkspaceActionSheetProps = {
   action: MobileWorkspaceAction
+  canMoveTypeDown: boolean
+  canMoveTypeUp: boolean
   canMoveViewDown: boolean
   canMoveViewUp: boolean
   createTitle: string
@@ -88,6 +91,8 @@ type MobileWorkspaceActionSheetProps = {
   onFolderNameChange: (value: string) => void
   onFolderPathChange: (value: string) => void
   onMoveNoteToFolder: () => void
+  onMoveTypeDown: () => void
+  onMoveTypeUp: () => void
   onMoveViewDown: () => void
   onMoveViewUp: () => void
   onOpenChangeNoteType: () => void
@@ -367,7 +372,15 @@ function singleTextFieldConfig(props: MobileWorkspaceActionSheetProps) {
       onCancel: props.onClose,
       onChangeText: props.onViewNameChange,
       onSubmit: props.onSaveView,
-      secondaryAction: <SavedViewActions {...props} />,
+      secondaryAction: (
+        <MobileSavedViewActions
+          canMoveDown={props.canMoveViewDown}
+          canMoveUp={props.canMoveViewUp}
+          onDelete={props.onDeleteView}
+          onMoveDown={props.onMoveViewDown}
+          onMoveUp={props.onMoveViewUp}
+        />
+      ),
       submitLabel: mobileText('common.save'),
     }
   }
@@ -466,6 +479,12 @@ function FolderActionsContent(props: MobileWorkspaceActionSheetProps) {
 function TypeSectionContent(props: MobileWorkspaceActionSheetProps) {
   return (
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <MobileTypeSectionActions
+        canMoveDown={props.canMoveTypeDown}
+        canMoveUp={props.canMoveTypeUp}
+        onMoveDown={props.onMoveTypeDown}
+        onMoveUp={props.onMoveTypeUp}
+      />
       <MobileTypeSectionEditor
         displayProperties={props.typeDisplayProperties}
         notes={props.notes}
@@ -523,76 +542,6 @@ function ViewDisplayPropertiesPicker({
       onQueryChange={onViewPropertyQueryChange}
       onSelectedPropertiesChange={onViewDisplayPropertiesChange}
     />
-  )
-}
-
-function SavedViewActions({
-  canMoveViewDown,
-  canMoveViewUp,
-  onDeleteView,
-  onMoveViewDown,
-  onMoveViewUp,
-}: MobileWorkspaceActionSheetProps) {
-  return (
-    <View style={styles.viewActions}>
-      <MoveViewButton
-        disabled={!canMoveViewUp}
-        label={mobileText('sidebar.action.moveViewUp')}
-        testID="workspace-move-view-up-action"
-        onPress={onMoveViewUp}
-      />
-      <MoveViewButton
-        disabled={!canMoveViewDown}
-        label={mobileText('sidebar.action.moveViewDown')}
-        testID="workspace-move-view-down-action"
-        onPress={onMoveViewDown}
-      />
-      <DeleteViewButton onPress={onDeleteView} />
-    </View>
-  )
-}
-
-function MoveViewButton({
-  disabled,
-  label,
-  onPress,
-  testID,
-}: {
-  disabled: boolean
-  label: string
-  onPress: () => void
-  testID: string
-}) {
-  return (
-    <Pressable
-      accessibilityLabel={label}
-      accessibilityRole="button"
-      style={({ pressed }) => [
-        styles.moveViewButton,
-        disabled ? styles.moveViewButtonDisabled : null,
-        pressed && !disabled ? styles.suggestionRowPressed : null,
-      ]}
-      testID={testID}
-      onPress={() => {
-        if (!disabled) onPress()
-      }}
-    >
-      <Text style={[styles.moveViewText, disabled ? styles.moveViewTextDisabled : null]}>{label}</Text>
-    </Pressable>
-  )
-}
-
-function DeleteViewButton({ onPress }: { onPress: () => void }) {
-  return (
-    <Pressable
-      accessibilityLabel={mobileText('sidebar.action.deleteView')}
-      accessibilityRole="button"
-      style={({ pressed }) => [styles.deleteViewButton, pressed ? styles.suggestionRowPressed : null]}
-      testID="workspace-delete-view-action"
-      onPress={onPress}
-    >
-      <Text style={styles.deleteViewText}>{mobileText('sidebar.action.deleteView')}</Text>
-    </Pressable>
   )
 }
 
@@ -1143,16 +1092,6 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     gap: mobileSpace.sm,
   },
-  deleteViewButton: {
-    borderRadius: 6,
-    paddingHorizontal: mobileSpace.sm,
-    paddingVertical: mobileSpace.xs,
-  },
-  deleteViewText: {
-    color: mobileColors.red,
-    fontSize: mobileType.body,
-    fontWeight: '500',
-  },
   overlay: {
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
@@ -1166,27 +1105,6 @@ const styles = StyleSheet.create({
   },
   suggestionList: {
     gap: mobileSpace.xs,
-  },
-  viewActions: {
-    flexDirection: 'row',
-    gap: mobileSpace.xs,
-    marginRight: 'auto',
-  },
-  moveViewButton: {
-    borderRadius: 6,
-    paddingHorizontal: mobileSpace.sm,
-    paddingVertical: mobileSpace.xs,
-  },
-  moveViewButtonDisabled: {
-    opacity: 0.45,
-  },
-  moveViewText: {
-    color: mobileColors.textMuted,
-    fontSize: mobileType.body,
-    fontWeight: '500',
-  },
-  moveViewTextDisabled: {
-    color: mobileColors.textFaint,
   },
   suggestionRow: {
     minHeight: 34,

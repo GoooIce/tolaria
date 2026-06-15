@@ -486,6 +486,8 @@
   "sidebar.action.reorderView": "Zmień kolejność widoku",
   "sidebar.action.moveViewUp": "Przesuń widok w górę",
   "sidebar.action.moveViewDown": "Przesuń widok w dół",
+  "sidebar.action.moveSectionUp": "Przenieś sekcję w górę",
+  "sidebar.action.moveSectionDown": "Przenieś sekcję w dół",
   "sidebar.action.customizeSections": "Dostosuj sekcje",
   "sidebar.action.renameSection": "Zmień nazwę sekcji…",
   "sidebar.action.renameType": "Zmień nazwę typu…",

@@ -23,6 +23,7 @@ import type {
   MobileRelationshipKind,
   MobileRelationshipValue,
   MobileSavedView,
+  MobileSidebarItem,
   MobileTone,
   MobileTypeDefinitions,
   MobileViewDefinition,
@@ -97,9 +98,10 @@ export type MobileWorkspaceEdit =
   | { definition: MobileViewDefinition; viewId: string; type: 'updateView' }
   | { viewId: string; type: 'deleteView' }
   | { direction: MobileViewMoveDirection; viewId: string; type: 'moveView' }
+  | { direction: MobileViewMoveDirection; type: 'moveTypeSection'; typeName: NoteTitle }
   | { patch: MobileTypeDefinitionPatch; type: 'updateTypeDefinition'; typeName: NoteTitle }
 type MobileViewEdit = Extract<MobileWorkspaceEdit, { type: 'createView' | 'deleteView' | 'moveView' | 'updateView' }>
-type MobileTypeEdit = Extract<MobileWorkspaceEdit, { type: 'updateTypeDefinition' }>
+type MobileTypeEdit = Extract<MobileWorkspaceEdit, { type: 'moveTypeSection' | 'updateTypeDefinition' }>
 type MobileFolderEdit = Extract<MobileWorkspaceEdit, { type: 'createFolder' | 'deleteFolder' | 'renameFolder' }>
 type MobileSnapshotEdit = Extract<MobileWorkspaceEdit, { type: 'createRelationshipTarget' | 'deleteNote' | 'moveNoteToFolder' | 'renameNoteFile' }>
 type MobileNoteEdit = Exclude<MobileWorkspaceEdit, MobileFolderEdit | MobileSnapshotEdit | MobileTypeEdit | MobileViewEdit | { type: 'createNote' }>
@@ -204,6 +206,7 @@ const mobileWorkspaceResultHandlers: MobileWorkspaceResultHandlerMap = {
   deleteNote: (snapshot, edit) => deleteMobileNote(snapshot, edit.noteId),
   deleteView: (snapshot, edit) => deleteMobileView(snapshot, edit.viewId),
   moveView: (snapshot, edit) => moveMobileView(snapshot, edit.viewId, edit.direction),
+  moveTypeSection: (snapshot, edit) => moveMobileTypeSection(snapshot, edit.typeName, edit.direction),
   moveNoteToFolder: (snapshot, edit) => moveNoteToFolder(snapshot, edit),
   renameFolder: (snapshot, edit) => applyMobileFolderEdit(snapshot, edit, rebuildSnapshot),
   renameNoteFile: (snapshot, edit) => renameNoteFile(snapshot, edit),
@@ -832,6 +835,59 @@ function moveMobileView(
       path: mobileSavedViewPath(view.filename),
     })),
   }
+}
+
+function moveMobileTypeSection(
+  snapshot: MobileWorkspaceSnapshot,
+  typeName: NoteTitle,
+  direction: MobileViewMoveDirection,
+): MobileWorkspaceEditResult {
+  const orderedItems = reorderedTypeSectionItems(snapshot, typeName, direction)
+  if (!orderedItems) return { snapshot, writes: [] }
+
+  let typeDefinitions = snapshot.typeDefinitions ?? {}
+  const typeNameToMove = cleanTypeName(typeName)
+  const orderUpdates = orderedItems.flatMap((item, order) => {
+    const existingDefinition = snapshot.typeDefinitions?.[item.typeName]
+    if (!existingDefinition && item.typeName !== typeNameToMove) return []
+    return [{ existingDefinition, order, typeName: item.typeName }]
+  })
+  const writes = orderUpdates.map(({ existingDefinition, order, typeName: orderedTypeName }) => {
+    typeDefinitions = typeDefinitionsWithPatch(typeDefinitions, orderedTypeName, { order })
+    return {
+      content: mobileTypeDefinitionContent(orderedTypeName, existingDefinition, { order }),
+      kind: 'saveNote' as const,
+      path: mobileTypeDefinitionPath(orderedTypeName, existingDefinition),
+    }
+  })
+  const notes = notesWithTypeDefinitionTones(snapshot.notes, typeDefinitions)
+  const allNotes = snapshot.allNotes ? notesWithTypeDefinitionTones(snapshot.allNotes, typeDefinitions) : undefined
+
+  return {
+    snapshot: rebuildSnapshot({ ...snapshot, typeDefinitions }, notes, allNotes),
+    writes,
+  }
+}
+
+function reorderedTypeSectionItems(
+  snapshot: MobileWorkspaceSnapshot,
+  typeName: NoteTitle,
+  direction: MobileViewMoveDirection,
+) {
+  const items = typeSectionItems(snapshot)
+  const sourceIndex = items.findIndex((item) => item.typeName === typeName)
+  const targetIndex = direction === 'up' ? sourceIndex - 1 : sourceIndex + 1
+  if (sourceIndex === -1 || targetIndex < 0 || targetIndex >= items.length) return null
+
+  const reordered = [...items]
+  const [item] = reordered.splice(sourceIndex, 1)
+  reordered.splice(targetIndex, 0, item)
+  return reordered
+}
+
+function typeSectionItems(snapshot: MobileWorkspaceSnapshot) {
+  return (snapshot.sidebarSections.find((section) => section.id === 'types')?.items ?? [])
+    .filter((item): item is MobileSidebarItem & { typeName: string } => Boolean(item.typeName))
 }
 
 function findMobileView(views: MobileSavedView[] | undefined, viewId: string): MobileSavedView | null {

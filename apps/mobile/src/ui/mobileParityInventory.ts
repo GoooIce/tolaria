@@ -113,6 +113,13 @@ export const mobileParityInventory = [
     surface: 'Read-only workspace action sheets',
   },
   {
+    assertions: ['saved-view reorder user-flow checks', 'type-section reorder user-flow checks'],
+    contracts: ['desktopSidebarParity', 'desktopToolbarActionParity'],
+    desktopSource: 'Sidebar saved-view and type-section context actions',
+    mobileFile: 'src/components/workspace/MobileWorkspaceMoveActions.tsx',
+    surface: 'Workspace sidebar reorder actions',
+  },
+  {
     assertions: ['typed property edit user-flow checks'],
     contracts: ['desktopPropertyParity'],
     desktopSource: 'Inspector property editors and shadcn segmented button controls',

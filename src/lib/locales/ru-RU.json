@@ -486,6 +486,8 @@
   "sidebar.action.reorderView": "Изменить порядок представлений",
   "sidebar.action.moveViewUp": "Переместить представление вверх",
   "sidebar.action.moveViewDown": "Переместить представление вниз",
+  "sidebar.action.moveSectionUp": "Переместить раздел вверх",
+  "sidebar.action.moveSectionDown": "Переместить раздел вниз",
   "sidebar.action.customizeSections": "Настроить разделы",
   "sidebar.action.renameSection": "Переименовать раздел…",
   "sidebar.action.renameType": "Переименовать тип…",

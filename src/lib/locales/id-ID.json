@@ -486,6 +486,8 @@
   "sidebar.action.reorderView": "Urutkan ulang tampilan",
   "sidebar.action.moveViewUp": "Pindahkan tampilan ke atas",
   "sidebar.action.moveViewDown": "Pindahkan tampilan ke bawah",
+  "sidebar.action.moveSectionUp": "Pindahkan bagian ke atas",
+  "sidebar.action.moveSectionDown": "Pindahkan bagian ke bawah",
   "sidebar.action.customizeSections": "Sesuaikan bagian",
   "sidebar.action.renameSection": "Ganti nama bagian…",
   "sidebar.action.renameType": "Ganti nama tipe…",

@@ -454,6 +454,10 @@ function typeSectionWorkspaceActions({
   const notes = workspaceNotes(workspaceSnapshot)
 
   return {
+    canMoveTypeDown: canMoveTypeSection(workspaceSnapshot, readOnlyForm.typeName, 'down'),
+    canMoveTypeUp: canMoveTypeSection(workspaceSnapshot, readOnlyForm.typeName, 'up'),
+    onMoveTypeDown: () => moveTypeSection({ applyEdit, direction: 'down', typeName: readOnlyForm.typeName }),
+    onMoveTypeUp: () => moveTypeSection({ applyEdit, direction: 'up', typeName: readOnlyForm.typeName }),
     onSaveTypeDefinition: () => updateTypeDefinition({ applyEdit, closeAction, form: readOnlyForm }),
     onTypeDisplayPropertiesChange: (value: string[]) => updateReadOnlyForm('typeDisplayProperties', value),
     onTypePropertyQueryChange: (value: string) => updateReadOnlyForm('typePropertyQuery', value),
@@ -1010,6 +1014,32 @@ function moveView({
 }) {
   if (!viewId) return
   applyEdit({ direction, type: 'moveView', viewId })
+}
+
+function moveTypeSection({
+  applyEdit,
+  direction,
+  typeName,
+}: {
+  applyEdit: (edit: MobileWorkspaceEdit) => void
+  direction: 'down' | 'up'
+  typeName: string
+}) {
+  const trimmedTypeName = typeName.trim()
+  if (!trimmedTypeName) return
+  applyEdit({ direction, type: 'moveTypeSection', typeName: trimmedTypeName })
+}
+
+function canMoveTypeSection(
+  snapshot: MobileWorkspaceSnapshot,
+  typeName: string,
+  direction: 'down' | 'up',
+) {
+  const items = snapshot.sidebarSections.find((section) => section.id === 'types')?.items ?? []
+  const typeItems = items.filter((item) => item.typeName)
+  const sourceIndex = typeItems.findIndex((item) => item.typeName === typeName)
+  const targetIndex = direction === 'up' ? sourceIndex - 1 : sourceIndex + 1
+  return sourceIndex !== -1 && targetIndex >= 0 && targetIndex < typeItems.length
 }
 
 function deleteView({

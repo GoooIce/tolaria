@@ -486,6 +486,8 @@
   "sidebar.action.reorderView": "Réorganiser la vue",
   "sidebar.action.moveViewUp": "Déplacer la vue vers le haut",
   "sidebar.action.moveViewDown": "Déplacer la vue vers le bas",
+  "sidebar.action.moveSectionUp": "Déplacer la section vers le haut",
+  "sidebar.action.moveSectionDown": "Déplacer la section vers le bas",
   "sidebar.action.customizeSections": "Personnaliser les sections",
   "sidebar.action.renameSection": "Renommer la section…",
   "sidebar.action.renameType": "Renommer le type…",

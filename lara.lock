@@ -488,6 +488,8 @@ files:
     sidebar.action.reorderView: ca2f42548fd57160d22fd0809bf8ed6e
     sidebar.action.moveViewUp: e601b7f0901f12efb71f7821c0fdb79e
     sidebar.action.moveViewDown: 6f86951085367864e3e4eb13f5c8688e
+    sidebar.action.moveSectionUp: c68bd41b73e040db23dd5193cd6a7cfe
+    sidebar.action.moveSectionDown: 5c220de5f09ca4673a6dbbf2e50b4e15
     sidebar.action.customizeSections: 050a134cad1e9c6f04abe5d635592703
     sidebar.action.renameSection: 8936914051df04e7550d0eeb4a31e0e0
     sidebar.action.renameType: 327d51d97d4b0e3ddcb7afa39c4bf5fa

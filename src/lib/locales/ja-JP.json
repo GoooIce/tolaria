@@ -486,6 +486,8 @@
   "sidebar.action.reorderView": "ビューの並べ替え",
   "sidebar.action.moveViewUp": "ビューを上に移動",
   "sidebar.action.moveViewDown": "ビューを下に移動",
+  "sidebar.action.moveSectionUp": "セクションを上に移動",
+  "sidebar.action.moveSectionDown": "セクションを下に移動",
   "sidebar.action.customizeSections": "セクションをカスタマイズ",
   "sidebar.action.renameSection": "セクション名を変更…",
   "sidebar.action.renameType": "タイプ名を変更…",

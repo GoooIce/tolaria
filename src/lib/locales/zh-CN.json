@@ -486,6 +486,8 @@
   "sidebar.action.reorderView": "重新排序视图",
   "sidebar.action.moveViewUp": "向上移动视图",
   "sidebar.action.moveViewDown": "向下移动视图",
+  "sidebar.action.moveSectionUp": "将章节上移",
+  "sidebar.action.moveSectionDown": "将章节下移",
   "sidebar.action.customizeSections": "自定义分组",
   "sidebar.action.renameSection": "重命名分组…",
   "sidebar.action.renameType": "重命名类型…",

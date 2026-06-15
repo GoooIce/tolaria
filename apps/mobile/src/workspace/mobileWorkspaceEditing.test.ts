@@ -915,6 +915,34 @@ describe('applyMobileWorkspaceEdit', () => {
       'Active Procedures',
     ])
   })
+
+  it('moves type sections and persists desktop-style dense order values', () => {
+    const result = applyMobileWorkspaceEditWithWrites(workspaceScenarioForId('default'), {
+      direction: 'up',
+      type: 'moveTypeSection',
+      typeName: 'Procedure',
+    })
+
+    expect(result.snapshot.typeDefinitions?.Procedure?.order).toBe(0)
+    expect(result.snapshot.typeDefinitions?.Essay?.order).toBe(1)
+    expect(result.writes).toEqual([
+      {
+        content: expect.stringContaining('order: 0'),
+        kind: 'saveNote',
+        path: 'procedure.md',
+      },
+      {
+        content: expect.stringContaining('order: 1'),
+        kind: 'saveNote',
+        path: 'essay.md',
+      },
+    ])
+    expect(result.snapshot.sidebarSections.find((section) => section.id === 'types')?.items?.map((item) => item.typeName)).toEqual([
+      'Procedure',
+      'Essay',
+      'Release',
+    ])
+  })
 })
 
 describe('mobile wikilink editing helpers', () => {

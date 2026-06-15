@@ -203,6 +203,8 @@ function actionSheetValues(props: ActionSheetHostProps) {
   return {
     canMoveViewDown,
     canMoveViewUp,
+    canMoveTypeDown: props.canMoveTypeDown,
+    canMoveTypeUp: props.canMoveTypeUp,
     folderPaths: props.snapshot.folderPaths,
     notes: suggestionNotes,
     searchQuery,
@@ -267,6 +269,8 @@ function actionSheetHandlers(props: ActionSheetHostProps) {
     onMoveNoteToFolder: props.onMoveNoteToFolder,
     onMoveViewDown: props.onMoveViewDown,
     onMoveViewUp: props.onMoveViewUp,
+    onMoveTypeDown: props.onMoveTypeDown,
+    onMoveTypeUp: props.onMoveTypeUp,
     onOpenChangeNoteType: props.onOpenChangeNoteType,
     onOpenCreateChildFolder: props.onOpenCreateChildFolder,
     onOpenMoveNoteToFolder: props.onOpenMoveNoteToFolder,

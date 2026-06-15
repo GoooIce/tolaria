@@ -487,6 +487,8 @@
   "sidebar.action.reorderView": "Zmianić paradak",
   "sidebar.action.moveViewUp": "Pieramiascić vyšej",
   "sidebar.action.moveViewDown": "Pieramiascić nižej",
+  "sidebar.action.moveSectionUp": "Pieramiascić razdziel vyšej",
+  "sidebar.action.moveSectionDown": "Pieramiascić razdziel nižej",
   "sidebar.action.customizeSections": "Naladzić siekcyi",
   "sidebar.action.renameSection": "Pierajmienavać siekcyju…",
   "sidebar.action.renameType": "Pierajmienavać typ…",

@@ -486,6 +486,8 @@
   "sidebar.action.reorderView": "보기 순서 재정렬",
   "sidebar.action.moveViewUp": "보기 위로 이동",
   "sidebar.action.moveViewDown": "보기 아래로 이동",
+  "sidebar.action.moveSectionUp": "섹션 위로 이동",
+  "sidebar.action.moveSectionDown": "섹션 아래로 이동",
   "sidebar.action.customizeSections": "섹션 사용자 지정",
   "sidebar.action.renameSection": "섹션 이름 변경…",
   "sidebar.action.renameType": "유형 이름 변경…",
