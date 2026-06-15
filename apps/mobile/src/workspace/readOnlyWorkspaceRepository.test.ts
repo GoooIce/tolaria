@@ -101,8 +101,18 @@ describe('fixtureReadOnlyWorkspaceRepository', () => {
       kind: 'saveNote',
       path: 'updated.md',
     }, {
+      kind: 'createFolder',
+      path: 'Notes/Drafts',
+    }, {
+      kind: 'renameFolder',
+      path: 'Notes',
+      toPath: 'Research',
+    }, {
+      kind: 'deleteFolder',
+      path: 'Research/Drafts',
+    }, {
       kind: 'deleteNote',
-      path: 'Notes/Old.md',
+      path: 'Research/Old.md',
     }, {
       kind: 'deleteView',
       path: 'views/old.yml',
@@ -111,7 +121,10 @@ describe('fixtureReadOnlyWorkspaceRepository', () => {
     expect(noteContents).toEqual({ 'updated.md': '# Updated\n' })
     expect(writes).toEqual([
       { content: '# Updated\n', kind: 'saveNote', path: 'updated.md' },
-      { kind: 'deleteNote', path: 'Notes/Old.md' },
+      { kind: 'createFolder', path: 'Notes/Drafts' },
+      { kind: 'renameFolder', path: 'Notes', toPath: 'Research' },
+      { kind: 'deleteFolder', path: 'Research/Drafts' },
+      { kind: 'deleteNote', path: 'Research/Old.md' },
       { kind: 'deleteView', path: 'views/old.yml' },
     ])
 

@@ -617,6 +617,67 @@ describe('applyMobileWorkspaceEdit', () => {
     }])
   })
 
+  it('creates empty folders in the sidebar without creating notes', () => {
+    const result = applyMobileWorkspaceEditWithWrites(workspaceScenarioForId('default'), {
+      name: 'Drafts',
+      parentPath: 'Writing',
+      type: 'createFolder',
+    })
+
+    expect(result.snapshot.notes.map((note) => note.title)).not.toContain('Drafts')
+    expect(result.snapshot.folderPaths).toContain('Writing/Drafts')
+    expect(sidebarFolders(result.snapshot)).toContainEqual(
+      expect.objectContaining({ id: 'Writing/Drafts', name: 'Drafts' }),
+    )
+    expect(result.writes).toEqual([{ kind: 'createFolder', path: 'Writing/Drafts' }])
+  })
+
+  it('renames folder subtrees and updates path-based wikilinks', () => {
+    const { movedSource, referringNote, snapshot } = workspaceMoveLinkScenario()
+    const result = applyMobileWorkspaceEditWithWrites({
+      ...snapshot,
+      folderPaths: ['Tolaria', 'Tolaria/Mobile UI'],
+    }, {
+      folderPath: 'Tolaria',
+      name: 'Research',
+      type: 'renameFolder',
+    })
+    const renamedSource = noteById(result.snapshot, movedSource.id)
+    const updatedRef = noteById(result.snapshot, referringNote.id)
+
+    expect(renamedSource.path).toBe('Research/Mobile UI/Workflow Orchestration Essay.md')
+    expect(result.snapshot.folderPaths).toContain('Research/Mobile UI')
+    expect(sidebarFolders(result.snapshot)).toContainEqual(
+      expect.objectContaining({ id: 'Research/Mobile UI', name: 'Mobile UI' }),
+    )
+    expectRetargetedWikilinks(updatedRef, movedSource.id, 'Research/Mobile UI/Workflow Orchestration Essay')
+    expect(result.writes).toEqual([
+      { kind: 'renameFolder', path: 'Tolaria', toPath: 'Research' },
+      {
+        content: updatedRef.rawContent,
+        kind: 'saveNote',
+        path: updatedRef.path,
+      },
+    ])
+  })
+
+  it('deletes folder subtrees from the visible and complete note pools', () => {
+    const base = workspaceScenarioForId('default')
+    const result = applyMobileWorkspaceEditWithWrites({
+      ...base,
+      allNotes: base.notes,
+      folderPaths: ['Tolaria', 'Tolaria/Mobile UI'],
+    }, {
+      folderPath: 'Tolaria',
+      type: 'deleteFolder',
+    })
+
+    expect(result.snapshot.notes.some((note) => note.path?.startsWith('Tolaria/'))).toBe(false)
+    expect(result.snapshot.allNotes?.some((note) => note.path?.startsWith('Tolaria/'))).toBe(false)
+    expect(result.snapshot.folderPaths).not.toContain('Tolaria/Mobile UI')
+    expect(result.writes).toEqual([{ kind: 'deleteFolder', path: 'Tolaria' }])
+  })
+
   it('deduplicates created note paths against existing note paths and ids', () => {
     const base = workspaceScenarioForId('default')
     const existingPath = {

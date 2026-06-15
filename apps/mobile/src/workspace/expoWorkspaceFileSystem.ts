@@ -16,9 +16,22 @@ declare const require: (moduleName: string) => ExpoFileSystemModule
 let expoFileSystemModule: ExpoFileSystemModule | null = null
 
 export const expoWorkspaceFileSystem: WorkspaceFileSystem = {
+  createDirectory: (rootUri, relativePath) => {
+    const normalizedPath = normalizedWorkspaceRelativePath(relativePath)
+    if (!normalizedPath) return
+
+    workspaceDirectory(expoFileSystem(), rootUri, normalizedPath).create({ idempotent: true, intermediates: true })
+  },
   defaultRootUri: () => {
     const { Directory, Paths } = expoFileSystem()
     return new Directory(Paths.document, 'Tolaria Vault').uri
+  },
+  deleteDirectory: (rootUri, relativePath) => {
+    const normalizedPath = normalizedWorkspaceRelativePath(relativePath)
+    if (!normalizedPath) return
+
+    const directory = workspaceDirectory(expoFileSystem(), rootUri, normalizedPath)
+    if (directory.exists) directory.delete()
   },
   deleteTextFile: (rootUri, relativePath) => {
     const normalizedPath = normalizedWorkspaceRelativePath(relativePath)
@@ -26,6 +39,19 @@ export const expoWorkspaceFileSystem: WorkspaceFileSystem = {
 
     const file = workspaceFile(expoFileSystem(), rootUri, normalizedPath)
     if (file.exists) file.delete()
+  },
+  moveDirectory: (rootUri, fromRelativePath, toRelativePath) => {
+    const fromPath = normalizedWorkspaceRelativePath(fromRelativePath)
+    const toPath = normalizedWorkspaceRelativePath(toRelativePath)
+    if (!fromPath || !toPath) return
+
+    const module = expoFileSystem()
+    const source = workspaceDirectory(module, rootUri, fromPath)
+    const destination = workspaceDirectory(module, rootUri, toPath)
+    if (!source.exists || destination.exists) return
+
+    destination.parentDirectory.create({ idempotent: true, intermediates: true })
+    source.move(destination)
   },
   readTextFile: (rootUri, relativePath) => {
     const normalizedPath = normalizedWorkspaceRelativePath(relativePath)
@@ -40,6 +66,13 @@ export const expoWorkspaceFileSystem: WorkspaceFileSystem = {
     if (!root.exists) return []
 
     return readDirectoryFiles(module, root, '')
+  },
+  readVaultDirectories: (rootUri) => {
+    const module = expoFileSystem()
+    const root = new module.Directory(rootUri)
+    if (!root.exists) return []
+
+    return readDirectoryPaths(module, root, '')
   },
   writeTextFile: (rootUri, relativePath, content) => {
     const normalizedPath = normalizedWorkspaceRelativePath(relativePath)
@@ -76,6 +109,23 @@ function readDirectoryFiles(
   return files
 }
 
+function readDirectoryPaths(
+  module: ExpoFileSystemModule,
+  directory: Directory,
+  currentRelativePath: RelativeVaultPath,
+): RelativeVaultPath[] {
+  const directories: RelativeVaultPath[] = []
+
+  for (const entry of directory.list()) {
+    const relativePath = joinedRelativePath(currentRelativePath, entry.name)
+    if (entry instanceof module.Directory && shouldReadDirectory(entry.name)) {
+      directories.push(relativePath, ...readDirectoryPaths(module, entry, relativePath))
+    }
+  }
+
+  return directories
+}
+
 function localVaultFile(file: File, relativePath: RelativeVaultPath): LocalVaultFile {
   const info = file.info()
   const content = file.textSync()
@@ -92,6 +142,10 @@ function localVaultFile(file: File, relativePath: RelativeVaultPath): LocalVault
 
 function workspaceFile(module: ExpoFileSystemModule, rootUri: RootUri, relativePath: RelativeVaultPath): File {
   return new module.File(rootUri, ...relativePath.split('/'))
+}
+
+function workspaceDirectory(module: ExpoFileSystemModule, rootUri: RootUri, relativePath: RelativeVaultPath): Directory {
+  return new module.Directory(rootUri, ...relativePath.split('/'))
 }
 
 function joinedRelativePath(parent: RelativeVaultPath, name: DirectoryName): RelativeVaultPath {

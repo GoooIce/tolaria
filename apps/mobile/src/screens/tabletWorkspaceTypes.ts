@@ -28,8 +28,11 @@ export type TabletPropertyValueKind = 'boolean' | 'list' | 'number' | 'string'
 
 export type TabletReadOnlyForm = {
   createTitle: ReadOnlyFormValue
+  editingFolderPath: ReadOnlyFormValue
   editingViewId: ReadOnlyFormValue
   filenameStem: ReadOnlyFormValue
+  folderName: ReadOnlyFormValue
+  folderParentPath: ReadOnlyFormValue
   folderPath: ReadOnlyFormValue
   noteType: ReadOnlyFormValue
   propertyName: ReadOnlyFormValue
@@ -76,22 +79,28 @@ export type TabletWorkspaceChromeProps = {
   onChangeNoteTypeInputChange: (value: ReadOnlyFormValue) => void
   onCloseAction: () => void
   onCopyDeepLink: () => void
+  onCreateFolder: () => void
   onCreateNote: () => void
   onCreateRelationshipTarget: () => void
   onCreateTitleChange: (value: ReadOnlyFormValue) => void
   onCreateView: () => void
+  onDeleteFolder: () => void
   onDeleteView: () => void
   onDeleteNote: () => void
   onDeleteProperty: (noteId: NoteId, key: string) => void
   onEditProperty: (noteId: NoteId, key: string, value: MobilePropertyValue) => void
   onFilenameStemChange: (value: ReadOnlyFormValue) => void
+  onFolderNameChange: (value: ReadOnlyFormValue) => void
   onFolderPathChange: (value: ReadOnlyFormValue) => void
   onMoveNoteToFolder: () => void
   onMoveViewDown: () => void
   onMoveViewUp: () => void
   onOpenChangeNoteType: () => void
+  onOpenCreateChildFolder: () => void
+  onOpenCreateFolder: () => void
   onOpenCreateNote: () => void
   onOpenCreateView: () => void
+  onOpenFolderActions: (selection: MobileSidebarFolderSelection) => void
   onOpenMoveNoteToFolder: () => void
   onOpenTypeActions: (selection: MobileSidebarItemSelection) => void
   onOpenViewActions: (selection: MobileSidebarItemSelection) => void
@@ -99,6 +108,7 @@ export type TabletWorkspaceChromeProps = {
   onOpenRenameNoteFile: () => void
   onOpenSearch: () => void
   onRemoveRelationship: (noteId: NoteId, key: string, ref: string) => void
+  onRenameFolder: () => void
   onSaveTypeDefinition: () => void
   onSaveProperty: () => void
   onSaveRelationship: () => void

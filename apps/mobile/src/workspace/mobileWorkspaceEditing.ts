@@ -41,6 +41,19 @@ import {
 } from './mobileSavedViews'
 import { buildMobileSidebarSections } from './mobileSidebarSections'
 import {
+  mobileFolderParentPath,
+  normalizedMobileFilenameStem,
+  normalizedMobileFolderPath,
+} from './mobileWorkspaceFolders'
+import { applyMobileFolderEdit } from './mobileWorkspaceFolderEditing'
+import {
+  movedNoteWikilinkRewrite,
+  noteFilename,
+  noteWithWritePath,
+  noteWritePath,
+  rewriteMovedNoteWikilinks,
+} from './mobileWorkspacePathRewrites'
+import {
   mobileTypeDefinitionContent,
   mobileTypeDefinitionPath,
   typeDefinitionsWithPatch,
@@ -71,6 +84,9 @@ export type MobileWorkspaceEdit =
   | { noteId: NoteId; type: 'changeNoteType'; value: NoteTitle }
   | { folderPath: FolderPath; noteId: NoteId; type: 'moveNoteToFolder' }
   | { filenameStem: FilenameStem; noteId: NoteId; type: 'renameNoteFile' }
+  | { name: string; parentPath?: FolderPath; type: 'createFolder' }
+  | { folderPath: FolderPath; name: string; type: 'renameFolder' }
+  | { folderPath: FolderPath; type: 'deleteFolder' }
   | { noteId: NoteId; type: 'toggleFavorite' }
   | { archived: boolean; noteId: NoteId; type: 'setArchived' }
   | { noteId: NoteId; organized: boolean; type: 'setOrganized' }
@@ -81,8 +97,9 @@ export type MobileWorkspaceEdit =
   | { patch: MobileTypeDefinitionPatch; type: 'updateTypeDefinition'; typeName: NoteTitle }
 type MobileViewEdit = Extract<MobileWorkspaceEdit, { type: 'createView' | 'deleteView' | 'moveView' | 'updateView' }>
 type MobileTypeEdit = Extract<MobileWorkspaceEdit, { type: 'updateTypeDefinition' }>
+type MobileFolderEdit = Extract<MobileWorkspaceEdit, { type: 'createFolder' | 'deleteFolder' | 'renameFolder' }>
 type MobileSnapshotEdit = Extract<MobileWorkspaceEdit, { type: 'deleteNote' | 'moveNoteToFolder' | 'renameNoteFile' }>
-type MobileNoteEdit = Exclude<MobileWorkspaceEdit, MobileSnapshotEdit | MobileTypeEdit | MobileViewEdit | { type: 'createNote' }>
+type MobileNoteEdit = Exclude<MobileWorkspaceEdit, MobileFolderEdit | MobileSnapshotEdit | MobileTypeEdit | MobileViewEdit | { type: 'createNote' }>
 type MobileWorkspaceResultHandlerMap = {
   [Type in MobileWorkspaceEdit['type']]?: (
     snapshot: MobileWorkspaceSnapshot,
@@ -92,7 +109,10 @@ type MobileWorkspaceResultHandlerMap = {
 
 export type MobileWorkspaceWrite =
   | { content: MarkdownContent; kind: 'createNote'; path: string }
+  | { kind: 'createFolder'; path: string }
+  | { kind: 'deleteFolder'; path: string }
   | { kind: 'deleteNote'; path: string }
+  | { kind: 'renameFolder'; path: string; toPath: string }
   | { content: MarkdownContent; kind: 'saveNote'; path: string }
   | { content: MarkdownContent; kind: 'saveView'; path: string }
   | { kind: 'deleteView'; path: string }
@@ -163,15 +183,18 @@ const mobileNoteEditHandlers: Record<MobileNoteEdit['type'], MobileNoteEditHandl
 }
 
 const mobileWorkspaceResultHandlers: MobileWorkspaceResultHandlerMap = {
+  createFolder: (snapshot, edit) => applyMobileFolderEdit(snapshot, edit, rebuildSnapshot),
   createNote: (snapshot, edit) => {
     const nextSnapshot = createMobileNote(snapshot, edit.title, edit.defaults)
     return { snapshot: nextSnapshot, writes: createNoteWrites(nextSnapshot) }
   },
+  deleteFolder: (snapshot, edit) => applyMobileFolderEdit(snapshot, edit, rebuildSnapshot),
   createView: (snapshot, edit) => createMobileView(snapshot, edit.definition),
   deleteNote: (snapshot, edit) => deleteMobileNote(snapshot, edit.noteId),
   deleteView: (snapshot, edit) => deleteMobileView(snapshot, edit.viewId),
   moveView: (snapshot, edit) => moveMobileView(snapshot, edit.viewId, edit.direction),
   moveNoteToFolder: (snapshot, edit) => moveNoteToFolder(snapshot, edit),
+  renameFolder: (snapshot, edit) => applyMobileFolderEdit(snapshot, edit, rebuildSnapshot),
   renameNoteFile: (snapshot, edit) => renameNoteFile(snapshot, edit),
   updateTypeDefinition: (snapshot, edit) => updateMobileTypeDefinition(snapshot, edit.typeName, edit.patch),
   updateView: (snapshot, edit) => updateMobileView(snapshot, edit.viewId, edit.definition),
@@ -306,7 +329,7 @@ function createMobileNote(
 
 function createNotePath(title: NoteTitle, folderPath: FolderPath | undefined): NoteId {
   const filename = `${slugifyTitle(title)}.md`
-  const folder = folderPath ? normalizedFolderPath(folderPath) : ''
+  const folder = folderPath ? normalizedMobileFolderPath(folderPath) : ''
   return folder ? `${folder}/${filename}` : filename
 }
 
@@ -411,7 +434,7 @@ function moveNoteToFolder(
   edit: Extract<MobileWorkspaceEdit, { type: 'moveNoteToFolder' }>,
 ): MobileWorkspaceEditResult {
   const previousNote = workspaceNoteById(snapshot, edit.noteId)
-  const folderPath = normalizedFolderPath(edit.folderPath)
+  const folderPath = normalizedMobileFolderPath(edit.folderPath)
   if (!previousNote || !folderPath) return { snapshot, writes: [] }
 
   return moveNoteToPath(snapshot, previousNote, movedNote(previousNote, folderPath))
@@ -422,7 +445,7 @@ function renameNoteFile(
   edit: Extract<MobileWorkspaceEdit, { type: 'renameNoteFile' }>,
 ): MobileWorkspaceEditResult {
   const previousNote = workspaceNoteById(snapshot, edit.noteId)
-  const stem = normalizedFilenameStem(edit.filenameStem)
+  const stem = normalizedMobileFilenameStem(edit.filenameStem)
   if (!previousNote || !stem) return { snapshot, writes: [] }
 
   return moveNoteToPath(snapshot, previousNote, renamedNoteFile(previousNote, stem))
@@ -483,21 +506,10 @@ function movedNote(note: MobileNote, folderPath: FolderPath): MobileNote {
 
 function renamedNoteFile(note: MobileNote, filenameStem: FilenameStem): MobileNote {
   const previousPath = noteWritePath(note)
-  const folderPath = noteFolderPath(previousPath)
+  const folderPath = mobileFolderParentPath(previousPath)
   const nextFilename = `${filenameStem}.md`
   const nextPath = folderPath ? `${folderPath}/${nextFilename}` : nextFilename
   return noteWithWritePath(note, nextPath)
-}
-
-function noteWithWritePath(note: MobileNote, nextPath: string): MobileNote {
-  const previousPath = noteWritePath(note)
-  if (nextPath === previousPath) return note
-
-  return {
-    ...note,
-    id: note.id === previousPath ? nextPath : note.id,
-    path: nextPath,
-  }
 }
 
 function moveNoteWrites(
@@ -529,110 +541,6 @@ function movedWikilinkWrites(
     if (previousRawContent.get(path) === note.rawContent) return []
     return [{ content: note.rawContent, kind: 'saveNote', path }]
   })
-}
-
-type MovedNoteWikilinkRewrite = {
-  newTarget: WikilinkTarget
-  oldTargets: Set<WikilinkTarget>
-}
-
-function movedNoteWikilinkRewrite(
-  previousNote: MobileNote,
-  nextNote: MobileNote,
-): MovedNoteWikilinkRewrite {
-  return {
-    newTarget: notePathStem(noteWritePath(nextNote)),
-    oldTargets: new Set([
-      previousNote.title,
-      notePathStem(noteWritePath(previousNote)),
-      filenameStem(noteWritePath(previousNote)),
-    ].filter(Boolean)),
-  }
-}
-
-function rewriteMovedNoteWikilinks(
-  note: MobileNote,
-  rewrite: MovedNoteWikilinkRewrite,
-): MobileNote {
-  if (note.rawContent === undefined) return note
-
-  const rawContent = replaceMovedWikilinks(note.rawContent, rewrite)
-  return rawContent === note.rawContent ? note : { ...note, rawContent }
-}
-
-function replaceMovedWikilinks(
-  content: MarkdownContent,
-  rewrite: MovedNoteWikilinkRewrite,
-): MarkdownContent {
-  return content.replace(/\[\[([^\]|]+)(\|[^\]]*)?\]\]/g, (match, target: string, alias: string | undefined) => {
-    return rewrite.oldTargets.has(target.trim()) ? `[[${rewrite.newTarget}${alias ?? ''}]]` : match
-  })
-}
-
-function noteFilename(path: string): string {
-  return path.split('/').filter(Boolean).at(-1) ?? path
-}
-
-function noteFolderPath(path: string): string {
-  return path.split('/').filter(Boolean).slice(0, -1).join('/')
-}
-
-function filenameStem(path: string): string {
-  return noteFilename(path).replace(/\.md$/u, '')
-}
-
-function notePathStem(path: string): string {
-  return path.replace(/\.md$/u, '')
-}
-
-function normalizedFolderPath(folderPath: FolderPath): FolderPath {
-  return folderPath.trim().replace(/^\/+|\/+$/g, '')
-}
-
-const windowsReservedDeviceNames = new Set([
-  'CON',
-  'PRN',
-  'AUX',
-  'NUL',
-  'COM1',
-  'COM2',
-  'COM3',
-  'COM4',
-  'COM5',
-  'COM6',
-  'COM7',
-  'COM8',
-  'COM9',
-  'LPT1',
-  'LPT2',
-  'LPT3',
-  'LPT4',
-  'LPT5',
-  'LPT6',
-  'LPT7',
-  'LPT8',
-  'LPT9',
-])
-const invalidPortableNameChars = new Set(['<', '>', ':', '"', '/', '\\', '|', '?', '*'])
-
-function normalizedFilenameStem(value: FilenameStem): FilenameStem | null {
-  const trimmed = value.trim()
-  const stem = (trimmed.endsWith('.md') ? trimmed.slice(0, -3) : trimmed).trim()
-  return isInvalidPortableNameSegment(stem) ? null : stem
-}
-
-function isInvalidPortableNameSegment(value: string): boolean {
-  if (!value || value === '.' || value === '..') return true
-  if (value.endsWith('.') || value.endsWith(' ')) return true
-  if ([...value].some(isInvalidPortableNameChar)) return true
-
-  const deviceName = value.split('.')[0]?.toUpperCase() ?? value.toUpperCase()
-  return windowsReservedDeviceNames.has(deviceName)
-}
-
-function isInvalidPortableNameChar(char: string): boolean {
-  const codePoint = char.codePointAt(0) ?? 0
-  return codePoint < 32 || codePoint === 127 || invalidPortableNameChars.has(char)
 }
 
 function rebuildSnapshot(
@@ -668,6 +576,7 @@ function rebuildSnapshot(
     notes: resolvedNotes,
     selectedNoteId: selectedNote?.id,
     sidebarSections: buildMobileSidebarSections({
+      folderPaths: snapshot.folderPaths,
       notes: resolvedAllNotes,
       previousSections: snapshot.sidebarSections,
       typeDefinitions: snapshot.typeDefinitions,
@@ -731,6 +640,7 @@ function createMobileView(
   const nextSnapshot = {
     ...snapshot,
     sidebarSections: buildMobileSidebarSections({
+      folderPaths: snapshot.folderPaths,
       notes: workspaceNotePool(snapshot),
       previousSections: snapshot.sidebarSections,
       typeDefinitions: snapshot.typeDefinitions,
@@ -856,6 +766,7 @@ function snapshotWithViews(
   return {
     ...snapshot,
     sidebarSections: buildMobileSidebarSections({
+      folderPaths: snapshot.folderPaths,
       notes: workspaceNotePool(snapshot),
       previousSections: snapshot.sidebarSections,
       typeDefinitions: snapshot.typeDefinitions,
@@ -882,10 +793,6 @@ function saveNoteWrites(
     kind: 'saveNote',
     path: noteWritePath(nextNote),
   }]
-}
-
-function noteWritePath(note: MobileNote): string {
-  return note.path ?? note.id
 }
 
 function deriveEditableNote({

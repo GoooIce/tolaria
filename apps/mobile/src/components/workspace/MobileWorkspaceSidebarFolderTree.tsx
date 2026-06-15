@@ -15,11 +15,13 @@ export function FolderTree({
   activeFolderId,
   folders,
   layoutProbe,
+  onOpenFolderActions,
   onSelectFolder,
 }: {
   activeFolderId?: string | null
   folders: MobileSidebarFolder[]
   layoutProbe?: MobileLayoutProbe
+  onOpenFolderActions?: (selection: MobileSidebarFolderSelection) => void
   onSelectFolder?: (selection: MobileSidebarFolderSelection) => void
 }) {
   return (
@@ -31,6 +33,7 @@ export function FolderTree({
           folder={folder}
           key={folder.id}
           layoutProbe={layoutProbe}
+          onOpenFolderActions={onOpenFolderActions}
           onSelectFolder={onSelectFolder}
         />
       ))}
@@ -43,17 +46,20 @@ function FolderTreeRow({
   depth,
   folder,
   layoutProbe,
+  onOpenFolderActions,
   onSelectFolder,
 }: {
   activeFolderId?: string | null
   depth: number
   folder: MobileSidebarFolder
   layoutProbe?: MobileLayoutProbe
+  onOpenFolderActions?: (selection: MobileSidebarFolderSelection) => void
   onSelectFolder?: (selection: MobileSidebarFolderSelection) => void
 }) {
   const hasChildren = folder.children.length > 0
   const active = activeFolderId ? folder.id === activeFolderId : folder.active
   const metricId = `sidebar.folder.${folder.id}`
+  const selection = { id: folder.id, name: folder.name }
 
   return (
     <View {...probeProps(layoutProbe, `${metricId}.container`)}>
@@ -61,7 +67,8 @@ function FolderTreeRow({
         {...probeProps(layoutProbe, `${metricId}.row`)}
         accessibilityLabel={folder.name}
         accessibilityRole="button"
-        onPress={() => onSelectFolder?.({ id: folder.id, name: folder.name })}
+        onLongPress={() => onOpenFolderActions?.(selection)}
+        onPress={() => onSelectFolder?.(selection)}
         style={[
           folderTreeStyles.row,
           nativeFolderTreeRowStyle,
@@ -90,6 +97,7 @@ function FolderTreeRow({
               folder={child}
               key={child.id}
               layoutProbe={layoutProbe}
+              onOpenFolderActions={onOpenFolderActions}
               onSelectFolder={onSelectFolder}
             />
           ))}

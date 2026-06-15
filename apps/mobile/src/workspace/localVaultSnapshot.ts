@@ -53,6 +53,7 @@ export type LocalVaultFile = {
 }
 
 export type LocalVaultSnapshotOptions = {
+  folderPaths?: RelativeVaultPath[]
   files: LocalVaultFile[]
   maxNotes?: number
   vaultLabel: LocalVaultLabel
@@ -88,6 +89,7 @@ type MobileNoteDetailLevel = 'editable' | 'summary'
 const DEFAULT_MAX_NOTES = 80
 
 export function buildLocalVaultWorkspaceSnapshot({
+  folderPaths = [],
   files,
   maxNotes = DEFAULT_MAX_NOTES,
   vaultLabel,
@@ -112,7 +114,8 @@ export function buildLocalVaultWorkspaceSnapshot({
     noteListSubtitle: noteListSubtitle(notes.length, visibleEntries.length),
     notes,
     selectedNoteId,
-    sidebarSections: buildMobileSidebarSections({ notes: allNotes, typeDefinitions, views }),
+    folderPaths,
+    sidebarSections: buildMobileSidebarSections({ folderPaths, notes: allNotes, typeDefinitions, views }),
     source: {
       kind: 'localVault',
       label: vaultLabel,

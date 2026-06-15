@@ -70,13 +70,13 @@ export function useTabletWorkspaceNavigation(snapshot: MobileWorkspaceSnapshot, 
         viewId: view.id,
       }, sourceSnapshot)
     }, [selectSidebarSelection, snapshot]),
-    selectFolder: useCallback((selection: MobileSidebarFolderSelection) => {
+    selectFolder: useCallback((selection: MobileSidebarFolderSelection, sourceSnapshot = snapshot) => {
       selectSidebarSelection({
         id: selection.id,
         kind: 'folder',
         label: selection.name,
-      })
-    }, [selectSidebarSelection]),
+      }, sourceSnapshot)
+    }, [selectSidebarSelection, snapshot]),
     selectSidebarItem: useCallback((selection: MobileSidebarItemSelection) => {
       selectSidebarSelection({
         count: selection.count,

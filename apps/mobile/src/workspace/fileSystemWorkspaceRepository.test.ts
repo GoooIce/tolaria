@@ -2,6 +2,13 @@ import { describe, expect, it } from 'vitest'
 import { createFileSystemWorkspaceRepository, normalizedWorkspaceRelativePath, type WorkspaceFileSystem } from './fileSystemWorkspaceRepository'
 import type { LocalVaultFile } from './localVaultSnapshot'
 
+type RelativePath = string
+type MovePathInput = {
+  fromRelativePath: RelativePath
+  path: RelativePath
+  toRelativePath: RelativePath
+}
+
 describe('createFileSystemWorkspaceRepository', () => {
   it('builds snapshots from markdown and saved-view files in the selected native vault root', () => {
     const fileSystem = fakeWorkspaceFileSystem({
@@ -29,6 +36,7 @@ type: Project
     const snapshot = repository.readSnapshot({ source: 'native', vaultLabel: 'Laputa', vaultRootUri: 'file:///vault' })
     const workflow = snapshot.allNotes?.find((note) => note.path === 'Writing/Workflow.md')
 
+    expect(snapshot.folderPaths).toEqual(expect.arrayContaining(['Projects', 'Writing']))
     expect(snapshot.source).toMatchObject({ kind: 'localVault', label: 'Laputa', totalNotes: 2 })
     expect(workflow).toMatchObject({
       path: 'Writing/Workflow.md',
@@ -105,6 +113,30 @@ type: Project
     expect(fileSystem.files()).toEqual({})
   })
 
+  it('persists folder create, rename, and delete writes through relative vault paths', async () => {
+    const fileSystem = fakeWorkspaceFileSystem({
+      'Writing/Workflow.md': '# Workflow\n\n',
+    })
+    const repository = createFileSystemWorkspaceRepository(fileSystem)
+
+    await repository.persistWrites([{
+      kind: 'createFolder',
+      path: 'Writing/Drafts',
+    }, {
+      kind: 'renameFolder',
+      path: 'Writing',
+      toPath: 'Research',
+    }, {
+      kind: 'deleteFolder',
+      path: 'Research/Drafts',
+    }], { source: 'native', vaultRootUri: 'file:///vault' })
+
+    expect(fileSystem.files()).toEqual({
+      'Research/Workflow.md': '# Workflow\n\n',
+    })
+    expect(fileSystem.directories()).toEqual(['Research'])
+  })
+
   it('rejects absolute and parent-traversal write paths', async () => {
     const fileSystem = fakeWorkspaceFileSystem({})
     const repository = createFileSystemWorkspaceRepository(fileSystem)
@@ -125,21 +157,74 @@ type: Project
   })
 })
 
-function fakeWorkspaceFileSystem(initialFiles: Record<string, string>): WorkspaceFileSystem & { files: () => Record<string, string> } {
+function fakeWorkspaceFileSystem(initialFiles: Record<string, string>): WorkspaceFileSystem & {
+  directories: () => string[]
+  files: () => Record<string, string>
+} {
   const files = new Map(Object.entries(initialFiles))
+  const directories = new Set<string>(folderPathsForFiles(Object.keys(initialFiles)))
 
   return {
+    createDirectory: (_rootUri, relativePath) => {
+      directories.add(relativePath)
+    },
     defaultRootUri: () => 'file:///default-vault',
+    deleteDirectory: (_rootUri, relativePath) => {
+      for (const path of [...directories]) {
+        if (path === relativePath || path.startsWith(`${relativePath}/`)) directories.delete(path)
+      }
+      for (const path of [...files.keys()]) {
+        if (path.startsWith(`${relativePath}/`)) files.delete(path)
+      }
+    },
     deleteTextFile: (_rootUri, relativePath) => {
       files.delete(relativePath)
     },
+    directories: () => [...directories].sort(),
     files: () => Object.fromEntries(files),
+    moveDirectory: (_rootUri, fromRelativePath, toRelativePath) => {
+      for (const path of [...directories]) {
+        const movedPath = movedDirectoryPath({ fromRelativePath, path, toRelativePath })
+        if (!movedPath) continue
+
+        directories.delete(path)
+        directories.add(movedPath)
+      }
+      for (const [path, content] of [...files.entries()]) {
+        const movedPath = movedFilePath({ fromRelativePath, path, toRelativePath })
+        if (!movedPath) continue
+
+        files.delete(path)
+        files.set(movedPath, content)
+      }
+    },
     readTextFile: (_rootUri, relativePath) => files.get(relativePath) ?? null,
+    readVaultDirectories: () => [...directories],
     readVaultFiles: (rootUri) => [...files.entries()].map(([relativePath, content], index) => localVaultFile(rootUri, relativePath, content, index)),
     writeTextFile: (_rootUri, relativePath, content) => {
+      for (const path of folderPathsForFiles([relativePath])) directories.add(path)
       files.set(relativePath, content)
     },
   }
+}
+
+function movedDirectoryPath({ fromRelativePath, path, toRelativePath }: MovePathInput): RelativePath | null {
+  if (path !== fromRelativePath && !path.startsWith(`${fromRelativePath}/`)) return null
+  return `${toRelativePath}${path.slice(fromRelativePath.length)}`
+}
+
+function movedFilePath({ fromRelativePath, path, toRelativePath }: MovePathInput): RelativePath | null {
+  if (!path.startsWith(`${fromRelativePath}/`)) return null
+  return `${toRelativePath}${path.slice(fromRelativePath.length)}`
+}
+
+function folderPathsForFiles(paths: string[]): string[] {
+  const folders = new Set<string>()
+  for (const path of paths) {
+    const parts = path.split('/').slice(0, -1)
+    for (let index = 1; index <= parts.length; index += 1) folders.add(parts.slice(0, index).join('/'))
+  }
+  return [...folders].filter(Boolean)
 }
 
 function localVaultFile(rootUri: string, relativePath: string, content: string, index: number): LocalVaultFile {

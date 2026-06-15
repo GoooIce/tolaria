@@ -4,8 +4,12 @@ import type { MobileWorkspaceWrite } from './mobileWorkspaceEditing'
 import type { ReadOnlyWorkspaceRepository, ReadOnlyWorkspaceRequest } from './readOnlyWorkspaceRepository'
 
 export type WorkspaceFileSystem = {
+  createDirectory: (rootUri: string, relativePath: string) => void
   defaultRootUri: () => string | null
+  deleteDirectory: (rootUri: string, relativePath: string) => void
   deleteTextFile: (rootUri: string, relativePath: string) => void
+  moveDirectory: (rootUri: string, fromRelativePath: string, toRelativePath: string) => void
+  readVaultDirectories: (rootUri: string) => string[]
   readTextFile: (rootUri: string, relativePath: string) => string | null
   readVaultFiles: (rootUri: string) => LocalVaultFile[]
   writeTextFile: (rootUri: string, relativePath: string, content: string) => void
@@ -36,6 +40,7 @@ export function createFileSystemWorkspaceRepository(fileSystem: WorkspaceFileSys
 
       return buildLocalVaultWorkspaceSnapshot({
         files: fileSystem.readVaultFiles(rootUri),
+        folderPaths: fileSystem.readVaultDirectories(rootUri),
         vaultLabel: workspaceLabel(rootUri, request),
         vaultPath: rootUri,
       })
@@ -53,6 +58,22 @@ function persistWorkspaceWrite(
 
   if (write.kind === 'deleteNote' || write.kind === 'deleteView') {
     fileSystem.deleteTextFile(rootUri, relativePath)
+    return
+  }
+
+  if (write.kind === 'createFolder') {
+    fileSystem.createDirectory(rootUri, relativePath)
+    return
+  }
+
+  if (write.kind === 'deleteFolder') {
+    fileSystem.deleteDirectory(rootUri, relativePath)
+    return
+  }
+
+  if (write.kind === 'renameFolder') {
+    const toRelativePath = normalizedWorkspaceRelativePath(write.toPath)
+    if (toRelativePath) fileSystem.moveDirectory(rootUri, relativePath, toRelativePath)
     return
   }
 

@@ -177,6 +177,24 @@ _archived: true
       ]),
     )
   })
+
+  it('renders explicit empty vault folders in the sidebar', () => {
+    const snapshot = buildLocalVaultWorkspaceSnapshot({
+      files: [
+        vaultFile('Writing/Projects/Active Project.md', '# Active Project\n'),
+      ],
+      folderPaths: ['Writing', 'Writing/Empty'],
+      vaultLabel: 'Laputa',
+      vaultPath: '/Users/luca/Laputa',
+    })
+
+    expect(snapshot.folderPaths).toEqual(['Writing', 'Writing/Empty'])
+    expect(flattenSidebarFolders(snapshot.sidebarSections.find((section) => section.id === 'folders')?.folders ?? [])).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'Writing/Empty', name: 'Empty' }),
+      ]),
+    )
+  })
 })
 
 function vaultFile(relativePath: string, content: string, index = 0): LocalVaultFile {

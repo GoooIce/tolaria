@@ -33,8 +33,10 @@ export type MobileWorkspaceAction =
   | 'addProperty'
   | 'addRelationship'
   | 'changeNoteType'
+  | 'createFolder'
   | 'createNote'
   | 'createView'
+  | 'editFolder'
   | 'editProperty'
   | 'editTypeSection'
   | 'editView'
@@ -49,25 +51,30 @@ type MobileWorkspaceActionSheetProps = {
   canMoveViewUp: boolean
   createTitle: string
   filenameStem: string
+  folderName: string
   folderPath: string
   notes: MobileNote[]
   noteType: string
   onChangeNoteType: () => void
   onChangeNoteTypeInputChange: (value: string) => void
   onClose: () => void
+  onCreateFolder: () => void
   onCreateNote: () => void
   onCreateRelationshipTarget: () => void
   onCreateTitleChange: (value: string) => void
   onCopyDeepLink: () => void
   onCreateView: () => void
+  onDeleteFolder: () => void
   onDeleteNote: () => void
   onDeleteView: () => void
   onFilenameStemChange: (value: string) => void
+  onFolderNameChange: (value: string) => void
   onFolderPathChange: (value: string) => void
   onMoveNoteToFolder: () => void
   onMoveViewDown: () => void
   onMoveViewUp: () => void
   onOpenChangeNoteType: () => void
+  onOpenCreateChildFolder: () => void
   onOpenMoveNoteToFolder: () => void
   onOpenRenameNoteFile: () => void
   onPropertyNameChange: (value: string) => void
@@ -77,6 +84,7 @@ type MobileWorkspaceActionSheetProps = {
   onSaveProperty: () => void
   onSaveRelationship: () => void
   onSaveTypeDefinition: () => void
+  onRenameFolder: () => void
   onRenameNoteFile: () => void
   onSaveView: () => void
   onSearchQueryChange: (value: string) => void
@@ -181,8 +189,10 @@ const actionContentByAction: Record<MobileWorkspaceAction, (props: MobileWorkspa
   addProperty: (props) => <AddPropertyContent {...props} />,
   addRelationship: (props) => <AddRelationshipContent {...props} />,
   changeNoteType: (props) => <RetargetNoteContent {...props} retargetAction="changeType" />,
+  createFolder: (props) => <SingleTextFieldContent config={singleTextFieldConfig(props)} />,
   createNote: (props) => <SingleTextFieldContent config={singleTextFieldConfig(props)} />,
   createView: (props) => <SingleTextFieldContent config={singleTextFieldConfig(props)} />,
+  editFolder: (props) => <FolderActionsContent {...props} />,
   editProperty: (props) => <AddPropertyContent {...props} />,
   editTypeSection: (props) => <TypeSectionContent {...props} />,
   editView: (props) => <SingleTextFieldContent config={singleTextFieldConfig(props)} />,
@@ -291,6 +301,19 @@ function SingleTextFieldContent({ config }: { config: SingleTextFieldConfig }) {
 }
 
 function singleTextFieldConfig(props: MobileWorkspaceActionSheetProps) {
+  if (props.action === 'createFolder') {
+    return {
+      inputLabel: mobileText('sidebar.folder.name'),
+      inputPlaceholder: mobileText('sidebar.folder.name'),
+      inputTestId: 'workspace-create-folder-name-input',
+      inputValue: props.folderName,
+      onCancel: props.onClose,
+      onChangeText: props.onFolderNameChange,
+      onSubmit: props.onCreateFolder,
+      submitLabel: mobileText('common.create'),
+    }
+  }
+
   if (props.action === 'editView') {
     return {
       extraContent: editViewContent(props),
@@ -361,6 +384,38 @@ function editViewContent(props: MobileWorkspaceActionSheetProps) {
       {viewFilterBuilder(props)}
       <ViewDisplayPropertiesPicker {...props} />
     </>
+  )
+}
+
+function FolderActionsContent(props: MobileWorkspaceActionSheetProps) {
+  return (
+    <View style={styles.content}>
+      <MobileTextInput
+        autoFocus
+        label={mobileText('sidebar.folder.newName')}
+        placeholder={mobileText('sidebar.folder.newName')}
+        testID="workspace-rename-folder-input"
+        value={props.folderName}
+        onChangeText={props.onFolderNameChange}
+      />
+      <ActionRow
+        icon={<FolderOpen color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />}
+        label={mobileText('sidebar.action.createFolder')}
+        testID="workspace-action-create-child-folder"
+        onPress={props.onOpenCreateChildFolder}
+      />
+      <ActionRow
+        destructive
+        icon={<Trash color={mobileColors.red} size={desktopToolbarActionParity.iconSize} />}
+        label={mobileText('sidebar.action.deleteFolder')}
+        testID="workspace-action-delete-folder"
+        onPress={props.onDeleteFolder}
+      />
+      <SheetFooter>
+        <MobileButton label={mobileText('common.cancel')} variant="ghost" onPress={props.onClose} />
+        <MobileButton disabled={props.folderName.trim().length === 0} label={mobileText('common.save')} variant="primary" onPress={props.onRenameFolder} />
+      </SheetFooter>
+    </View>
   )
 }
 
@@ -964,8 +1019,10 @@ const actionTitleByAction: Record<MobileWorkspaceAction, () => string> = {
   addProperty: () => mobileText('inspector.properties.addProperty'),
   addRelationship: () => mobileText('inspector.relationship.addRelationship').replace(/^\+\s*/, ''),
   changeNoteType: () => mobileText('command.note.changeType'),
+  createFolder: () => mobileText('sidebar.action.createFolder'),
   createNote: () => mobileText('command.note.newNote'),
   createView: () => mobileText('viewDialog.title.create'),
+  editFolder: () => mobileText('sidebar.action.renameFolder'),
   editProperty: () => mobileText('inspector.title.properties'),
   editTypeSection: () => mobileText('sidebar.section.name'),
   editView: () => mobileText('viewDialog.title.edit'),

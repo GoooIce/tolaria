@@ -170,6 +170,7 @@ export type MobileWorkspaceSnapshot = {
   allNotes?: MobileNote[]
   editorBlocks: MobileEditorBlock[]
   editorBullets: string[]
+  folderPaths?: string[]
   noteListSubtitle: string
   notes: MobileNote[]
   searchQuery?: string

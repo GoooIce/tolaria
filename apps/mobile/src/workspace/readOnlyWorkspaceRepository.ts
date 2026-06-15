@@ -64,13 +64,38 @@ function persistHostWrites(writes: MobileWorkspaceWrite[]) {
   const writeLog = ensureHostWriteLog()
 
   for (const write of writes) {
-    if (write.kind === 'deleteNote' || write.kind === 'deleteView') {
+    if (write.kind === 'deleteFolder') {
+      deleteHostFolder(contents, write.path)
+    } else if (write.kind === 'renameFolder') {
+      renameHostFolder(contents, write.path, write.toPath)
+    } else if (write.kind === 'deleteNote' || write.kind === 'deleteView') {
       Reflect.deleteProperty(contents, write.path)
+    } else if (write.kind === 'createFolder') {
+      // Host mode keeps folder structure in the in-memory snapshot; there is no file content to mirror.
     } else {
       contents[write.path] = write.content
     }
     writeLog.push(write)
   }
+}
+
+function deleteHostFolder(contents: Record<string, string>, folderPath: string) {
+  for (const path of Object.keys(contents)) {
+    if (hostPathInFolder(folderPath, path)) Reflect.deleteProperty(contents, path)
+  }
+}
+
+function renameHostFolder(contents: Record<string, string>, previousPath: string, nextPath: string) {
+  for (const [path, content] of Object.entries(contents)) {
+    if (!hostPathInFolder(previousPath, path)) continue
+
+    Reflect.deleteProperty(contents, path)
+    contents[`${nextPath}${path.slice(previousPath.length)}`] = content
+  }
+}
+
+function hostPathInFolder(folderPath: string, candidatePath: string): boolean {
+  return candidatePath === folderPath || candidatePath.startsWith(`${folderPath}/`)
 }
 
 function readHostWorkspaceSnapshot(): MobileWorkspaceSnapshot | null {

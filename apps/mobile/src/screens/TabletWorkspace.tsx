@@ -75,8 +75,10 @@ function TabletWorkspaceChrome(props: TabletWorkspaceChromeProps) {
     onDeleteProperty,
     onEditProperty,
     onOpenChangeNoteType,
+    onOpenCreateFolder,
     onOpenCreateNote,
     onOpenCreateView,
+    onOpenFolderActions,
     onOpenMoreActions,
     onOpenSearch,
     onOpenTypeActions,
@@ -110,7 +112,9 @@ function TabletWorkspaceChrome(props: TabletWorkspaceChromeProps) {
             layoutProbe={layoutProbe}
             sections={snapshot.sidebarSections}
             title={snapshot.source?.label}
+            onCreateFolder={onOpenCreateFolder}
             onCreateView={onOpenCreateView}
+            onOpenFolderActions={onOpenFolderActions}
             onOpenTypeActions={onOpenTypeActions}
             onOpenViewActions={onOpenViewActions}
             onSelectFolder={onSelectFolder}
@@ -201,6 +205,7 @@ function actionSheetValues(props: ActionSheetHostProps) {
     canMoveViewUp,
     createTitle: readOnlyForm.createTitle,
     filenameStem: readOnlyForm.filenameStem,
+    folderName: readOnlyForm.folderName,
     folderPath: readOnlyForm.folderPath,
     notes: suggestionNotes,
     noteType: readOnlyForm.noteType,
@@ -239,24 +244,29 @@ function actionSheetHandlers(props: ActionSheetHostProps) {
     onChangeNoteTypeInputChange: props.onChangeNoteTypeInputChange,
     onClose: props.onCloseAction,
     onCopyDeepLink: props.onCopyDeepLink,
+    onCreateFolder: props.onCreateFolder,
     onCreateNote: props.onCreateNote,
     onCreateRelationshipTarget: props.onCreateRelationshipTarget,
     onCreateTitleChange: props.onCreateTitleChange,
     onCreateView: props.onCreateView,
+    onDeleteFolder: props.onDeleteFolder,
     onDeleteNote: props.onDeleteNote,
     onDeleteView: props.onDeleteView,
     onFilenameStemChange: props.onFilenameStemChange,
+    onFolderNameChange: props.onFolderNameChange,
     onFolderPathChange: props.onFolderPathChange,
     onMoveNoteToFolder: props.onMoveNoteToFolder,
     onMoveViewDown: props.onMoveViewDown,
     onMoveViewUp: props.onMoveViewUp,
     onOpenChangeNoteType: props.onOpenChangeNoteType,
+    onOpenCreateChildFolder: props.onOpenCreateChildFolder,
     onOpenMoveNoteToFolder: props.onOpenMoveNoteToFolder,
     onOpenRenameNoteFile: props.onOpenRenameNoteFile,
     onPropertyNameChange: props.onPropertyNameChange,
     onPropertyValueChange: props.onPropertyValueChange,
     onRelationshipNameChange: props.onRelationshipNameChange,
     onRelationshipNoteTitleChange: props.onRelationshipNoteTitleChange,
+    onRenameFolder: props.onRenameFolder,
     onRenameNoteFile: props.onRenameNoteFile,
     onSaveProperty: props.onSaveProperty,
     onSaveRelationship: props.onSaveRelationship,

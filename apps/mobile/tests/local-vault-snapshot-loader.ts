@@ -3,7 +3,7 @@ import { access, readdir, readFile, stat } from 'node:fs/promises'
 import { basename, join, relative } from 'node:path'
 import { performance } from 'node:perf_hooks'
 import { buildLocalVaultWorkspaceSnapshot, type LocalVaultFile } from '../src/workspace/localVaultSnapshot'
-import type { MobileSidebarFolder, MobileWorkspaceSnapshot } from '../src/workspace/mobileWorkspaceModel'
+import type { MobileNote, MobileSidebarFolder, MobileWorkspaceSnapshot } from '../src/workspace/mobileWorkspaceModel'
 import {
   HOST_WORKSPACE_NOTE_CONTENTS_GLOBAL_KEY,
   HOST_WORKSPACE_SNAPSHOT_GLOBAL_KEY,
@@ -17,8 +17,13 @@ export type LocalVaultSnapshotState = {
   readDurationMs: number
   snapshot: MobileWorkspaceSnapshot
   totalDurationMs: number
-  vaultPath: string
+  vaultPath: VaultPath
 }
+
+type AbsolutePath = string
+type DirectoryName = string
+type RelativePath = string
+type VaultPath = string
 
 const defaultLocalVaultPath = '/Users/luca/Laputa'
 export const localVaultPath = process.env.MOBILE_QA_VAULT_PATH ?? defaultLocalVaultPath
@@ -59,7 +64,7 @@ export async function localVaultSnapshotState(): Promise<LocalVaultSnapshotState
 
 export function firstSidebarFolder(snapshot: MobileWorkspaceSnapshot): MobileSidebarFolder | null {
   const folders = snapshot.sidebarSections.find((section) => section.id === 'folders')?.folders ?? []
-  return firstFolder(folders)
+  return firstNoteBackedFolder(folders, snapshotNoteFolderPaths(snapshot)) ?? firstFolder(folders)
 }
 
 function firstFolder(folders: MobileSidebarFolder[]): MobileSidebarFolder | null {
@@ -70,6 +75,30 @@ function firstFolder(folders: MobileSidebarFolder[]): MobileSidebarFolder | null
   }
 
   return null
+}
+
+function firstNoteBackedFolder(
+  folders: MobileSidebarFolder[],
+  noteFolderPaths: Set<string>,
+): MobileSidebarFolder | null {
+  for (const folder of folders) {
+    if (noteFolderPaths.has(folder.id)) return folder
+
+    const child = firstNoteBackedFolder(folder.children, noteFolderPaths)
+    if (child) return child
+  }
+
+  return null
+}
+
+function snapshotNoteFolderPaths(snapshot: MobileWorkspaceSnapshot): Set<string> {
+  return new Set((snapshot.allNotes ?? snapshot.notes).flatMap(noteAncestorFolderPaths))
+}
+
+function noteAncestorFolderPaths(note: MobileNote): string[] {
+  const path = note.path || note.id
+  const folderParts = path.split('/').slice(0, -1)
+  return folderParts.map((_, index) => folderParts.slice(0, index + 1).join('/'))
 }
 
 async function buildLocalVaultSnapshotState(): Promise<LocalVaultSnapshotState | null> {
@@ -83,9 +112,11 @@ async function buildLocalVaultSnapshotState(): Promise<LocalVaultSnapshotState |
 
   const startedAt = performance.now()
   const files = await readLocalVaultFiles(localVaultPath)
+  const folderPaths = await readLocalVaultDirectories(localVaultPath)
   const readAt = performance.now()
   const snapshot = buildLocalVaultWorkspaceSnapshot({
     files,
+    folderPaths,
     vaultLabel: basename(localVaultPath),
     vaultPath: localVaultPath,
   })
@@ -110,7 +141,7 @@ function noteContentMap(files: LocalVaultFile[]): Record<string, string> {
   )
 }
 
-async function readLocalVaultFiles(vaultPath: string): Promise<LocalVaultFile[]> {
+async function readLocalVaultFiles(vaultPath: VaultPath): Promise<LocalVaultFile[]> {
   const markdownPaths = await listWorkspaceFiles(vaultPath)
   const files: LocalVaultFile[] = []
 
@@ -122,9 +153,13 @@ async function readLocalVaultFiles(vaultPath: string): Promise<LocalVaultFile[]>
   return files
 }
 
-async function listWorkspaceFiles(vaultPath: string, currentPath = vaultPath): Promise<string[]> {
+async function readLocalVaultDirectories(vaultPath: VaultPath): Promise<RelativePath[]> {
+  return listWorkspaceDirectories(vaultPath)
+}
+
+async function listWorkspaceFiles(vaultPath: VaultPath, currentPath: AbsolutePath = vaultPath): Promise<AbsolutePath[]> {
   const entries = await readdir(currentPath, { withFileTypes: true })
-  const files: string[] = []
+  const files: AbsolutePath[] = []
 
   for (const entry of entries) {
     const absolutePath = join(currentPath, entry.name)
@@ -138,15 +173,30 @@ async function listWorkspaceFiles(vaultPath: string, currentPath = vaultPath): P
   return files
 }
 
-function shouldReadFile(relativePath: string): boolean {
+async function listWorkspaceDirectories(vaultPath: VaultPath, currentPath: AbsolutePath = vaultPath): Promise<RelativePath[]> {
+  const entries = await readdir(currentPath, { withFileTypes: true })
+  const directories: RelativePath[] = []
+
+  for (const entry of entries) {
+    if (!entry.isDirectory() || !shouldReadDirectory(entry.name)) continue
+
+    const absolutePath = join(currentPath, entry.name)
+    directories.push(relative(vaultPath, absolutePath).replaceAll('\\', '/'))
+    directories.push(...await listWorkspaceDirectories(vaultPath, absolutePath))
+  }
+
+  return directories
+}
+
+function shouldReadFile(relativePath: RelativePath): boolean {
   return relativePath.endsWith('.md') || /^views\/[^/]+\.ya?ml$/u.test(relativePath)
 }
 
-function shouldReadDirectory(name: string): boolean {
+function shouldReadDirectory(name: DirectoryName): boolean {
   return !name.startsWith('.') && name !== 'node_modules'
 }
 
-async function readLocalVaultFile(vaultPath: string, absolutePath: string): Promise<LocalVaultFile> {
+async function readLocalVaultFile(vaultPath: VaultPath, absolutePath: AbsolutePath): Promise<LocalVaultFile> {
   const [content, metadata] = await Promise.all([
     readFile(absolutePath, 'utf8'),
     stat(absolutePath),

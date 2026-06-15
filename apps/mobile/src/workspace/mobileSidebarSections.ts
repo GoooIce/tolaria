@@ -1,8 +1,8 @@
 import { evaluateMobileSavedView } from './mobileSavedViews'
+import { buildMobileFolderTree } from './mobileWorkspaceFolders'
 import type {
   MobileNote,
   MobileSavedView,
-  MobileSidebarFolder,
   MobileSidebarIcon,
   MobileSidebarItem,
   MobileSidebarSection,
@@ -12,6 +12,7 @@ import type {
 } from './mobileWorkspaceModel'
 
 type BuildMobileSidebarSectionsInput = {
+  folderPaths?: string[]
   notes: MobileNote[]
   previousSections?: MobileSidebarSection[]
   typeDefinitions?: MobileTypeDefinitions
@@ -31,6 +32,7 @@ const typeIcons: Record<string, MobileSidebarIcon> = {
 }
 
 export function buildMobileSidebarSections({
+  folderPaths,
   notes,
   previousSections = [],
   typeDefinitions = {},
@@ -43,7 +45,7 @@ export function buildMobileSidebarSections({
     favoritesSection(activeNotes),
     viewsSection(views, notes),
     typesSection(activeNotes, previousSections, typeDefinitions),
-    foldersSection(notes),
+    foldersSection(notes, folderPaths),
   ]
 
   return sections.filter((section) => section.id === 'primary' || Boolean(section.items?.length || section.folders?.length))
@@ -121,9 +123,9 @@ function typesSection(
   }
 }
 
-function foldersSection(notes: MobileNote[]): MobileSidebarSection {
+function foldersSection(notes: MobileNote[], folderPaths: string[] = []): MobileSidebarSection {
   return {
-    folders: folderTree(notes),
+    folders: buildMobileFolderTree({ folderPaths, notes }),
     id: 'folders',
     label: 'Folders',
   }
@@ -180,59 +182,6 @@ function isVisibleTypeDefinition(definition?: MobileTypeDefinition) {
   return definition?.visible !== false
 }
 
-function folderTree(notes: MobileNote[]): MobileSidebarFolder[] {
-  const roots: MobileSidebarFolder[] = []
-
-  for (const note of notes) {
-    appendFolderPath(roots, folderPathSegments(note))
-  }
-
-  sortFolderTree(roots)
-  return roots
-}
-
-function appendFolderPath(roots: MobileSidebarFolder[], segments: string[]) {
-  let currentPath = ''
-  let level = roots
-
-  for (const segment of segments) {
-    currentPath = currentPath ? `${currentPath}/${segment}` : segment
-    const folder = findOrCreateFolder(level, segment, currentPath)
-    level = folder.children
-  }
-}
-
-function folderPathSegments(note: MobileNote): string[] {
-  return notePath(note)
-    .split('/')
-    .slice(0, -1)
-    .filter(visibleFolderSegment)
-}
-
-function notePath(note: MobileNote): string {
-  return note.path ?? note.id
-}
-
-function findOrCreateFolder(
-  folders: MobileSidebarFolder[],
-  name: string,
-  path: string,
-): MobileSidebarFolder {
-  const existing = folders.find((folder) => folder.id === path)
-  if (existing) return existing
-
-  const folder = { children: [], expanded: true, id: path, name }
-  folders.push(folder)
-  return folder
-}
-
-function sortFolderTree(folders: MobileSidebarFolder[]) {
-  folders.sort((left, right) => left.name.localeCompare(right.name))
-  for (const folder of folders) {
-    sortFolderTree(folder.children)
-  }
-}
-
 function viewTone(view: MobileSavedView): MobileTone {
   const color = view.definition.color
   return isMobileTone(color) ? color : 'gray'
@@ -246,10 +195,6 @@ function isMobileTone(value: string | null): value is MobileTone {
     || value === 'purple'
     || value === 'red'
     || value === 'yellow'
-}
-
-function visibleFolderSegment(segment: string): boolean {
-  return Boolean(segment) && !segment.startsWith('.') && segment !== 'type'
 }
 
 function pluralizeType(type: string): string {

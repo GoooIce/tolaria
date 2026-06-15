@@ -24,6 +24,7 @@ test.describe('mobile UI lab interactions', () => {
     await editMarkdownWithWikilink(page)
     await archiveAndUnarchiveSelectedNote(page)
     await organizeUnorganizeAndDeleteSelectedDraft(page)
+    await createRenameAndDeleteSidebarFolder(page)
   })
 
 
@@ -251,13 +252,24 @@ async function customizeProcedureTypeSection(page: PageLike) {
 }
 
 async function longPress(page: PageLike, testId: string) {
-  const target = page.getByTestId(testId)
+  await longPressLocator(page, page.getByTestId(testId), testId)
+}
+
+async function longPressRoleButton(page: PageLike, name: string) {
+  await longPressLocator(page, page.getByRole('button', { name }).first(), name)
+}
+
+async function longPressLocator(
+  page: PageLike,
+  target: ReturnType<PageLike['getByTestId']>,
+  label: string,
+) {
   const box = await target.boundingBox()
-  if (!box) throw new Error(`Cannot long-press missing target: ${testId}`)
+  if (!box) throw new Error(`Cannot long-press missing target: ${label}`)
 
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
   await page.mouse.down()
-  await page.waitForTimeout(360)
+  await page.waitForTimeout(700)
   await page.mouse.up()
 }
 
@@ -398,6 +410,37 @@ async function organizeUnorganizeAndDeleteSelectedDraft(page: PageLike) {
   await expect(page.getByTestId('note-row-mobile-qa-draft.md')).toBeHidden()
 }
 
+async function createRenameAndDeleteSidebarFolder(page: PageLike) {
+  await page.getByTestId('sidebar-section-create-folders').click()
+  await expect(page.getByTestId('workspace-create-folder-name-input')).toBeVisible()
+  await page.getByTestId('workspace-create-folder-name-input').fill('Mobile Test Folder')
+  await page.getByTestId('workspace-action-sheet-createFolder').getByRole('button', { name: 'Create' }).click()
+  await expect(page.getByRole('button', { name: 'Mobile Test Folder' })).toBeVisible()
+  await expect(page.getByTestId('note-list-toolbar-title')).toHaveText('Mobile Test Folder')
+
+  await longPressRoleButton(page, 'Mobile Test Folder')
+  await expect(page.getByTestId('workspace-rename-folder-input')).toHaveValue('Mobile Test Folder')
+  await page.getByTestId('workspace-rename-folder-input').fill('Mobile Renamed Folder')
+  await page.getByTestId('workspace-action-sheet-editFolder').getByRole('button', { name: 'Save' }).click()
+  await expect(page.getByRole('button', { name: 'Mobile Renamed Folder' })).toBeVisible()
+  await expect(page.getByTestId('note-list-toolbar-title')).toHaveText('Mobile Renamed Folder')
+
+  await longPressRoleButton(page, 'Mobile Renamed Folder')
+  await page.getByTestId('workspace-action-create-child-folder').click()
+  await page.getByTestId('workspace-create-folder-name-input').fill('Child Folder')
+  await page.getByTestId('workspace-action-sheet-createFolder').getByRole('button', { name: 'Create' }).click()
+  await expect(page.getByRole('button', { name: 'Child Folder' })).toBeVisible()
+  await expect(page.getByTestId('note-list-toolbar-title')).toHaveText('Child Folder')
+
+  await longPressRoleButton(page, 'Child Folder')
+  await page.getByTestId('workspace-action-delete-folder').click()
+  await expect(page.getByRole('button', { name: 'Child Folder' })).toBeHidden()
+
+  await longPressRoleButton(page, 'Mobile Renamed Folder')
+  await page.getByTestId('workspace-action-delete-folder').click()
+  await expect(page.getByRole('button', { name: 'Mobile Renamed Folder' })).toBeHidden()
+}
+
 async function installRequiredLocalVaultSnapshot(page: PageLike): Promise<LocalVaultSnapshotState> {
   const state = await installLocalVaultSnapshot(page)
   test.skip(!state, `Local vault path is not readable: ${localVaultPath}`)
@@ -486,9 +529,11 @@ async function assertSavedViewNavigationBudget(page: PageLike, state: LocalVault
 async function assertFolderNavigationBudget(page: PageLike, state: LocalVaultSnapshotState) {
   const folder = firstSidebarFolder(state.snapshot)
   if (!folder) return
+  const folderButton = page.getByRole('button', { name: folder.name }).first()
+  await folderButton.scrollIntoViewIfNeeded()
 
   const folderNavigationDurationMs = await measureDuration(async () => {
-    await page.getByRole('button', { name: folder.name }).first().click()
+    await folderButton.click()
     await expect(page.getByTestId('note-list-toolbar-title')).toHaveText(folder.name)
   })
   expect(folderNavigationDurationMs).toBeLessThan(700)

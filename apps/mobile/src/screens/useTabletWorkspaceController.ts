@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { MobileWorkspaceAction } from '../components/workspace/MobileWorkspaceActionSheet'
-import type { MobileSidebarItemSelection } from '../components/workspace/MobileWorkspaceSidebar'
+import type {
+  MobileSidebarFolderSelection,
+  MobileSidebarItemSelection,
+} from '../components/workspace/MobileWorkspaceSidebar'
 import type {
   MobileCreateNoteDefaults,
   MobileNote,
@@ -41,12 +44,22 @@ import { useTabletWorkspaceNavigation } from './tabletWorkspaceNavigation'
 import type { TabletReadOnlyForm } from './tabletWorkspaceTypes'
 import type { TabletSidebarSelection } from './tabletWorkspaceNavigation'
 import { createNoteDefaultsForSelection } from './tabletWorkspaceCreateDefaults'
+import { selectAfterWorkspaceEdit } from './tabletWorkspaceEditSelection'
+import {
+  createFolderFields,
+  folderActionFields,
+  folderParentPathForSelection,
+  folderWorkspaceActions,
+} from './tabletWorkspaceFolderActions'
 import { viewColorForSelection, viewFiltersForSelection } from './tabletWorkspaceViewHelpers'
 
 const emptyReadOnlyForm: TabletReadOnlyForm = {
   createTitle: '',
+  editingFolderPath: '',
   editingViewId: '',
   filenameStem: '',
+  folderName: '',
+  folderParentPath: '',
   folderPath: '',
   noteType: '',
   propertyName: '',
@@ -87,6 +100,7 @@ type WorkspaceActionsContext = {
   navigation: TabletWorkspaceNavigation
   readOnlyForm: TabletReadOnlyForm
   selectedNote: MobileNote | null
+  setOpenAction: SetOpenAction
   updateReadOnlyForm: ReadOnlyFormUpdater
   workspaceSnapshot: MobileWorkspaceSnapshot
 }
@@ -119,6 +133,7 @@ export function useTabletWorkspaceController({
     navigation,
     readOnlyForm,
     selectedNote,
+    setOpenAction,
     updateReadOnlyForm,
     workspaceSnapshot,
   })
@@ -185,31 +200,8 @@ function useControllerApplyEdit({
 }) {
   return useCallback((edit: MobileWorkspaceEdit) => {
     const result = applyWorkspaceEdit(edit)
-    if (edit.type === 'createNote' && result.snapshot.selectedNoteId) {
-      setSelectedNoteId(result.snapshot.selectedNoteId)
-    } else if (edit.type === 'createView') {
-      selectCreatedView(edit, result.snapshot, navigation)
-    } else if (edit.type === 'updateView') {
-      selectUpdatedView(edit.viewId, result.snapshot, navigation)
-    } else if (edit.type === 'deleteView') {
-      selectAfterDeletedView(edit.viewId, result.snapshot, navigation)
-    } else if (edit.type === 'moveNoteToFolder' || edit.type === 'renameNoteFile') {
-      setSelectedNoteId(selectedNoteIdAfterPathEdit(edit, result))
-    }
+    selectAfterWorkspaceEdit({ edit, navigation, result, setSelectedNoteId })
   }, [applyWorkspaceEdit, navigation, setSelectedNoteId])
-}
-
-function selectedNoteIdAfterPathEdit(
-  edit: Extract<MobileWorkspaceEdit, { type: 'moveNoteToFolder' | 'renameNoteFile' }>,
-  result: ReturnType<typeof applyMobileWorkspaceEditWithWrites>,
-) {
-  const notes = result.snapshot.allNotes ?? result.snapshot.notes
-  const directMatch = notes.find((note) => note.id === edit.noteId)
-  if (directMatch) return directMatch.id
-
-  const savedPath = result.writes.find((write) => write.kind === 'saveNote')?.path
-  const pathMatch = savedPath ? notes.find((note) => note.path === savedPath || note.id === savedPath) : null
-  return pathMatch?.id ?? result.snapshot.selectedNoteId ?? null
 }
 
 function useCloseWorkspaceAction({
@@ -239,41 +231,6 @@ function useSaveSelectedEdit({
     applyEdit(toEdit(selectedNote.id))
     closeAction()
   }, [applyEdit, closeAction, selectedNote])
-}
-
-function selectCreatedView(
-  edit: Extract<MobileWorkspaceEdit, { type: 'createView' }>,
-  snapshot: MobileWorkspaceSnapshot,
-  navigation: TabletWorkspaceNavigation,
-) {
-  const createdView = snapshot.views?.find((view) => view.definition.name === edit.definition.name)
-  if (createdView) navigation.selectSavedView(createdView, snapshot)
-}
-
-function selectUpdatedView(
-  viewId: string,
-  snapshot: MobileWorkspaceSnapshot,
-  navigation: TabletWorkspaceNavigation,
-) {
-  const updatedView = snapshot.views?.find((view) => view.id === viewId)
-  if (!updatedView) return
-  if (!isSelectedView(navigation.sidebarSelection, viewId)) return
-
-  navigation.selectSavedView(updatedView, snapshot)
-}
-
-function selectAfterDeletedView(
-  viewId: string,
-  snapshot: MobileWorkspaceSnapshot,
-  navigation: TabletWorkspaceNavigation,
-) {
-  if (navigation.sidebarSelection.kind !== 'item' || navigation.sidebarSelection.viewId !== viewId) return
-  navigation.selectDefaultSidebarItem(snapshot)
-}
-
-function isSelectedView(selection: TabletSidebarSelection, viewId: string) {
-  if (selection.kind !== 'item') return false
-  return selection.viewId === viewId
 }
 
 function useWorkspaceEditPipeline({
@@ -367,6 +324,12 @@ function actionSheetWorkspaceActions({
     onAddProperty: (key?: string) => openAction('addProperty', addPropertyFields(key)),
     onAddRelationship: (key?: string) => openAction('addRelationship', addRelationshipFields(key)),
     onCloseAction: closeAction,
+    onOpenCreateFolder: () => openWorkspaceAction({
+      action: 'createFolder',
+      fields: createFolderFields(folderParentPathForSelection(navigation.sidebarSelection)),
+      setOpenAction,
+      updateReadOnlyForm,
+    }),
     onOpenCreateNote: () => setOpenAction('createNote'),
     onOpenCreateView: () => openCreateView({
       filters: viewFiltersForSelection(navigation.sidebarSelection, navigation.notes, selectedNote, workspaceSnapshot.views ?? []),
@@ -381,6 +344,12 @@ function actionSheetWorkspaceActions({
       { key: 'filenameStem', value: filenameStemForNote(selectedNote) },
     ]),
     onOpenSearch: () => setOpenAction('search'),
+    onOpenFolderActions: (selection: MobileSidebarFolderSelection) => openWorkspaceAction({
+      action: 'editFolder',
+      fields: folderActionFields(selection),
+      setOpenAction,
+      updateReadOnlyForm,
+    }),
     onOpenViewActions: (selection: MobileSidebarItemSelection) => openViewActions({
       selection,
       setOpenAction,
@@ -402,6 +371,7 @@ function createWorkspaceActions({
   navigation,
   readOnlyForm,
   selectedNote,
+  setOpenAction,
   updateReadOnlyForm,
   workspaceSnapshot,
 }: WorkspaceActionsContext) {
@@ -426,6 +396,7 @@ function createWorkspaceActions({
       selection: navigation.sidebarSelection,
       typeDefinitions: workspaceSnapshot.typeDefinitions,
     }),
+    ...folderWorkspaceActions({ applyEdit, closeAction, readOnlyForm, setOpenAction, updateReadOnlyForm }),
     ...savedViewWorkspaceActions({ applyEdit, closeAction, readOnlyForm, updateReadOnlyForm, workspaceSnapshot }),
     ...typeSectionWorkspaceActions({ applyEdit, closeAction, readOnlyForm, updateReadOnlyForm, workspaceSnapshot }),
   }
