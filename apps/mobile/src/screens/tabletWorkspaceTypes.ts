@@ -57,6 +57,7 @@ export type TabletReadOnlyForm = {
   viewFilters: MobileViewFilterGroup
   viewName: ReadOnlyFormValue
   viewPropertyQuery: ReadOnlyFormValue
+  viewSort: ReadOnlyFormValue
 }
 
 export type TabletWorkspaceChromeProps = {
@@ -143,6 +144,7 @@ export type TabletWorkspaceChromeProps = {
   onViewDisplayPropertiesChange: (value: string[]) => void
   onViewNameChange: (value: ReadOnlyFormValue) => void
   onViewPropertyQueryChange: (value: ReadOnlyFormValue) => void
+  onViewSortChange: (value: ReadOnlyFormValue) => void
   onSaveView: () => void
   onPropertyNameChange: (value: ReadOnlyFormValue) => void
   onPropertyValueChange: (value: ReadOnlyFormValue) => void

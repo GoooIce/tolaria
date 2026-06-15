@@ -13,6 +13,7 @@ import {
   type MobileTypeSchemaRelationship,
 } from '../../workspace/mobileTypeDefinitionSchema'
 import { noteTypeColor, noteTypeSoftColor } from './mobileWorkspaceTone'
+import { MobileSortPicker } from './MobileSortPicker'
 import { MobileViewDisplayPropertiesPicker } from './MobileViewDisplayPropertiesPicker'
 import { MobileWorkspaceSuggestionList } from './MobileWorkspaceSuggestionList'
 
@@ -53,14 +54,6 @@ type MobileTypeSectionEditorProps = {
 
 const toneOptions: MobileTone[] = ['gray', 'green', 'purple', 'orange', 'blue', 'yellow', 'red']
 
-const sortOptions = [
-  { label: `${mobileText('noteList.sort.modified')} ${mobileText('noteList.sort.descending')}`, value: 'modified:desc' },
-  { label: `${mobileText('noteList.sort.modified')} ${mobileText('noteList.sort.ascending')}`, value: 'modified:asc' },
-  { label: `${mobileText('noteList.sort.title')} ${mobileText('noteList.sort.ascending')}`, value: 'title:asc' },
-  { label: `${mobileText('noteList.sort.title')} ${mobileText('noteList.sort.descending')}`, value: 'title:desc' },
-  { label: `${mobileText('noteList.sort.status')} ${mobileText('noteList.sort.ascending')}`, value: 'status:asc' },
-]
-
 export function MobileTypeSectionEditor(props: MobileTypeSectionEditorProps) {
   return (
     <View style={styles.editor} testID="workspace-type-section-editor">
@@ -75,7 +68,12 @@ export function MobileTypeSectionEditor(props: MobileTypeSectionEditorProps) {
       />
       <VisibilityToggle visible={props.visible} onChange={props.onVisibleChange} />
       <TonePicker selectedTone={props.tone} onSelect={props.onToneChange} />
-      <SortPicker selectedSort={props.sort} onSelect={props.onSortChange} />
+      <MobileSortPicker
+        selectedSort={props.sort}
+        testID="workspace-type-sort-picker"
+        testIDPrefix="workspace-type-sort"
+        onSelect={props.onSortChange}
+      />
       <MobileTextInput
         label={mobileText('customize.template')}
         multiline
@@ -263,38 +261,6 @@ function TonePicker({
   )
 }
 
-function SortPicker({
-  onSelect,
-  selectedSort,
-}: {
-  onSelect: (value: string) => void
-  selectedSort: string
-}) {
-  return (
-    <View style={styles.section} testID="workspace-type-sort-picker">
-      {sortOptions.map((option) => {
-        const selected = selectedSort === option.value
-        return (
-          <Pressable
-            accessibilityLabel={option.label}
-            accessibilityRole="button"
-            key={option.value}
-            style={({ pressed }) => [
-              styles.sortRow,
-              selected ? styles.sortRowSelected : null,
-              pressed ? styles.pressed : null,
-            ]}
-            testID={`workspace-type-sort-${option.value.replace(/[^a-z0-9]+/gu, '-')}`}
-            onPress={() => onSelect(option.value)}
-          >
-            <Text style={[styles.rowText, selected ? styles.selectedText : null]}>{option.label}</Text>
-          </Pressable>
-        )
-      })}
-    </View>
-  )
-}
-
 const styles = StyleSheet.create({
   editor: {
     gap: mobileSpace.md,
@@ -339,19 +305,6 @@ const styles = StyleSheet.create({
     flex: 1,
     color: mobileColors.textMuted,
     fontSize: mobileType.caption,
-  },
-  selectedText: {
-    color: mobileColors.primary,
-    fontWeight: '600',
-  },
-  sortRow: {
-    minHeight: 32,
-    justifyContent: 'center',
-    borderRadius: 6,
-    paddingHorizontal: mobileSpace.sm,
-  },
-  sortRowSelected: {
-    backgroundColor: mobileColors.primarySoft,
   },
   templateInput: {
     minHeight: 92,

@@ -148,6 +148,13 @@ export const mobileParityInventory = [
     surface: 'Saved-view note-list column picker',
   },
   {
+    assertions: ['saved-view sort user-flow checks', 'type-section sort user-flow checks'],
+    contracts: ['desktopPropertyParity', 'desktopToolbarActionParity'],
+    desktopSource: 'SortDropdown and NoteListHeader sort persistence',
+    mobileFile: 'src/components/workspace/MobileSortPicker.tsx',
+    surface: 'Saved-view and Type-section sort picker',
+  },
+  {
     assertions: ['type-section edit user-flow checks', 'type schema/default edit user-flow checks'],
     contracts: ['desktopPropertyParity', 'desktopSidebarParity'],
     desktopSource: 'TypeCustomizePopover, Type document frontmatter schema/defaults, Sidebar type context actions, and NoteListHeader type columns',

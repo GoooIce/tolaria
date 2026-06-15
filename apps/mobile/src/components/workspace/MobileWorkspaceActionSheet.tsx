@@ -38,6 +38,7 @@ import {
   mobileTypeSuggestions,
 } from '../../workspace/mobileWorkspaceSuggestions'
 import { MobileTypeIcon } from './MobileWorkspaceIcons'
+import { MobileSortPicker } from './MobileSortPicker'
 import { MobileBooleanPropertyValuePicker, MobilePropertyValueKindPicker } from './MobilePropertyValueKindPicker'
 import { MobileTypeSectionEditor } from './MobileTypeSectionEditor'
 import { MobileViewDisplayPropertiesPicker } from './MobileViewDisplayPropertiesPicker'
@@ -122,6 +123,7 @@ type MobileWorkspaceActionSheetProps = {
   onViewFiltersChange: (value: MobileViewFilterGroup) => void
   onViewNameChange: (value: string) => void
   onViewPropertyQueryChange: (value: string) => void
+  onViewSortChange: (value: string) => void
   propertyName: string
   propertyValue: string
   propertyValueKind: MobilePropertyValueKind
@@ -150,6 +152,7 @@ type MobileWorkspaceActionSheetProps = {
   viewName: string
   viewPropertyOptions: string[]
   viewPropertyQuery: string
+  viewSort: string
   onTypeDisplayPropertiesChange: (value: string[]) => void
   onTypeNameChange: (value: string) => void
   onTypePropertyQueryChange: (value: string) => void
@@ -446,11 +449,19 @@ function singleTextFieldConfig(props: MobileWorkspaceActionSheetProps) {
 
 function viewFilterBuilder(props: MobileWorkspaceActionSheetProps) {
   return (
-    <MobileViewFilterBuilder
-      group={props.viewFilters}
-      notes={props.notes}
-      onChange={props.onViewFiltersChange}
-    />
+    <>
+      <MobileSortPicker
+        selectedSort={props.viewSort}
+        testID="workspace-view-sort-picker"
+        testIDPrefix="workspace-view-sort"
+        onSelect={props.onViewSortChange}
+      />
+      <MobileViewFilterBuilder
+        group={props.viewFilters}
+        notes={props.notes}
+        onChange={props.onViewFiltersChange}
+      />
+    </>
   )
 }
 

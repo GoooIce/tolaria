@@ -233,7 +233,7 @@ async function createNote(page: PageLike, title: string, rowId: string) {
   await page.getByTestId('note-list-create-action').click()
   await expect(page.getByTestId('workspace-create-note-title-input')).toBeVisible()
   await page.getByTestId('workspace-create-note-title-input').fill(title)
-  await page.getByTestId('workspace-action-sheet-createNote').getByRole('button', { name: 'Create' }).click()
+  await page.getByTestId('workspace-action-sheet-createNote').getByRole('button', { exact: true, name: 'Create' }).click()
   await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
   await expect(page.getByTestId(`note-row-${rowId}`)).toBeVisible()
   await expect(page.getByTestId('editor-title')).toHaveText(title)
@@ -264,7 +264,7 @@ async function createSavedViewFromSidebar(page: PageLike) {
   await expect(page.getByTestId('workspace-create-view-name-input')).toBeVisible()
   await expect(page.getByTestId('workspace-create-view-name-input')).toHaveValue('Inbox')
   await page.getByTestId('workspace-create-view-name-input').fill('Mobile Inbox View')
-  await page.getByTestId('workspace-action-sheet-createView').getByRole('button', { name: 'Create' }).click()
+  await page.getByTestId('workspace-action-sheet-createView').getByRole('button', { exact: true, name: 'Create' }).click()
   await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
   await expect(page.getByRole('button', { name: 'Mobile Inbox View' })).toBeVisible()
   await expect(page.getByTestId('note-list-toolbar-title')).toHaveText('Mobile Inbox View')
@@ -311,11 +311,15 @@ async function moveCreatedSavedView(page: PageLike) {
 async function customizeCreatedSavedViewColumns(page: PageLike) {
   await longPress(page, 'sidebar-item-view-mobile-inbox-view')
   await expect(page.getByTestId('workspace-view-property-picker')).toBeVisible()
+  await page.getByTestId('workspace-view-sort-title-asc').click()
   await page.getByTestId('workspace-view-property-search-input').fill('bel')
   await page.getByTestId('workspace-view-property-option-belongs-to').click()
   await page.getByTestId('workspace-action-sheet-editView').getByRole('button', { name: 'Save' }).click()
   await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
 
+  await expect(await rowY(page.getByTestId('note-row-open-source-project'))).toBeLessThan(
+    await rowY(page.getByTestId('note-row-workflow-orchestration')),
+  )
   const workflowRow = page.getByTestId('note-row-workflow-orchestration')
   await expect(workflowRow.getByText('LLM Workflow')).toBeVisible()
   await expect(workflowRow.getByText('Tolaria MVP')).toBeVisible()
@@ -354,7 +358,7 @@ async function customizeProcedureTypeSection(page: PageLike) {
   await expect(page.getByTestId('note-row-open-source-project').getByText('Project Board')).toBeVisible()
   await page.getByTestId('note-list-create-action').click()
   await page.getByTestId('workspace-create-note-title-input').fill('Runbook From Type Defaults')
-  await page.getByTestId('workspace-action-sheet-createNote').getByRole('button', { name: 'Create' }).click()
+  await page.getByTestId('workspace-action-sheet-createNote').getByRole('button', { exact: true, name: 'Create' }).click()
   await expect(page.getByTestId('note-row-runbook-from-type-defaults.md')).toBeVisible()
   await expect(page.getByTestId('property-row-priority')).toContainText('High')
   await expect(page.getByTestId('relationship-row-workflow-orchestration-essay')).toBeVisible()
@@ -366,7 +370,7 @@ async function createAndDeleteTypeSection(page: PageLike) {
   await page.getByTestId('sidebar-section-create-types').click()
   await expect(page.getByTestId('workspace-create-type-name-input')).toBeVisible()
   await page.getByTestId('workspace-create-type-name-input').fill('Decision')
-  await page.getByTestId('workspace-action-sheet-createType').getByRole('button', { name: 'Create' }).click()
+  await page.getByTestId('workspace-action-sheet-createType').getByRole('button', { exact: true, name: 'Create' }).click()
   await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
 
   const decisionSection = page.getByTestId('sidebar-item-type-decision')
@@ -548,7 +552,7 @@ async function createRenameAndDeleteSidebarFolder(page: PageLike) {
   await page.getByTestId('sidebar-section-create-folders').click()
   await expect(page.getByTestId('workspace-create-folder-name-input')).toBeVisible()
   await page.getByTestId('workspace-create-folder-name-input').fill('Mobile Test Folder')
-  await page.getByTestId('workspace-action-sheet-createFolder').getByRole('button', { name: 'Create' }).click()
+  await page.getByTestId('workspace-action-sheet-createFolder').getByRole('button', { exact: true, name: 'Create' }).click()
   await expect(page.getByRole('button', { name: 'Mobile Test Folder' })).toBeVisible()
   await expect(page.getByTestId('note-list-toolbar-title')).toHaveText('Mobile Test Folder')
 
@@ -562,7 +566,7 @@ async function createRenameAndDeleteSidebarFolder(page: PageLike) {
   await longPressRoleButton(page, 'Mobile Renamed Folder')
   await page.getByTestId('workspace-action-create-child-folder').click()
   await page.getByTestId('workspace-create-folder-name-input').fill('Child Folder')
-  await page.getByTestId('workspace-action-sheet-createFolder').getByRole('button', { name: 'Create' }).click()
+  await page.getByTestId('workspace-action-sheet-createFolder').getByRole('button', { exact: true, name: 'Create' }).click()
   await expect(page.getByRole('button', { name: 'Child Folder' })).toBeVisible()
   await expect(page.getByTestId('note-list-toolbar-title')).toHaveText('Child Folder')
 

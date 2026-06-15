@@ -868,36 +868,10 @@ describe('applyMobileWorkspaceEdit', () => {
   })
 
   it('updates saved-view YAML without changing the filename', () => {
-    const result = applyMobileWorkspaceEditWithWrites(workspaceScenarioForId('default'), {
-      definition: {
-        color: 'purple',
-        filters: { all: [{ field: 'status', op: 'equals', value: 'Active' }] },
-        icon: null,
-        listPropertiesDisplay: ['belongs_to', 'status'],
-        name: 'Active Workflows',
-        sort: 'modified:desc',
-      },
-      type: 'updateView',
-      viewId: 'view-active-procedures',
-    })
+    const result = updateActiveSavedView()
 
-    expect(result.writes).toEqual([{
-      content: expect.stringContaining('name: "Active Workflows"'),
-      kind: 'saveView',
-      path: 'views/active-procedures.yml',
-    }])
-    expect(result.writes[0]).toEqual(expect.objectContaining({
-      content: expect.stringContaining('value: "Active"'),
-      kind: 'saveView',
-    }))
-    const savedViewWrite = result.writes.find((write) => write.kind === 'saveView')
-    expect(savedViewWrite?.content).toContain('listPropertiesDisplay:\n  - "belongs_to"\n  - "status"')
-    expect(result.snapshot.views?.[0]?.definition.listPropertiesDisplay).toEqual(['belongs_to', 'status'])
-    expect(result.snapshot.views?.[0]?.definition.name).toBe('Active Workflows')
-    expect(result.snapshot.sidebarSections.find((section) => section.id === 'views')?.items?.[0]).toMatchObject({
-      id: 'view-active-procedures',
-      label: 'Active Workflows',
-    })
+    expectUpdatedSavedViewWrite(result)
+    expectUpdatedSavedViewSnapshot(result)
   })
 
   it('deletes saved views and removes the sidebar section when none remain', () => {
@@ -1039,6 +1013,51 @@ describe('mobile wikilink editing helpers', () => {
 
 function sidebarItems(snapshot: MobileWorkspaceSnapshot, sectionId: SidebarSectionId) {
   return snapshot.sidebarSections.find((section) => section.id === sectionId)?.items ?? []
+}
+
+function updateActiveSavedView() {
+  return applyMobileWorkspaceEditWithWrites(workspaceScenarioForId('default'), {
+    definition: {
+      color: 'purple',
+      filters: { all: [{ field: 'status', op: 'equals', value: 'Active' }] },
+      icon: null,
+      listPropertiesDisplay: ['belongs_to', 'status'],
+      name: 'Active Workflows',
+      sort: 'title:asc',
+    },
+    type: 'updateView',
+    viewId: 'view-active-procedures',
+  })
+}
+
+function expectUpdatedSavedViewWrite(
+  result: ReturnType<typeof applyMobileWorkspaceEditWithWrites>,
+) {
+  const savedViewWrite = result.writes.find((write) => write.kind === 'saveView')
+
+  expect(result.writes).toHaveLength(1)
+  expect(savedViewWrite).toMatchObject({
+    kind: 'saveView',
+    path: 'views/active-procedures.yml',
+  })
+  expect(savedViewWrite?.content).toContain('name: "Active Workflows"')
+  expect(savedViewWrite?.content).toContain('value: "Active"')
+  expect(savedViewWrite?.content).toContain('sort: "title:asc"')
+  expect(savedViewWrite?.content).toContain('listPropertiesDisplay:\n  - "belongs_to"\n  - "status"')
+}
+
+function expectUpdatedSavedViewSnapshot(
+  result: ReturnType<typeof applyMobileWorkspaceEditWithWrites>,
+) {
+  expect(result.snapshot.views?.[0]?.definition).toMatchObject({
+    listPropertiesDisplay: ['belongs_to', 'status'],
+    name: 'Active Workflows',
+    sort: 'title:asc',
+  })
+  expect(result.snapshot.sidebarSections.find((section) => section.id === 'views')?.items?.[0]).toMatchObject({
+    id: 'view-active-procedures',
+    label: 'Active Workflows',
+  })
 }
 
 function sidebarFolders(snapshot: MobileWorkspaceSnapshot) {

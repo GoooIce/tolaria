@@ -249,6 +249,7 @@ function actionSheetFormValues(readOnlyForm: ActionSheetHostProps['readOnlyForm'
     viewFilters: readOnlyForm.viewFilters,
     viewName: readOnlyForm.viewName,
     viewPropertyQuery: readOnlyForm.viewPropertyQuery,
+    viewSort: readOnlyForm.viewSort,
   }
 }
 
@@ -315,6 +316,7 @@ function actionSheetHandlers(props: ActionSheetHostProps) {
     onViewFiltersChange: props.onViewFiltersChange,
     onViewNameChange: props.onViewNameChange,
     onViewPropertyQueryChange: props.onViewPropertyQueryChange,
+    onViewSortChange: props.onViewSortChange,
   }
 }
 

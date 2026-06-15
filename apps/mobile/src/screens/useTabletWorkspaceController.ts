@@ -93,6 +93,7 @@ const emptyReadOnlyForm: TabletReadOnlyForm = {
   viewFilters: { all: [] },
   viewName: '',
   viewPropertyQuery: '',
+  viewSort: 'modified:desc',
 }
 
 type ApplyWorkspaceEdit = (edit: MobileWorkspaceEdit) => void
@@ -404,6 +405,7 @@ function createWorkspaceActions({
       name: readOnlyForm.viewName,
       selectedNote,
       selection: navigation.sidebarSelection,
+      sort: readOnlyForm.viewSort,
       typeDefinitions: workspaceSnapshot.typeDefinitions,
     }),
     onCreateType: () => applyNonEmptyStringEdit({
@@ -438,6 +440,7 @@ function savedViewWorkspaceActions({
       displayProperties: readOnlyForm.viewDisplayProperties,
       filters: readOnlyForm.viewFilters,
       name: readOnlyForm.viewName,
+      sort: readOnlyForm.viewSort,
       viewId: readOnlyForm.editingViewId,
       views: workspaceSnapshot.views ?? [],
     }),
@@ -445,6 +448,7 @@ function savedViewWorkspaceActions({
     onViewFiltersChange: (value: MobileViewFilterGroup) => updateReadOnlyForm('viewFilters', value),
     onViewNameChange: (value: string) => updateReadOnlyForm('viewName', value),
     onViewPropertyQueryChange: (value: string) => updateReadOnlyForm('viewPropertyQuery', value),
+    onViewSortChange: (value: string) => updateReadOnlyForm('viewSort', value),
     viewPropertyOptions: mobileListPropertySuggestions(
       editableViewPropertyNotes(readOnlyForm, workspaceSnapshot),
       readOnlyForm.viewPropertyQuery,
@@ -738,6 +742,7 @@ function openCreateView({
 }) {
   updateReadOnlyForm('viewFilters', cloneFilterGroup(filters))
   updateReadOnlyForm('viewName', defaultViewName(noteListTitle))
+  updateReadOnlyForm('viewSort', 'modified:desc')
   setOpenAction('createView')
 }
 
@@ -761,6 +766,7 @@ function openViewActions({
   updateReadOnlyForm('viewFilters', cloneFilterGroup(view.definition.filters))
   updateReadOnlyForm('viewName', selection.label)
   updateReadOnlyForm('viewPropertyQuery', '')
+  updateReadOnlyForm('viewSort', view.definition.sort ?? 'modified:desc')
   setOpenAction('editView')
 }
 
@@ -864,6 +870,7 @@ function createView({
   name,
   selectedNote,
   selection,
+  sort,
   typeDefinitions,
 }: {
   applyEdit: (edit: MobileWorkspaceEdit) => void
@@ -872,6 +879,7 @@ function createView({
   name: string
   selectedNote: MobileNote | null
   selection: TabletSidebarSelection
+  sort: string
   typeDefinitions?: MobileTypeDefinitions
 }) {
   const trimmedName = name.trim()
@@ -883,7 +891,7 @@ function createView({
       filters,
       icon: null,
       name: trimmedName,
-      sort: 'modified:desc',
+      sort: normalizedSort(sort),
     },
     type: 'createView',
   })
@@ -896,6 +904,7 @@ function updateView({
   displayProperties,
   filters,
   name,
+  sort,
   viewId,
   views,
 }: {
@@ -904,6 +913,7 @@ function updateView({
   displayProperties: string[]
   filters: MobileViewFilterGroup
   name: string
+  sort: string
   viewId: string
   views: NonNullable<MobileWorkspaceSnapshot['views']>
 }) {
@@ -917,6 +927,7 @@ function updateView({
       filters,
       listPropertiesDisplay: normalizedListPropertiesDisplay(displayProperties),
       name: trimmedName,
+      sort: normalizedSort(sort),
     },
     type: 'updateView',
     viewId,
@@ -997,6 +1008,10 @@ function normalizedListPropertiesDisplay(displayProperties: string[]) {
       seen.add(normalized)
       return true
     })
+}
+
+function normalizedSort(sort: string) {
+  return sort.trim() || 'modified:desc'
 }
 
 function workspaceNotes(snapshot: MobileWorkspaceSnapshot) {
