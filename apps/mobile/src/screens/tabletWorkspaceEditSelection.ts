@@ -201,6 +201,9 @@ function noteIdBySavedPath(notes: MobileWorkspaceSnapshot['notes'], writes: Mobi
 }
 
 function savedNotePath(writes: MobileWorkspaceWrite[]): string | null {
-  const write = writes.find((candidate) => candidate.kind === 'saveNote')
-  return write?.path ?? null
+  const moveWrite = writes.find((candidate) => candidate.kind === 'moveNote')
+  if (moveWrite) return moveWrite.toPath
+
+  const saveWrite = writes.find((candidate) => candidate.kind === 'saveNote')
+  return saveWrite?.path ?? null
 }

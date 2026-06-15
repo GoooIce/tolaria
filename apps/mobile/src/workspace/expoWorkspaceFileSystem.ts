@@ -10,6 +10,7 @@ type ExpoFileSystemModule = {
 type DirectoryName = string
 type RelativeVaultPath = string
 type RootUri = string
+type MovableWorkspaceEntry = Directory | File
 
 declare const require: (moduleName: string) => ExpoFileSystemModule
 
@@ -41,17 +42,10 @@ export const expoWorkspaceFileSystem: WorkspaceFileSystem = {
     if (file.exists) file.delete()
   },
   moveDirectory: (rootUri, fromRelativePath, toRelativePath) => {
-    const fromPath = normalizedWorkspaceRelativePath(fromRelativePath)
-    const toPath = normalizedWorkspaceRelativePath(toRelativePath)
-    if (!fromPath || !toPath) return
-
-    const module = expoFileSystem()
-    const source = workspaceDirectory(module, rootUri, fromPath)
-    const destination = workspaceDirectory(module, rootUri, toPath)
-    if (!source.exists || destination.exists) return
-
-    destination.parentDirectory.create({ idempotent: true, intermediates: true })
-    source.move(destination)
+    moveWorkspaceEntry(rootUri, fromRelativePath, toRelativePath, workspaceDirectory)
+  },
+  moveTextFile: (rootUri, fromRelativePath, toRelativePath) => {
+    moveWorkspaceEntry(rootUri, fromRelativePath, toRelativePath, workspaceFile)
   },
   readTextFile: (rootUri, relativePath) => {
     const normalizedPath = normalizedWorkspaceRelativePath(relativePath)
@@ -88,6 +82,25 @@ export const expoWorkspaceFileSystem: WorkspaceFileSystem = {
 function expoFileSystem(): ExpoFileSystemModule {
   expoFileSystemModule ??= require('expo-file-system')
   return expoFileSystemModule
+}
+
+function moveWorkspaceEntry(
+  rootUri: RootUri,
+  fromRelativePath: RelativeVaultPath,
+  toRelativePath: RelativeVaultPath,
+  entryForPath: (module: ExpoFileSystemModule, rootUri: RootUri, relativePath: RelativeVaultPath) => MovableWorkspaceEntry,
+) {
+  const fromPath = normalizedWorkspaceRelativePath(fromRelativePath)
+  const toPath = normalizedWorkspaceRelativePath(toRelativePath)
+  if (!fromPath || !toPath) return
+
+  const module = expoFileSystem()
+  const source = entryForPath(module, rootUri, fromPath)
+  const destination = entryForPath(module, rootUri, toPath)
+  if (!source.exists || destination.exists) return
+
+  destination.parentDirectory.create({ idempotent: true, intermediates: true })
+  source.move(destination)
 }
 
 function readDirectoryFiles(

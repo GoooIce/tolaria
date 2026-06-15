@@ -226,7 +226,7 @@ describe('applyMobileWorkspaceEdit', () => {
     expectTypeSchemaDefaultWrite(result)
   })
 
-  it('moves notes to another folder by changing the relative path and planning delete plus save writes', () => {
+  it('moves notes to another folder by changing the relative path and planning a move write', () => {
     const base = workspaceScenarioForId('default')
     const editableNote = {
       ...base.notes[0],
@@ -246,11 +246,10 @@ describe('applyMobileWorkspaceEdit', () => {
     expect(note?.path).toBe('Writing/Essays/Workflow Orchestration Essay.md')
     expect(result.snapshot.selectedNoteId).toBe('workflow-orchestration')
     expect(result.writes).toEqual([
-      { kind: 'deleteNote', path: 'Tolaria/Mobile UI/Workflow Orchestration Essay.md' },
       {
-        content: expect.stringContaining('# Workflow Orchestration Essay'),
-        kind: 'saveNote',
-        path: 'Writing/Essays/Workflow Orchestration Essay.md',
+        kind: 'moveNote',
+        path: 'Tolaria/Mobile UI/Workflow Orchestration Essay.md',
+        toPath: 'Writing/Essays/Workflow Orchestration Essay.md',
       },
     ])
     expect(sidebarFolders(result.snapshot)).toContainEqual(
@@ -945,11 +944,10 @@ function expectRetargetedWikilinkWrites(
   },
 ) {
   expect(writes).toEqual([
-    { kind: 'deleteNote', path: 'Tolaria/Mobile UI/Workflow Orchestration Essay.md' },
     {
-      content: '# Workflow Orchestration Essay\n\nMove me.\n',
-      kind: 'saveNote',
-      path: destinationPath,
+      kind: 'moveNote',
+      path: 'Tolaria/Mobile UI/Workflow Orchestration Essay.md',
+      toPath: destinationPath,
     },
     {
       content: refContent,

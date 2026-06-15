@@ -194,3 +194,4 @@ proposed → active → superseded
 | [0141](0141-expo-file-system-mobile-vault-repository.md) | Expo FileSystem mobile vault repository | active |
 | [0142](0142-expo-clipboard-mobile-deep-link-copy.md) | Expo Clipboard for mobile deep-link copy | active |
 | [0143](0143-mobile-folder-mutation-write-contract.md) | Mobile folder mutation write contract | active |
+| [0144](0144-mobile-note-move-write-contract.md) | Mobile note move write contract | active |

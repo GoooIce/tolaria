@@ -95,6 +95,43 @@ type: Project
     })
   })
 
+  it('moves note files through relative vault paths without rewriting content', async () => {
+    const fileSystem = fakeWorkspaceFileSystem({
+      'Writing/Workflow.md': '# Workflow\n\nOriginal body.\n',
+    })
+    const repository = createFileSystemWorkspaceRepository(fileSystem)
+
+    await repository.persistWrites([{
+      kind: 'moveNote',
+      path: 'Writing/Workflow.md',
+      toPath: 'Research/Workflow.md',
+    }], { source: 'native', vaultRootUri: 'file:///vault' })
+
+    expect(fileSystem.files()).toEqual({
+      'Research/Workflow.md': '# Workflow\n\nOriginal body.\n',
+    })
+    expect(fileSystem.directories()).toEqual(['Research', 'Writing'])
+  })
+
+  it('does not overwrite an existing file when moving a note', async () => {
+    const fileSystem = fakeWorkspaceFileSystem({
+      'Research/Workflow.md': '# Existing\n\n',
+      'Writing/Workflow.md': '# Workflow\n\nOriginal body.\n',
+    })
+    const repository = createFileSystemWorkspaceRepository(fileSystem)
+
+    await repository.persistWrites([{
+      kind: 'moveNote',
+      path: 'Writing/Workflow.md',
+      toPath: 'Research/Workflow.md',
+    }], { source: 'native', vaultRootUri: 'file:///vault' })
+
+    expect(fileSystem.files()).toEqual({
+      'Research/Workflow.md': '# Existing\n\n',
+      'Writing/Workflow.md': '# Workflow\n\nOriginal body.\n',
+    })
+  })
+
   it('deletes note and saved-view files through relative vault paths', async () => {
     const fileSystem = fakeWorkspaceFileSystem({
       'Writing/Workflow.md': '# Workflow\n\n',
@@ -197,6 +234,14 @@ function fakeWorkspaceFileSystem(initialFiles: Record<string, string>): Workspac
         files.delete(path)
         files.set(movedPath, content)
       }
+    },
+    moveTextFile: (_rootUri, fromRelativePath, toRelativePath) => {
+      const content = files.get(fromRelativePath)
+      if (content === undefined || files.has(toRelativePath)) return
+
+      files.delete(fromRelativePath)
+      for (const path of folderPathsForFiles([toRelativePath])) directories.add(path)
+      files.set(toRelativePath, content)
     },
     readTextFile: (_rootUri, relativePath) => files.get(relativePath) ?? null,
     readVaultDirectories: () => [...directories],

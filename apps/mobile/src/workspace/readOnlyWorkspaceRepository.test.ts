@@ -101,6 +101,10 @@ describe('fixtureReadOnlyWorkspaceRepository', () => {
       kind: 'saveNote',
       path: 'updated.md',
     }, {
+      kind: 'moveNote',
+      path: 'Notes/Old.md',
+      toPath: 'Notes/Moved.md',
+    }, {
       kind: 'createFolder',
       path: 'Notes/Drafts',
     }, {
@@ -118,9 +122,13 @@ describe('fixtureReadOnlyWorkspaceRepository', () => {
       path: 'views/old.yml',
     }], { source: 'host' })
 
-    expect(noteContents).toEqual({ 'updated.md': '# Updated\n' })
+    expect(noteContents).toEqual({
+      'Research/Moved.md': '# Old\n',
+      'updated.md': '# Updated\n',
+    })
     expect(writes).toEqual([
       { content: '# Updated\n', kind: 'saveNote', path: 'updated.md' },
+      { kind: 'moveNote', path: 'Notes/Old.md', toPath: 'Notes/Moved.md' },
       { kind: 'createFolder', path: 'Notes/Drafts' },
       { kind: 'renameFolder', path: 'Notes', toPath: 'Research' },
       { kind: 'deleteFolder', path: 'Research/Drafts' },

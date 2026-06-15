@@ -9,6 +9,7 @@ export type WorkspaceFileSystem = {
   deleteDirectory: (rootUri: string, relativePath: string) => void
   deleteTextFile: (rootUri: string, relativePath: string) => void
   moveDirectory: (rootUri: string, fromRelativePath: string, toRelativePath: string) => void
+  moveTextFile: (rootUri: string, fromRelativePath: string, toRelativePath: string) => void
   readVaultDirectories: (rootUri: string) => string[]
   readTextFile: (rootUri: string, relativePath: string) => string | null
   readVaultFiles: (rootUri: string) => LocalVaultFile[]
@@ -56,7 +57,7 @@ function persistWorkspaceWrite(
   const relativePath = normalizedWorkspaceRelativePath(write.path)
   if (!relativePath) return
 
-  if (write.kind === 'deleteNote' || write.kind === 'deleteView') {
+  if (isDeleteTextWrite(write)) {
     fileSystem.deleteTextFile(rootUri, relativePath)
     return
   }
@@ -71,6 +72,21 @@ function persistWorkspaceWrite(
     return
   }
 
+  persistMoveOrTextWrite(fileSystem, rootUri, relativePath, write)
+}
+
+function persistMoveOrTextWrite(
+  fileSystem: WorkspaceFileSystem,
+  rootUri: string,
+  relativePath: string,
+  write: Extract<MobileWorkspaceWrite, { kind: 'createNote' | 'moveNote' | 'renameFolder' | 'saveNote' | 'saveView' }>,
+) {
+  if (write.kind === 'moveNote') {
+    const toRelativePath = normalizedWorkspaceRelativePath(write.toPath)
+    if (toRelativePath) fileSystem.moveTextFile(rootUri, relativePath, toRelativePath)
+    return
+  }
+
   if (write.kind === 'renameFolder') {
     const toRelativePath = normalizedWorkspaceRelativePath(write.toPath)
     if (toRelativePath) fileSystem.moveDirectory(rootUri, relativePath, toRelativePath)
@@ -78,6 +94,12 @@ function persistWorkspaceWrite(
   }
 
   fileSystem.writeTextFile(rootUri, relativePath, write.content)
+}
+
+function isDeleteTextWrite(
+  write: MobileWorkspaceWrite,
+): write is Extract<MobileWorkspaceWrite, { kind: 'deleteNote' | 'deleteView' }> {
+  return write.kind === 'deleteNote' || write.kind === 'deleteView'
 }
 
 function workspaceRootUri(

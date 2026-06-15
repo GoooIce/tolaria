@@ -114,6 +114,7 @@ export type MobileWorkspaceWrite =
   | { kind: 'createFolder'; path: string }
   | { kind: 'deleteFolder'; path: string }
   | { kind: 'deleteNote'; path: string }
+  | { kind: 'moveNote'; path: string; toPath: string }
   | { kind: 'renameFolder'; path: string; toPath: string }
   | { content: MarkdownContent; kind: 'saveNote'; path: string }
   | { content: MarkdownContent; kind: 'saveView'; path: string }
@@ -517,11 +518,10 @@ function moveNoteWrites(
 ): MobileWorkspaceWrite[] {
   const previousPath = noteWritePath(previousNote)
   const nextPath = noteWritePath(nextNote)
-  if (previousPath === nextPath || nextNote.rawContent === undefined) return []
+  if (previousPath === nextPath) return []
 
   return [
-    { kind: 'deleteNote', path: previousPath },
-    { content: nextNote.rawContent, kind: 'saveNote', path: nextPath },
+    { kind: 'moveNote', path: previousPath, toPath: nextPath },
     ...movedWikilinkWrites(previousPool, nextPool, nextPath),
   ]
 }

@@ -68,6 +68,8 @@ function persistHostWrites(writes: MobileWorkspaceWrite[]) {
       deleteHostFolder(contents, write.path)
     } else if (write.kind === 'renameFolder') {
       renameHostFolder(contents, write.path, write.toPath)
+    } else if (write.kind === 'moveNote') {
+      moveHostContent(contents, write.path, write.toPath)
     } else if (write.kind === 'deleteNote' || write.kind === 'deleteView') {
       Reflect.deleteProperty(contents, write.path)
     } else if (write.kind === 'createFolder') {
@@ -77,6 +79,14 @@ function persistHostWrites(writes: MobileWorkspaceWrite[]) {
     }
     writeLog.push(write)
   }
+}
+
+function moveHostContent(contents: Record<string, string>, previousPath: string, nextPath: string) {
+  const content = contents[previousPath]
+  if (content === undefined || contents[nextPath] !== undefined) return
+
+  Reflect.deleteProperty(contents, previousPath)
+  contents[nextPath] = content
 }
 
 function deleteHostFolder(contents: Record<string, string>, folderPath: string) {
