@@ -52,7 +52,7 @@ export function selectAfterWorkspaceEdit({
 }
 
 function selectAfterCreatedNote({ edit, result, setSelectedNoteId }: EditSelectionContext) {
-  if (edit.type !== 'createNote') return false
+  if (edit.type !== 'createNote' && edit.type !== 'createRelationshipTarget') return false
   if (result.snapshot.selectedNoteId) setSelectedNoteId(result.snapshot.selectedNoteId)
   return true
 }

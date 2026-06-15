@@ -82,6 +82,7 @@ export type MobileWorkspaceEdit =
   | { key: FrontmatterKey; noteId: NoteId; value: MobilePropertyValue; type: 'updateProperty' }
   | { key: FrontmatterKey; noteId: NoteId; type: 'deleteProperty' }
   | { key: FrontmatterKey; noteId: NoteId; targetTitle: NoteTitle; type: 'addRelationship' }
+  | { defaults?: MobileCreateNoteDefaults; key: FrontmatterKey; sourceNoteId: NoteId; targetTitle: NoteTitle; type: 'createRelationshipTarget' }
   | { key: FrontmatterKey; noteId: NoteId; ref: WikilinkRef; type: 'removeRelationship' }
   | { noteId: NoteId; type: 'changeNoteType'; value: NoteTitle }
   | { folderPath: FolderPath; noteId: NoteId; type: 'moveNoteToFolder' }
@@ -100,7 +101,7 @@ export type MobileWorkspaceEdit =
 type MobileViewEdit = Extract<MobileWorkspaceEdit, { type: 'createView' | 'deleteView' | 'moveView' | 'updateView' }>
 type MobileTypeEdit = Extract<MobileWorkspaceEdit, { type: 'updateTypeDefinition' }>
 type MobileFolderEdit = Extract<MobileWorkspaceEdit, { type: 'createFolder' | 'deleteFolder' | 'renameFolder' }>
-type MobileSnapshotEdit = Extract<MobileWorkspaceEdit, { type: 'deleteNote' | 'moveNoteToFolder' | 'renameNoteFile' }>
+type MobileSnapshotEdit = Extract<MobileWorkspaceEdit, { type: 'createRelationshipTarget' | 'deleteNote' | 'moveNoteToFolder' | 'renameNoteFile' }>
 type MobileNoteEdit = Exclude<MobileWorkspaceEdit, MobileFolderEdit | MobileSnapshotEdit | MobileTypeEdit | MobileViewEdit | { type: 'createNote' }>
 type MobileWorkspaceResultHandlerMap = {
   [Type in MobileWorkspaceEdit['type']]?: (
@@ -134,6 +135,12 @@ type MobileNoteEditContext = {
   editableNote: EditableNoteInput
   note: MobileNote
   notes: MobileNote[]
+  typeDefinitions?: MobileTypeDefinitions
+}
+type RelationshipTargetRefContext = {
+  relationshipKey: FrontmatterKey
+  sourceNoteId: NoteId
+  targetRef: WikilinkRef
   typeDefinitions?: MobileTypeDefinitions
 }
 type MobileNoteEditHandler = (context: MobileNoteEditContext, edit: MobileNoteEdit) => MobileNote
@@ -191,6 +198,7 @@ const mobileWorkspaceResultHandlers: MobileWorkspaceResultHandlerMap = {
     const nextSnapshot = createMobileNote(snapshot, edit.title, edit.defaults)
     return { snapshot: nextSnapshot, writes: createNoteWrites(nextSnapshot) }
   },
+  createRelationshipTarget: (snapshot, edit) => createRelationshipTarget(snapshot, edit),
   deleteFolder: (snapshot, edit) => applyMobileFolderEdit(snapshot, edit, rebuildSnapshot),
   createView: (snapshot, edit) => createMobileView(snapshot, edit.definition),
   deleteNote: (snapshot, edit) => deleteMobileNote(snapshot, edit.noteId),
@@ -381,14 +389,24 @@ function addRelationship(
   const trimmedTitle = targetTitle.trim()
   if (!trimmedKey || !trimmedTitle) return note
 
-  const document = parseLocalVaultDocument(note.rawContent)
-  const currentRefs = frontmatterRelationships(document.frontmatter)[trimmedKey] ?? []
   const ref = relationshipRefForTitle(trimmedTitle, notes)
+  return addRelationshipRef(note, trimmedKey, ref)
+}
+
+function addRelationshipRef(
+  note: EditableNoteInput,
+  key: FrontmatterKey,
+  ref: WikilinkRef,
+  typeDefinitions?: MobileTypeDefinitions,
+): MobileNote {
+  const document = parseLocalVaultDocument(note.rawContent)
+  const currentRefs = frontmatterRelationships(document.frontmatter)[key] ?? []
   const nextRefs = currentRefs.includes(ref) ? currentRefs : [...currentRefs, ref]
 
   return deriveEditableNote({
     fallback: note,
-    rawContent: writeFrontmatterValue(note.rawContent, trimmedKey, nextRefs),
+    rawContent: writeFrontmatterValue(note.rawContent, key, nextRefs),
+    typeDefinitions,
   }).note
 }
 
@@ -617,6 +635,104 @@ function createNoteWrites(snapshot: MobileWorkspaceSnapshot): MobileWorkspaceWri
     kind: 'createNote',
     path: noteWritePath(note),
   }]
+}
+
+function createRelationshipTarget(
+  snapshot: MobileWorkspaceSnapshot,
+  edit: Extract<MobileWorkspaceEdit, { type: 'createRelationshipTarget' }>,
+): MobileWorkspaceEditResult {
+  const sourceNote = workspaceNoteById(snapshot, edit.sourceNoteId)
+  const targetTitle = edit.targetTitle.trim()
+  const relationshipKey = normalizeRelationshipKey(edit.key)
+  if (!sourceNote?.rawContent || !targetTitle || !relationshipKey) return { snapshot, writes: [] }
+
+  const targetSnapshot = createMobileNote(
+    snapshot,
+    targetTitle,
+    relationshipTargetDefaults(sourceNote, edit.defaults),
+  )
+  const targetNote = workspaceNoteById(targetSnapshot, targetSnapshot.selectedNoteId ?? '')
+  if (!targetNote?.rawContent) return { snapshot, writes: [] }
+
+  const nextSnapshot = snapshotWithRelationshipTargetRef({
+    relationshipKey,
+    sourceNoteId: sourceNote.id,
+    targetNote,
+    targetSnapshot,
+  })
+
+  return {
+    snapshot: nextSnapshot,
+    writes: [
+      ...createNoteWrites(targetSnapshot),
+      ...saveNoteWrites(targetSnapshot, nextSnapshot, {
+        key: relationshipKey,
+        noteId: sourceNote.id,
+        targetTitle: targetNote.title,
+        type: 'addRelationship',
+      }),
+    ],
+  }
+}
+
+function snapshotWithRelationshipTargetRef({
+  relationshipKey,
+  sourceNoteId,
+  targetNote,
+  targetSnapshot,
+}: {
+  relationshipKey: FrontmatterKey
+  sourceNoteId: NoteId
+  targetNote: MobileNote
+  targetSnapshot: MobileWorkspaceSnapshot
+}): MobileWorkspaceSnapshot {
+  const targetRef = `[[${wikilinkTargetForNote(targetNote)}]]`
+  const context = {
+    relationshipKey,
+    sourceNoteId,
+    targetRef,
+    typeDefinitions: targetSnapshot.typeDefinitions,
+  }
+  const notes = addRelationshipRefToNoteList(targetSnapshot.notes, context)
+  const allNotes = targetSnapshot.allNotes
+    ? addRelationshipRefToNoteList(targetSnapshot.allNotes, context)
+    : undefined
+
+  return rebuildSnapshot(targetSnapshot, notes, allNotes)
+}
+
+function addRelationshipRefToNoteList(
+  notes: MobileNote[],
+  context: RelationshipTargetRefContext,
+): MobileNote[] {
+  return notes.map((note) => {
+    if (note.id !== context.sourceNoteId || note.rawContent === undefined) return note
+    return addRelationshipRef(
+      withEditableContent(note),
+      context.relationshipKey,
+      context.targetRef,
+      context.typeDefinitions,
+    )
+  })
+}
+
+function relationshipTargetDefaults(
+  sourceNote: MobileNote,
+  defaults: MobileCreateNoteDefaults = {},
+): MobileCreateNoteDefaults {
+  const folderPath = defaults.folderPath ?? noteFolderPath(sourceNote)
+  return {
+    ...defaults,
+    ...(folderPath ? { folderPath } : {}),
+    type: defaults.type ?? 'Note',
+  }
+}
+
+function noteFolderPath(note: MobileNote): FolderPath | undefined {
+  const path = note.path ?? note.id
+  const parts = path.split('/').filter(Boolean)
+  parts.pop()
+  return parts.length > 0 ? parts.join('/') : undefined
 }
 
 function createMobileView(

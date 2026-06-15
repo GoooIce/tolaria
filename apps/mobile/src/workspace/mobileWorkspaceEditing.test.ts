@@ -621,6 +621,54 @@ describe('applyMobileWorkspaceEdit', () => {
     }])
   })
 
+  it('creates relationship targets beside the source note and links the exact created path', () => {
+    const base = workspaceScenarioForId('default')
+    const sourceNote = {
+      ...base.notes[0],
+      rawContent: '# Workflow Orchestration Essay\n\nSource body.\n',
+    }
+    const result = applyMobileWorkspaceEditWithWrites({
+      ...base,
+      allNotes: [sourceNote, ...base.notes.slice(1)],
+      notes: [sourceNote, ...base.notes.slice(1)],
+      selectedNoteId: sourceNote.id,
+    }, {
+      key: 'Related to',
+      sourceNoteId: sourceNote.id,
+      targetTitle: 'New Dependency',
+      type: 'createRelationshipTarget',
+    })
+    const target = result.snapshot.allNotes?.find((note) => note.path === 'Tolaria/Mobile UI/new-dependency.md')
+    const updatedSource = result.snapshot.allNotes?.find((note) => note.id === sourceNote.id)
+
+    expect(result.snapshot.selectedNoteId).toBe('Tolaria/Mobile UI/new-dependency.md')
+    expect(target).toMatchObject({
+      id: 'Tolaria/Mobile UI/new-dependency.md',
+      path: 'Tolaria/Mobile UI/new-dependency.md',
+      title: 'New Dependency',
+      type: 'Note',
+    })
+    expect(updatedSource?.rawContent).toContain('related_to:\n  - [[Tolaria/Mobile UI/new-dependency]]')
+    expect(updatedSource?.relationships.find((relationship) => relationship.key === 'related_to')?.values).toContainEqual(
+      expect.objectContaining({
+        id: target?.id,
+        title: 'New Dependency',
+      }),
+    )
+    expect(result.writes).toEqual([
+      {
+        content: '# New Dependency\n\n',
+        kind: 'createNote',
+        path: 'Tolaria/Mobile UI/new-dependency.md',
+      },
+      {
+        content: updatedSource?.rawContent,
+        kind: 'saveNote',
+        path: 'Tolaria/Mobile UI/Workflow Orchestration Essay.md',
+      },
+    ])
+  })
+
   it('creates empty folders in the sidebar without creating notes', () => {
     const result = applyMobileWorkspaceEditWithWrites(workspaceScenarioForId('default'), {
       name: 'Drafts',

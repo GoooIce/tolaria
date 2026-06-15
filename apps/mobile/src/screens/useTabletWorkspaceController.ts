@@ -826,9 +826,12 @@ function createRelationshipTarget({
   const title = form.relationshipNoteTitle.trim()
   if (!selectedNote || !key || !title) return
 
-  const sourceNoteId = selectedNote.id
-  applyEdit({ title, type: 'createNote' })
-  applyEdit({ key, noteId: sourceNoteId, targetTitle: title, type: 'addRelationship' })
+  applyEdit({
+    key,
+    sourceNoteId: selectedNote.id,
+    targetTitle: title,
+    type: 'createRelationshipTarget',
+  })
   closeAction()
 }
 
