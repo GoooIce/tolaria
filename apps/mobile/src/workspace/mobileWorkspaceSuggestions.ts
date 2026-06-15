@@ -8,11 +8,22 @@ type SuggestionText = string
 type NormalizedSuggestionKey = string
 type ViewField = string
 type ViewFieldValue = string
+type ViewValueResolver = (note: MobileNote) => ViewFieldValue[]
 type FolderPath = string
 
 const DESKTOP_SUGGESTED_PROPERTY_KEYS = ['Status', 'Date', 'URL'] as const
 const DESKTOP_SUGGESTED_RELATIONSHIP_KEYS = ['belongs_to', 'related_to', 'has'] as const
-const DESKTOP_VIEW_BUILT_IN_FIELDS = ['type', 'status', 'title', 'favorite', 'body'] as const
+const DESKTOP_VIEW_BUILT_IN_FIELDS = ['type', 'isa', 'status', 'title', 'filename', 'archived', 'favorite', 'body'] as const
+const BUILT_IN_VIEW_VALUE_RESOLVERS: Record<string, ViewValueResolver> = {
+  archived: (note) => [String(note.archived === true)],
+  body: (note) => note.snippet ? [note.snippet] : [],
+  favorite: (note) => [String(note.favorite)],
+  filename: (note) => [note.path?.split('/').at(-1) ?? note.id],
+  isa: (note) => [note.type],
+  status: (note) => note.status ? [note.status] : [],
+  title: (note) => [note.title],
+  type: (note) => [note.type],
+}
 const CANONICAL_RELATIONSHIP_KEYS: Partial<Record<NormalizedSuggestionKey, RelationshipKey>> = {
   belongs_to: 'belongs_to',
   has: 'has',
@@ -210,12 +221,7 @@ function builtInViewValues(
   note: MobileNote,
   normalizedKey: NormalizedSuggestionKey,
 ): ViewFieldValue[] | null {
-  if (normalizedKey === 'type') return [note.type]
-  if (normalizedKey === 'status') return note.status ? [note.status] : []
-  if (normalizedKey === 'title') return [note.title]
-  if (normalizedKey === 'favorite') return [String(note.favorite)]
-  if (normalizedKey === 'body') return note.snippet ? [note.snippet] : []
-  return null
+  return BUILT_IN_VIEW_VALUE_RESOLVERS[normalizedKey]?.(note) ?? null
 }
 
 function relationshipValuesForSuggestion(

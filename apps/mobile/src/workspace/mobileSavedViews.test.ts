@@ -119,6 +119,52 @@ filters:
     ]).map((candidate) => candidate.id)).toEqual(['match'])
   })
 
+  it('evaluates discoverable desktop built-in saved-view fields', () => {
+    const view = parseMobileSavedViewFile({
+      relativePath: 'views/procedure-docs.yml',
+      content: `name: Procedure Docs
+filters:
+  all:
+    - field: isa
+      op: equals
+      value: Procedure
+    - field: filename
+      op: contains
+      value: runbook
+    - field: favorite
+      op: equals
+      value: true
+    - field: body
+      op: contains
+      value: checklist
+`,
+    }, 0)
+
+    expect(evaluateMobileSavedView(view!, [
+      note({
+        favorite: true,
+        id: 'Procedures/mobile-runbook.md',
+        path: 'Procedures/mobile-runbook.md',
+        snippet: 'Release checklist and QA steps',
+        type: 'Procedure',
+      }),
+      note({
+        favorite: true,
+        id: 'Procedures/mobile-runbook-draft.md',
+        path: 'Procedures/mobile-runbook-draft.md',
+        snippet: 'Draft without the keyword',
+        type: 'Procedure',
+      }),
+      note({
+        favorite: true,
+        id: 'Procedures/mobile-guide.md',
+        path: 'Procedures/mobile-guide.md',
+        snippet: 'Release checklist and QA steps',
+        type: 'Procedure',
+      }),
+    ]).map((candidate) => candidate.id)).toEqual(['Procedures/mobile-runbook.md'])
+  })
+
   it('evaluates regex-enabled saved-view filters like desktop', () => {
     const view = parseMobileSavedViewFile({
       relativePath: 'views/regex.yml',
