@@ -8,6 +8,7 @@ import {
   mobilePropertyKeySuggestions,
   mobilePropertyValueSuggestions,
   mobileRelationshipKeySuggestions,
+  mobileRelationshipTargetSuggestions,
   mobileTypeSuggestions,
   mobileViewFieldSuggestions,
   mobileViewValueSuggestions,
@@ -47,6 +48,34 @@ describe('mobile workspace suggestions', () => {
 
     expect(suggestions.slice(0, 3)).toEqual(['belongs_to', 'related_to', 'has'])
     expect(mobileRelationshipKeySuggestions(workspaceScenarioForId('default').notes, 'ment')).toEqual(['Mentions'])
+  })
+
+  it('suggests relationship targets by desktop note identity fields', () => {
+    const notes = [
+      {
+        ...workspaceScenarioForId('default').notes[0]!,
+        aliases: ['Weekly Review'],
+        id: 'journal/cafe-notes.md',
+        path: 'journal/cafe-notes.md',
+        tags: ['Travel'],
+        title: 'Café Notes',
+        type: 'Journal',
+      },
+      {
+        ...workspaceScenarioForId('default').notes[1]!,
+        archived: true,
+        aliases: ['Archived Weekly'],
+        id: 'archive/weekly.md',
+        path: 'archive/weekly.md',
+        title: 'Archived Weekly',
+      },
+    ]
+
+    expect(mobileRelationshipTargetSuggestions(notes, 'Cafe').map((note) => note.id)).toEqual(['journal/cafe-notes.md'])
+    expect(mobileRelationshipTargetSuggestions(notes, 'weekly review').map((note) => note.id)).toEqual(['journal/cafe-notes.md'])
+    expect(mobileRelationshipTargetSuggestions(notes, 'cafe-notes.md').map((note) => note.id)).toEqual(['journal/cafe-notes.md'])
+    expect(mobileRelationshipTargetSuggestions(notes, 'travel').map((note) => note.id)).toEqual(['journal/cafe-notes.md'])
+    expect(mobileRelationshipTargetSuggestions(notes, 'archived weekly')).toEqual([])
   })
 
   it('suggests retargeting types and folders excluding the selected note destination', () => {

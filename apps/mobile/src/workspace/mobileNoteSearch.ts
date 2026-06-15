@@ -1,28 +1,45 @@
 import { mobileNoteDisplayLabels } from './mobileNoteDisplay'
 import type { MobileNote } from './mobileWorkspaceModel'
 
-export function normalizedMobileSearchQuery(value: string) {
+type DisplayPropertyKey = string
+type SearchQuery = string
+type SearchText = string
+
+export function normalizedMobileSearchQuery(value: SearchQuery) {
   return normalizeSearchText(value)
 }
 
-export function mobileQuickOpenSearchText(note: MobileNote) {
+export function mobileNoteIdentitySearchText(note: MobileNote) {
   return normalizeSearchText([
     note.title,
     ...(note.aliases ?? []),
     noteFilename(note),
     noteFilenameStem(note),
-    note.snippet,
     note.type,
-    note.status,
     note.tags.join(' '),
     note.path ?? '',
   ].join(' '))
 }
 
+export function mobileNoteIdentityMatchesQuery(note: MobileNote, query: SearchQuery) {
+  const normalizedQuery = normalizedMobileSearchQuery(query)
+  if (!normalizedQuery) return true
+
+  return mobileNoteIdentitySearchText(note).includes(normalizedQuery)
+}
+
+export function mobileQuickOpenSearchText(note: MobileNote) {
+  return normalizeSearchText([
+    mobileNoteIdentitySearchText(note),
+    note.snippet,
+    note.status,
+  ].join(' '))
+}
+
 export function mobileNoteListMatchesQuery(
   note: MobileNote,
-  query: string,
-  displayPropertyKeys: string[] = [],
+  query: SearchQuery,
+  displayPropertyKeys: DisplayPropertyKey[] = [],
 ) {
   const normalizedQuery = normalizeSearchText(query)
   if (!normalizedQuery) return true
@@ -30,7 +47,7 @@ export function mobileNoteListMatchesQuery(
   return mobileNoteListSearchText(note, displayPropertyKeys).includes(normalizedQuery)
 }
 
-export function mobileNoteListSearchText(note: MobileNote, displayPropertyKeys: string[] = []) {
+export function mobileNoteListSearchText(note: MobileNote, displayPropertyKeys: DisplayPropertyKey[] = []) {
   return normalizeSearchText([
     note.title,
     note.snippet,
@@ -38,7 +55,7 @@ export function mobileNoteListSearchText(note: MobileNote, displayPropertyKeys: 
   ].join(' '))
 }
 
-function normalizeSearchText(value: string) {
+function normalizeSearchText(value: SearchText) {
   return value.normalize('NFKD').replace(/\p{Mark}/gu, '').trim().toLowerCase()
 }
 

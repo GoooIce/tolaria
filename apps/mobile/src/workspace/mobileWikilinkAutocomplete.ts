@@ -1,4 +1,5 @@
 import type { MobileNote } from './mobileWorkspaceModel'
+import { mobileNoteIdentityMatchesQuery, normalizedMobileSearchQuery } from './mobileNoteSearch'
 import { mobileWikilinkTargetForNote } from './mobileWikilinks'
 
 type CursorOffset = number
@@ -90,7 +91,7 @@ export function mobilePersonMentionAutocompleteSuggestions(
   notes: MobileNote[],
   query: PersonMentionQuery,
 ): MobileNote[] {
-  const normalizedQuery = normalizeSearchText(query)
+  const normalizedQuery = normalizedMobileSearchQuery(query)
   if (normalizedQuery.length === 0) return []
 
   return finalizeMobileWikilinkSuggestions(notes
@@ -114,8 +115,7 @@ function prepareMobileWikilinkSuggestions(notes: MobileNote[]): MobileNote[] {
 }
 
 function mobileWikilinkMatchesQuery(note: MobileNote, query: WikilinkQuery): boolean {
-  const normalizedQuery = normalizeSearchText(query)
-  return mobileWikilinkSearchValues(note).some((value) => normalizeSearchText(value).includes(normalizedQuery))
+  return mobileNoteIdentityMatchesQuery(note, query)
 }
 
 function deduplicateMobileWikilinksByPath(notes: MobileNote[]): MobileNote[] {
@@ -151,34 +151,9 @@ function mobileWikilinkIdentityPath(note: MobileNote): string {
   return note.path ?? note.id
 }
 
-function filenameStem(path: string): string {
-  const parts = path.split('/').filter(Boolean)
-  const filename = parts.length > 0 ? parts[parts.length - 1] : path
-  return filename.replace(/\.[^.]+$/u, '')
-}
-
 function boundedTextCursor(text: MarkdownContent, cursor: CursorOffset): CursorOffset {
   if (!Number.isFinite(cursor)) return text.length
   return Math.max(0, Math.min(cursor, text.length))
-}
-
-function normalizeSearchText(value: string): string {
-  return value.trim().toLowerCase()
-}
-
-function mobileWikilinkPathSearchValues(note: MobileNote): string[] {
-  if (!note.path) return [filenameStem(note.id)]
-  return [note.path, filenameStem(note.path)]
-}
-
-function mobileWikilinkSearchValues(note: MobileNote): string[] {
-  return [
-    note.title,
-    note.type,
-    ...mobileWikilinkPathSearchValues(note),
-    ...(note.aliases ?? []),
-    ...note.tags,
-  ]
 }
 
 function hasPersonMentionBoundary(text: string, triggerIndex: number): boolean {
@@ -190,7 +165,7 @@ function mobilePersonMentionMatchesQuery(note: MobileNote, normalizedQuery: stri
   return [
     note.title,
     ...(note.aliases ?? []),
-  ].some((value) => normalizeSearchText(value).includes(normalizedQuery))
+  ].some((value) => normalizedMobileSearchQuery(value).includes(normalizedQuery))
 }
 
 function activeMobileInlineQuery(

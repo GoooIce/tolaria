@@ -1,9 +1,27 @@
 import { describe, expect, it } from 'vitest'
 import { mobileNoteDisplayLabels } from './mobileNoteDisplay'
-import { mobileNoteListMatchesQuery } from './mobileNoteSearch'
+import { mobileNoteIdentityMatchesQuery, mobileNoteListMatchesQuery } from './mobileNoteSearch'
 import type { MobileNote } from './mobileWorkspaceModel'
 
 describe('mobile note search', () => {
+  it('matches note identity by title, alias, filename, type, tag, path, and diacritics', () => {
+    const candidate = note({
+      aliases: ['Weekly Review'],
+      path: 'journal/cafe-notes.md',
+      tags: ['Travel'],
+      title: 'Café Notes',
+      type: 'Journal',
+    })
+
+    expect(mobileNoteIdentityMatchesQuery(candidate, 'Cafe Notes')).toBe(true)
+    expect(mobileNoteIdentityMatchesQuery(candidate, 'weekly review')).toBe(true)
+    expect(mobileNoteIdentityMatchesQuery(candidate, 'cafe-notes.md')).toBe(true)
+    expect(mobileNoteIdentityMatchesQuery(candidate, 'journal/cafe')).toBe(true)
+    expect(mobileNoteIdentityMatchesQuery(candidate, 'travel')).toBe(true)
+    expect(mobileNoteIdentityMatchesQuery(candidate, 'journal')).toBe(true)
+    expect(mobileNoteIdentityMatchesQuery(candidate, 'release cleanup')).toBe(false)
+  })
+
   it('uses configured note-list chip labels for displayed properties and relationships', () => {
     const candidate = note({
       properties: [

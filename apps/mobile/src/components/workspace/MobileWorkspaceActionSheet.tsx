@@ -35,6 +35,7 @@ import {
   mobilePropertyValueSuggestions,
   mobileFolderSuggestions,
   mobileRelationshipKeySuggestions,
+  mobileRelationshipTargetSuggestions,
   mobileTypeSuggestions,
 } from '../../workspace/mobileWorkspaceSuggestions'
 import { MobileTypeIcon } from './MobileWorkspaceIcons'
@@ -676,7 +677,7 @@ function AddRelationshipContent({
   relationshipNoteTitle,
 }: MobileWorkspaceActionSheetProps) {
   const keySuggestions = mobileRelationshipKeySuggestions(notes, relationshipName)
-  const suggestions = relationshipSuggestions(notes, relationshipNoteTitle)
+  const suggestions = mobileRelationshipTargetSuggestions(notes, relationshipNoteTitle)
   const createTargetTitle = relationshipNoteTitle.trim()
   const showCreateTarget = shouldShowRelationshipCreateTarget(notes, createTargetTitle)
 
@@ -1060,25 +1061,6 @@ function NoteRowChips({ note }: { note: MobileNote }) {
       {note.tags.slice(0, 1).map((tag) => <MobileChip density="list" key={tag} label={tag} tone={tagTone(tag)} />)}
     </View>
   )
-}
-
-function relationshipSuggestions(notes: MobileNote[], query: string) {
-  const normalized = query.trim().toLowerCase()
-  if (!normalized) return []
-
-  return notes
-    .filter((note) => !note.archived && relationshipSuggestionSearchText(note).includes(normalized))
-    .slice(0, 6)
-}
-
-function relationshipSuggestionSearchText(note: MobileNote) {
-  return [
-    note.title,
-    note.type,
-    note.path ?? '',
-    ...(note.aliases ?? []),
-    note.tags.join(' '),
-  ].join(' ').toLowerCase()
 }
 
 function shouldShowRelationshipCreateTarget(notes: MobileNote[], title: string) {

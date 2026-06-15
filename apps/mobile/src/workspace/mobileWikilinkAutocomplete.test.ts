@@ -49,6 +49,14 @@ describe('mobile wikilink autocomplete', () => {
     expect(mobileWikilinkAutocompleteSuggestions(suggestions, 'project-alpha')).toHaveLength(1)
   })
 
+  it('matches wikilink targets when the query omits title diacritics', () => {
+    const suggestions = mobileWikilinkAutocompleteSuggestions([
+      note({ path: 'journal/cafe-notes.md', title: 'Café Notes' }),
+    ], 'Cafe')
+
+    expect(suggestions.map((suggestion) => suggestion.title)).toEqual(['Café Notes'])
+  })
+
   it('shows desktop-style top suggestions for an empty wikilink query', () => {
     const suggestions = mobileWikilinkAutocompleteSuggestions([
       note({ path: 'zeta.md', title: 'Zeta' }),

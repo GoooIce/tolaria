@@ -1,4 +1,5 @@
 import type { MobileNote, MobileRelationship, MobileTypeDefinitions } from './mobileWorkspaceModel'
+import { mobileNoteIdentityMatchesQuery, normalizedMobileSearchQuery } from './mobileNoteSearch'
 
 type PropertyKey = string
 type PropertyValueText = string
@@ -62,6 +63,18 @@ export function mobileRelationshipKeySuggestions(
   query: SuggestionQuery,
 ): RelationshipKey[] {
   return visibleSuggestions(relationshipKeyCandidates(notes), query)
+}
+
+export function mobileRelationshipTargetSuggestions(
+  notes: MobileNote[],
+  query: SuggestionQuery,
+): MobileNote[] {
+  const normalizedQuery = normalizedMobileSearchQuery(query)
+  if (!normalizedQuery) return []
+
+  return notes
+    .filter((note) => !note.archived && mobileNoteIdentityMatchesQuery(note, normalizedQuery))
+    .slice(0, 6)
 }
 
 export function mobileTypeSuggestions(
