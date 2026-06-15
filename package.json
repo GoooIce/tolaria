@@ -19,7 +19,7 @@
     "mobile:lint": "eslint apps/mobile --max-warnings=0",
     "mobile:export:web": "pnpm --filter @tolaria/mobile exec expo export --platform web --output-dir /tmp/tolaria-mobile-ui-web",
     "mobile:export:ios": "pnpm --filter @tolaria/mobile exec expo export --platform ios --output-dir /tmp/tolaria-mobile-ui-ios",
-    "mobile:qa:ios-simulator": "node apps/mobile/scripts/capture-ios-simulator.mjs --landscape",
+    "mobile:qa:ios-simulator": "node apps/mobile/scripts/capture-ios-simulator.mjs --landscape --open-url 'exp://127.0.0.1:8081/--/?layoutProbe=1' --wait 3000",
     "mobile:qa:ios-layout": "node apps/mobile/scripts/assert-ios-layout-metrics.mjs --open-url 'exp://127.0.0.1:8081/--/?layoutProbe=1' --wait 3000",
     "mobile:qa:screenshots": "pnpm mobile:export:web && playwright test --config apps/mobile/playwright.config.ts",
     "mobile:start": "pnpm --filter @tolaria/mobile start",

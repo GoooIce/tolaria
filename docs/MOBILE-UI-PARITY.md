@@ -54,6 +54,7 @@ pnpm mobile:lint
 pnpm mobile:typecheck
 pnpm mobile:test
 pnpm mobile:qa:screenshots
+pnpm mobile:qa:ios-layout
 pnpm mobile:qa:ios-simulator
 ```
 
@@ -80,13 +81,15 @@ The screenshot suite also contains objective parity assertions for tablet landsc
 
 The same Playwright suite also compares the primary tablet-landscape screen against a committed pixel baseline and checks that mobile parity constants still match desktop `src/index.css` and `src/theme.json`.
 
-`pnpm mobile:qa:ios-simulator` captures the currently booted iPad Simulator into:
+`pnpm mobile:qa:ios-layout` opens the native Expo Go deep link with `layoutProbe=1`, reads `TOLARIA_MOBILE_LAYOUT_METRIC` lines from the iPad Simulator logs, and fails when native React Native row boxes drift from the desktop parity contract. This is mandatory for padding, margin, row-height, indentation, and count-pill alignment because the Expo web/browser lane can pass while the iPad simulator renders differently.
+
+`pnpm mobile:qa:ios-simulator` opens the native Expo Go deep link with `layoutProbe=1`, sets the currently booted iPad Simulator to landscape, and captures it into:
 
 ```text
 /tmp/tolaria-mobile-ui-simulator/ipad-landscape.png
 ```
 
-Use it after launching Expo on iOS with `pnpm mobile:ios`. The command sets the booted iPad Simulator to landscape and captures the visible Simulator window, so the artifact matches the native Expo Go surface rather than the Expo web build.
+Use it after launching Expo on iOS with `pnpm mobile:ios`. The command refreshes Expo Go before capture, so the artifact matches the native app surface rather than Mobile Safari, the Expo web build, or a stale foreground Simulator app.
 
 If Expo Go is not already focused, open the running native bundle first:
 
@@ -95,7 +98,7 @@ pnpm mobile:ios
 pnpm mobile:qa:ios-simulator
 ```
 
-For tablet UI review, treat this simulator artifact as mandatory alongside Playwright screenshots. Playwright catches measurable parity regressions quickly; the simulator screenshot catches native Expo Go rendering differences that browser automation can miss. Use `--open-url` only for native deep links such as `exp://...`; an `http://...` URL opens Mobile Safari and is not an acceptance target for the mobile app.
+For tablet UI review, treat the native metric gate and simulator artifact as mandatory alongside Playwright screenshots. Playwright catches measurable parity regressions quickly; the simulator screenshot catches native Expo Go rendering differences that browser automation can miss. Use `--open-url` only for native deep links such as `exp://...`; an `http://...` URL opens Mobile Safari and is not an acceptance target for the mobile app.
 
 For padding, margin, row-height, and indentation regressions, do not rely on screenshots alone. Enable the layout probe and compare measured React Native layout numbers against the desktop parity contract:
 
