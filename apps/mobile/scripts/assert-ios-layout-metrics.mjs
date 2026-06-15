@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* global console, process, setTimeout */
 
 import { spawnSync } from 'node:child_process'
 import {
@@ -7,6 +8,7 @@ import {
   latestNativeLayoutMetrics,
   parseNativeLayoutMetrics,
 } from '../src/qa/nativeLayoutMetrics.ts'
+import { assertNativeQaOpenUrl } from '../src/qa/nativeQaUrls.ts'
 
 const defaultLogWindow = '5m'
 
@@ -20,6 +22,7 @@ Options:
   --device <udid>       Simulator UDID. Defaults to MOBILE_QA_SIMULATOR_UDID, then the booted iPad.
   --last <duration>     log show window, such as 90s or 5m. Defaults to ${defaultLogWindow}.
   --open-url <url>      Open a simulator URL before collecting logs. Use Expo deep links with layoutProbe=1.
+                       http(s) URLs are rejected because they open Mobile Safari, not the native app.
   --wait <ms>           Delay after opening a URL before collecting logs. Defaults to 3000.
   --help                Show this help.
 `)
@@ -121,6 +124,7 @@ async function main() {
   const waitMs = Number(readOption(args, '--wait', '3000'))
 
   if (openUrl) {
+    assertNativeQaOpenUrl(openUrl, 'Native iOS layout metrics')
     await openFreshProbeUrl(device, openUrl, waitMs)
   }
 

@@ -89,7 +89,7 @@ The same Playwright suite also compares the primary tablet-landscape screen agai
 /tmp/tolaria-mobile-ui-simulator/ipad-landscape.png
 ```
 
-Use it after launching Expo on iOS with `pnpm mobile:ios`. The command refreshes Expo Go before capture, so the artifact matches the native app surface rather than Mobile Safari, the Expo web build, or a stale foreground Simulator app.
+Use it after launching Expo on iOS with `pnpm mobile:ios`. The command refreshes Expo Go before capture, so the artifact matches the native app surface rather than Mobile Safari, the Expo web build, or a stale foreground Simulator app. The native QA scripts reject `http://` and `https://` open URLs because those launch Mobile Safari; automated native acceptance must use `exp://`, `exps://`, or `tolaria://` deep links.
 
 If Expo Go is not already focused, open the running native bundle first:
 

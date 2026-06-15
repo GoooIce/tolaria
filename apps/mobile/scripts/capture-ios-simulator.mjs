@@ -1,8 +1,10 @@
 #!/usr/bin/env node
+/* global console, process, setTimeout */
 
 import { mkdir } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import { spawnSync } from 'node:child_process'
+import { assertNativeQaOpenUrl } from '../src/qa/nativeQaUrls.ts'
 
 const defaultOutputDir = '/tmp/tolaria-mobile-ui-simulator'
 
@@ -20,6 +22,7 @@ Options:
   --orientation <value> Set orientation: portrait, landscape-left, or landscape-right.
   --framebuffer         Capture the raw simulator framebuffer instead of the visible Simulator window.
   --open-url <url>      Open a simulator URL before capture. Use exp:// URLs for Expo Go native QA.
+                       http(s) URLs are rejected because they open Mobile Safari, not the native app.
   --wait <ms>           Delay after opening a URL and before capture. Defaults to 3000.
   --help                Show this help.
 `)
@@ -139,6 +142,7 @@ async function main() {
   }
 
   if (url) {
+    assertNativeQaOpenUrl(url, 'Native iOS simulator capture')
     run('xcrun', ['simctl', 'openurl', device, url])
     await new Promise((resolveDelay) => setTimeout(resolveDelay, waitMs))
   }
