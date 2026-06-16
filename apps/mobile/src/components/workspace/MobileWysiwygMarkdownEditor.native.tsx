@@ -9,8 +9,8 @@ import {
   tiptapJsonToMobileMarkdown,
 } from '../../workspace/mobileDocumentContent'
 import type { MobileEditorBlock, MobileNote } from '../../workspace/mobileWorkspaceModel'
-import { desktopEditorParity } from '../../ui/desktopParity'
-import { mobileColors, mobileSpace } from '../../ui/tokens'
+import { mobileColors } from '../../ui/tokens'
+import { mobileTentapEditorCss } from './MobileWysiwygMarkdownEditorCss'
 
 type MobileWysiwygMarkdownEditorProps = {
   blocks: MobileEditorBlock[]
@@ -33,6 +33,10 @@ type TimerHandle = ReturnType<typeof setTimeout>
 type NativeTentapEditorBridgeOptions = Omit<MobileWysiwygMarkdownEditorProps, 'notes'> & {
   initialDocumentContent: string
 }
+type NativeTentapEditorSurfaceProps = {
+  editor: EditorBridge
+  injectEditorCss: () => void
+}
 type NativeTentapEditorRefs = {
   acceptsEditorChangesRef: MutableRefObject<boolean>
   contentRef: MutableRefObject<string>
@@ -50,20 +54,19 @@ export function MobileWysiwygMarkdownEditor({
   note,
   onUpdateContent,
 }: MobileWysiwygMarkdownEditorProps) {
-  const initialDocumentContent = mobileNoteEditableContent({
-    ...note,
-    editorBlocks: note.editorBlocks ?? blocks,
-    editorBullets: bullets,
-  })
-  const { editor, injectEditorCss } = useNativeTentapEditorBridge({
+  const bridge = useNativeTentapEditorBridge({
     blocks,
     bullets,
     compact,
-    initialDocumentContent,
+    initialDocumentContent: initialNativeEditorContent({ blocks, bullets, note }),
     note,
     onUpdateContent,
   })
 
+  return <NativeTentapEditorSurface {...bridge} />
+}
+
+function NativeTentapEditorSurface({ editor, injectEditorCss }: NativeTentapEditorSurfaceProps) {
   return (
     <View style={nativeEditorStyles.container} testID="editor-wysiwyg-form">
       <RichText
@@ -77,6 +80,17 @@ export function MobileWysiwygMarkdownEditor({
       </KeyboardAvoidingView>
     </View>
   )
+}
+
+function initialNativeEditorContent(
+  props: Pick<MobileWysiwygMarkdownEditorProps, 'blocks' | 'bullets' | 'note'>,
+): string {
+  const { blocks, bullets, note } = props
+  return mobileNoteEditableContent({
+    ...note,
+    editorBlocks: note.editorBlocks ?? blocks,
+    editorBullets: bullets,
+  })
 }
 
 function useNativeTentapEditorBridge({
@@ -317,109 +331,6 @@ function isJsonReadableEditorBridge(editor: EditorBridge | null): editor is Json
 
 function isCssInjectableEditorBridge(editor: EditorBridge | null): editor is CssInjectableEditorBridge {
   return typeof (editor as Partial<CssInjectableEditorBridge> | null)?.injectCSS === 'function'
-}
-
-function mobileTentapEditorCss(compact: boolean): string {
-  const horizontalPadding = compact ? mobileSpace.xl : desktopEditorParity.contentPaddingHorizontal
-  const h1FontSize = compact ? 30 : desktopEditorParity.h1FontSize
-  const h1LineHeight = compact ? 36 : desktopEditorParity.h1LineHeight
-
-  return `
-    html, body {
-      background: ${mobileColors.editor};
-      color: ${mobileColors.text};
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
-      font-size: ${desktopEditorParity.bodyFontSize}px;
-      line-height: ${desktopEditorParity.bodyLineHeight}px;
-      margin: 0;
-      padding: 0;
-    }
-    .ProseMirror {
-      box-sizing: border-box;
-      caret-color: ${mobileColors.primary};
-      margin: 0 auto;
-      max-width: ${desktopEditorParity.contentMaxWidth}px;
-      min-height: 100vh;
-      outline: none;
-      padding: ${desktopEditorParity.contentPaddingVertical}px ${horizontalPadding}px 96px;
-      width: 100%;
-    }
-    .ProseMirror h1 {
-      border-bottom: 1px solid ${mobileColors.border};
-      color: ${mobileColors.text};
-      font-size: ${h1FontSize}px;
-      font-weight: 700;
-      line-height: ${h1LineHeight}px;
-      margin: 0 0 ${desktopEditorParity.h1MarginBottom}px;
-      padding-bottom: ${desktopEditorParity.h1PaddingBottom}px;
-    }
-    .ProseMirror h2 {
-      color: ${mobileColors.text};
-      font-size: ${desktopEditorParity.h2FontSize}px;
-      font-weight: 700;
-      line-height: ${desktopEditorParity.h2LineHeight}px;
-      margin: ${desktopEditorParity.h2MarginTop}px 0 ${desktopEditorParity.h2MarginBottom}px;
-    }
-    .ProseMirror h3,
-    .ProseMirror h4 {
-      color: ${mobileColors.text};
-      font-size: ${desktopEditorParity.h3FontSize}px;
-      font-weight: 700;
-      line-height: ${desktopEditorParity.h3LineHeight}px;
-      margin: ${desktopEditorParity.h3MarginTop}px 0 ${desktopEditorParity.h3MarginBottom}px;
-    }
-    .ProseMirror p {
-      margin: 0 0 ${desktopEditorParity.paragraphSpacing}px;
-    }
-    .ProseMirror blockquote {
-      border-left: 3px solid ${mobileColors.primary};
-      color: ${mobileColors.textMuted};
-      font-style: italic;
-      margin: ${desktopEditorParity.quoteMarginVertical}px 0;
-      padding-left: ${desktopEditorParity.quotePaddingLeft}px;
-    }
-    .ProseMirror code {
-      background: ${mobileColors.graySoft};
-      border-radius: 4px;
-      font-family: Menlo, monospace;
-      font-size: ${desktopEditorParity.inlineCodeFontSize}px;
-      padding: ${desktopEditorParity.inlineCodePaddingVertical}px ${desktopEditorParity.inlineCodePaddingHorizontal}px;
-    }
-    .ProseMirror pre {
-      background: ${mobileColors.graySoft};
-      border-radius: 6px;
-      overflow-x: auto;
-      padding: ${mobileSpace.md}px;
-    }
-    .ProseMirror ul,
-    .ProseMirror ol {
-      margin: 0 0 ${desktopEditorParity.paragraphSpacing}px;
-      padding-left: ${desktopEditorParity.listIndentSize + desktopEditorParity.listPaddingLeft}px;
-    }
-    .ProseMirror li {
-      margin: ${desktopEditorParity.listItemSpacing}px 0;
-    }
-    .ProseMirror hr {
-      border: 0;
-      border-top: ${desktopEditorParity.horizontalRuleThickness}px solid ${mobileColors.border};
-      margin: ${desktopEditorParity.horizontalRuleMarginVertical}px 0;
-    }
-    .ProseMirror table {
-      border-collapse: collapse;
-      font-size: ${desktopEditorParity.tableFontSize}px;
-      margin: ${mobileSpace.md}px 0;
-      width: 100%;
-    }
-    .ProseMirror th,
-    .ProseMirror td {
-      border: 1px solid ${mobileColors.border};
-      padding: ${desktopEditorParity.tableCellPaddingVertical}px ${desktopEditorParity.tableCellPaddingHorizontal}px;
-      text-align: left;
-    }
-    .ProseMirror a {
-      color: ${mobileColors.primary};
-    }
-  `
 }
 
 const nativeEditorStyles = StyleSheet.create({
