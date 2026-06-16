@@ -91,18 +91,11 @@ filters:
   })
 
   it('sorts saved views with desktop custom-property sort strings', () => {
-    const rankedView = parseMobileSavedViewFile(
-      { content: 'name: Ranked\nsort: "property:Priority:asc"\nfilters:\n  all: []\n', relativePath: 'views/ranked.yml' },
-      0,
-    )
-    const datedView = parseMobileSavedViewFile(
-      { content: 'name: Dated\nsort: "Due:desc"\nfilters:\n  all: []\n', relativePath: 'views/dated.yml' },
-      1,
-    )
-    const offsetDateView = parseMobileSavedViewFile(
-      { content: 'name: Offset Dates\nsort: "property:Due:asc"\nfilters:\n  all: []\n', relativePath: 'views/offset-dates.yml' },
-      2,
-    )
+    const parsedView = (name: string, sort: string, order: number) => parseMobileSavedViewFile({ content: `name: ${name}\nsort: "${sort}"\nfilters:\n  all: []\n`, relativePath: `views/${name.toLowerCase().replace(/\s+/gu, '-')}.yml` }, order)
+    const rankedView = parsedView('Ranked', 'property:Priority:asc', 0)
+    const datedView = parsedView('Dated', 'Due:desc', 1)
+    const offsetDateView = parsedView('Offset Dates', 'property:Due:asc', 2)
+    const typePropertyView = parsedView('Type Property', 'type:asc', 3)
     const notes = [
       note({ id: 'missing' }),
       note({ id: 'low', properties: [{ key: 'Priority', label: 'Priority', value: 3 }, { key: 'Due', label: 'Due', value: '2026-06-10' }] }),
@@ -115,6 +108,11 @@ filters:
       note({ id: 'late-us-evening', properties: [{ key: 'Due', label: 'Due', value: '2026-06-10T23:00:00-05:00' }] }),
       note({ id: 'utc-midnight', properties: [{ key: 'Due', label: 'Due', value: '2026-06-11T00:00:00Z' }] }),
     ]).map((candidate) => candidate.id)).toEqual(['utc-midnight', 'late-us-evening'])
+    expect(evaluateMobileSavedView(typePropertyView!, [
+      note({ id: 'missing', type: 'Book' }),
+      note({ id: 'frontmatter-zeta', properties: [{ key: 'type', label: 'type', value: 'Zeta' }], type: 'Essay' }),
+      note({ id: 'frontmatter-alpha', properties: [{ key: 'type', label: 'type', value: 'Alpha' }], type: 'Procedure' }),
+    ]).map((candidate) => candidate.id)).toEqual(['frontmatter-alpha', 'frontmatter-zeta', 'missing'])
   })
 
   it('sorts saved views with desktop built-in sort semantics', () => {

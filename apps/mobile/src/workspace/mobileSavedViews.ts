@@ -83,7 +83,7 @@ const supportedFilterOps = new Set<MobileViewFilterOp>([
   'before',
   'after',
 ])
-const builtInSortFields = new Set(['created', 'modified', 'status', 'title', 'type'])
+const builtInSortFields = new Set(['created', 'modified', 'status', 'title'])
 const regexFilterOps = new Set<MobileViewFilterOp>(['contains', 'equals', 'not_contains', 'not_equals'])
 const maxUserRegexLength = 256
 const regexRepeatLimit = 25
