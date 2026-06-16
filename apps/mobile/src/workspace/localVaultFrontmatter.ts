@@ -211,15 +211,21 @@ function splitInlineArrayItems(value: FrontmatterText): FrontmatterText[] {
 }
 
 function parseScalar(value: FrontmatterText): LocalVaultFrontmatterScalar | null {
+  const quoted = isQuotedScalar(value)
   const clean = unquote(value)
   const lower = clean.toLowerCase()
 
   if (lower === 'null') return null
   if (lower === 'true' || lower === 'yes') return true
   if (lower === 'false' || lower === 'no') return false
-  if (isNumericScalar(clean)) return Number(clean)
+  if (!quoted && isNumericScalar(clean)) return Number(clean)
 
   return clean
+}
+
+function isQuotedScalar(value: FrontmatterText): boolean {
+  const quote = value.at(0)
+  return isQuote(quote) && value.at(-1) === quote
 }
 
 function unquote(value: FrontmatterText): FrontmatterText {

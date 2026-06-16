@@ -100,4 +100,18 @@ Body.
     expect(document.frontmatter.rating).toBe('')
     expect(frontmatterList(document.frontmatter, ['tags'])).toEqual(['Reading'])
   })
+
+  it('keeps quoted numeric frontmatter values as strings like desktop', () => {
+    const document = parseLocalVaultDocument(`---
+version: "42"
+rating: '3.5'
+order: 3.5
+---
+Body.
+`)
+
+    expect(document.frontmatter.version).toBe('42')
+    expect(document.frontmatter.rating).toBe('3.5')
+    expect(document.frontmatter.order).toBe(3.5)
+  })
 })
