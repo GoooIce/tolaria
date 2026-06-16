@@ -45,6 +45,19 @@ describe('mobile workspace suggestions', () => {
     expect(mobilePropertyValueSuggestions(withPriority.notes, 'Status', 'ship')).toEqual(['Shipped'])
   })
 
+  it('uses the active comma segment for every list-valued property suggestion query', () => {
+    const withAreas = applyMobileWorkspaceEdit(workspaceScenarioForId('default'), {
+      key: 'Areas',
+      noteId: 'workflow-orchestration',
+      type: 'updateProperty',
+      value: ['Design', 'Research'],
+    })
+
+    expect(mobilePropertyValueSuggestions(withAreas.notes, 'Areas', 'Design, res', 'list')).toEqual(['Research'])
+    expect(mobilePropertyValueSuggestions(withAreas.notes, 'Areas', 'Design, de', 'list')).toEqual([])
+    expect(mobilePropertyValueSuggestions(withAreas.notes, 'Areas', 'Design, res', 'string')).toEqual([])
+  })
+
   it('suggests canonical relationship keys plus custom vault relationship keys', () => {
     const suggestions = mobileRelationshipKeySuggestions(workspaceScenarioForId('default').notes, '')
 

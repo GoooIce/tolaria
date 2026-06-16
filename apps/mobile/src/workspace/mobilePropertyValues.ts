@@ -11,6 +11,10 @@ export type MobilePropertyValueInput = {
   valueText: MobilePropertyValueText
 }
 
+export type MobilePropertySuggestionValueInput = MobilePropertyValueInput & {
+  suggestion: string
+}
+
 export function mobilePropertyValueFormText(value: MobilePropertyValue): string {
   if (Array.isArray(value)) return value.join(', ')
   return String(value)
@@ -50,12 +54,25 @@ export function parseMobilePropertyValue(input: MobilePropertyValueInput): Mobil
   return input.valueText.trim()
 }
 
+export function mobilePropertySuggestionValue(input: MobilePropertySuggestionValueInput): string {
+  const kind = mobilePropertyValueKindForKey(input.key, input.kind)
+  if (kind !== 'list') return input.suggestion
+  return listPropertySuggestionValue(input.valueText, input.suggestion)
+}
+
 export function isMobileListPropertyKey(key: MobilePropertyKey): boolean {
   return key.trim().toLowerCase() === 'tags'
 }
 
 function listPropertyValue(value: MobilePropertyValueText): string[] {
   return value.split(',').map((item) => item.trim()).filter(Boolean)
+}
+
+function listPropertySuggestionValue(valueText: MobilePropertyValueText, suggestion: string): string {
+  const parts = valueText.split(',').map((part) => part.trim())
+  const existing = parts.slice(0, -1).filter(Boolean)
+  const withoutSuggestion = existing.filter((part) => part.toLowerCase() !== suggestion.toLowerCase())
+  return [...withoutSuggestion, suggestion].join(', ')
 }
 
 function booleanPropertyValue(value: MobilePropertyValueText): boolean {

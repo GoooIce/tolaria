@@ -22,6 +22,7 @@ import {
 } from '../../workspace/mobileQuickOpen'
 import {
   isMobileListPropertyKey,
+  mobilePropertySuggestionValue,
   mobilePropertyValueKindForKey,
   type MobilePropertyValueKind,
 } from '../../workspace/mobilePropertyValues'
@@ -620,7 +621,7 @@ function AddPropertyContent({
   const lockedListKind = isMobileListPropertyKey(propertyName)
   const selectedValueKind = mobilePropertyValueKindForKey(propertyName, propertyValueKind)
   const keySuggestions = editingProperty ? [] : mobilePropertyKeySuggestions(notes, selectedNote, propertyName)
-  const valueSuggestions = mobilePropertyValueSuggestions(notes, propertyName, propertyValue)
+  const valueSuggestions = mobilePropertyValueSuggestions(notes, propertyName, propertyValue, selectedValueKind)
 
   return (
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" style={styles.scrollArea}>
@@ -661,7 +662,12 @@ function AddPropertyContent({
         labels={valueSuggestions}
         testID="workspace-property-value-suggestions"
         testIDPrefix="workspace-property-value-suggestion"
-        onSelect={(value) => onPropertyValueChange(propertySuggestionValue(propertyName, propertyValue, value))}
+        onSelect={(value) => onPropertyValueChange(mobilePropertySuggestionValue({
+          key: propertyName,
+          kind: selectedValueKind,
+          suggestion: value,
+          valueText: propertyValue,
+        }))}
       />
       <SheetFooter>
         <MobileButton label={mobileText('common.cancel')} variant="ghost" onPress={onClose} />
@@ -1074,15 +1080,6 @@ function shouldShowRelationshipCreateTarget(notes: MobileNote[], title: string) 
   if (!normalized) return false
 
   return !notes.some((note) => !note.archived && note.title.trim().toLowerCase() === normalized)
-}
-
-function propertySuggestionValue(propertyName: string, propertyValue: string, suggestion: string) {
-  if (propertyName.trim().toLowerCase() !== 'tags') return suggestion
-
-  const parts = propertyValue.split(',').map((part) => part.trim())
-  const existing = parts.slice(0, -1).filter(Boolean)
-  const withoutSuggestion = existing.filter((part) => part.toLowerCase() !== suggestion.toLowerCase())
-  return [...withoutSuggestion, suggestion].join(', ')
 }
 
 function actionTitle(action: MobileWorkspaceAction, propertyName: string) {

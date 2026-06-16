@@ -1,5 +1,6 @@
 import type { MobileNote, MobileRelationship, MobileTypeDefinitions } from './mobileWorkspaceModel'
 import { mobileNoteIdentityMatchesQuery, normalizedMobileSearchQuery } from './mobileNoteSearch'
+import { mobilePropertyValueKindForKey, type MobilePropertyValueKind } from './mobilePropertyValues'
 
 type PropertyKey = string
 type PropertyValueText = string
@@ -56,10 +57,11 @@ export function mobilePropertyValueSuggestions(
   notes: MobileNote[],
   key: PropertyKey,
   query: SuggestionQuery,
+  kind: MobilePropertyValueKind = 'string',
 ): PropertyValueText[] {
   const normalizedKey = canonicalSuggestionKey(key)
   if (!normalizedKey) return []
-  const listQuery = propertyListQuery(query, normalizedKey)
+  const listQuery = propertyListQuery(query, mobilePropertyValueKindForKey(key, kind))
   return visibleSuggestions(propertyValueCandidates(notes, normalizedKey), listQuery.query)
     .filter((value) => !listQuery.selected.has(canonicalSuggestionKey(value)))
 }
@@ -347,9 +349,9 @@ function propertyValueTexts(
 
 function propertyListQuery(
   query: SuggestionQuery,
-  normalizedKey: NormalizedSuggestionKey,
+  kind: MobilePropertyValueKind,
 ): { query: SuggestionQuery; selected: Set<NormalizedSuggestionKey> } {
-  if (normalizedKey !== 'tags') return { query, selected: new Set() }
+  if (kind !== 'list') return { query, selected: new Set() }
 
   const parts = query.split(',').map((part) => part.trim())
   const activeQuery = parts.at(-1) ?? ''

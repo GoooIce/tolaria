@@ -3,6 +3,7 @@ import {
   mobilePropertyValueFormText,
   mobilePropertyValueKind,
   mobilePropertyValueKindForKey,
+  mobilePropertySuggestionValue,
   mobilePropertyValueTextForKindChange,
   parseMobilePropertyValue,
 } from './mobilePropertyValues'
@@ -40,5 +41,26 @@ describe('mobile property values', () => {
     expect(mobilePropertyValueTextForKindChange('no', 'boolean')).toBe('false')
     expect(mobilePropertyValueTextForKindChange('', 'boolean')).toBe('true')
     expect(mobilePropertyValueTextForKindChange('8', 'number')).toBe('8')
+  })
+
+  it('completes the active comma segment for every list-valued property', () => {
+    expect(mobilePropertySuggestionValue({
+      key: 'Areas',
+      kind: 'list',
+      suggestion: 'Research',
+      valueText: 'Design, res',
+    })).toBe('Design, Research')
+    expect(mobilePropertySuggestionValue({
+      key: 'Areas',
+      kind: 'list',
+      suggestion: 'Design',
+      valueText: 'Design, des',
+    })).toBe('Design')
+    expect(mobilePropertySuggestionValue({
+      key: 'Priority',
+      kind: 'string',
+      suggestion: 'High',
+      valueText: 'H',
+    })).toBe('High')
   })
 })
