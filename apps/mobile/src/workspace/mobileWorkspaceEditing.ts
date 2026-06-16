@@ -57,7 +57,7 @@ import {
   rewriteMovedNoteWikilinks,
 } from './mobileWorkspacePathRewrites'
 import { writeMobileFrontmatterValue } from './mobileFrontmatterWrites'
-import { normalizeMobileWikilinkTarget } from './mobileWikilinks'
+import { mobileNoteForWikilinkTarget } from './mobileWikilinks'
 import type { MobileTypeDefinitionPatch } from './mobileTypeDefinitions'
 import { applyMobileTypeEdit } from './mobileWorkspaceTypeEditing'
 import { normalizeRelationshipKey } from './mobileWorkspaceSuggestions'
@@ -1125,14 +1125,7 @@ function unresolvedRelationshipValue(rawValue: WikilinkRef, target: WikilinkTarg
 }
 
 function resolveRelationshipTarget(notes: MobileNote[], target: WikilinkTarget): MobileNote | null {
-  const normalizedTarget = normalizeMobileWikilinkTarget(target)
-  return notes.find((note) => {
-    const pathStem = note.path?.replace(/\.[^.]+$/, '') ?? note.id.replace(/\.[^.]+$/, '')
-    return normalizeMobileWikilinkTarget(note.title) === normalizedTarget
-      || (note.aliases ?? []).some((alias) => normalizeMobileWikilinkTarget(alias) === normalizedTarget)
-      || normalizeMobileWikilinkTarget(note.id.replace(/\.[^.]+$/, '')) === normalizedTarget
-      || normalizeMobileWikilinkTarget(pathStem) === normalizedTarget
-  }) ?? null
+  return mobileNoteForWikilinkTarget(notes, target)
 }
 
 function relationshipRefForTitle(title: NoteTitle, notes: MobileNote[]): WikilinkRef {
