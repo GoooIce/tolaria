@@ -373,10 +373,11 @@ function readList(lines: MarkdownLines, startIndex: number): ReadHtmlBlockResult
   const items: MobileMarkdownListItem[] = []
   let index = startIndex
   const kind: ListKind = first.kind
+  const depth = first.depth
 
   while (index < lines.length) {
     const current = listLine(lines[index] ?? '')
-    if (!current || current.kind !== kind) break
+    if (!current || current.depth < depth || (current.depth === depth && current.kind !== kind)) break
     items.push(current)
     index += 1
   }

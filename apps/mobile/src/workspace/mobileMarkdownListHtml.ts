@@ -3,16 +3,20 @@ export type MobileMarkdownListKind = 'bullet' | 'ordered' | 'task'
 export type MobileMarkdownListItem = {
   checked?: boolean
   depth: number
+  kind?: MobileMarkdownListKind
   markerNumber?: number
   text: string
 }
 
 type InlineHtmlRenderer = (text: string) => string
+type ResolvedMobileMarkdownListItem = MobileMarkdownListItem & {
+  kind: MobileMarkdownListKind
+}
 type ListRenderOptions = {
   depth: number
   index: number
   inlineHtml: InlineHtmlRenderer
-  items: MobileMarkdownListItem[]
+  items: ResolvedMobileMarkdownListItem[]
   kind: MobileMarkdownListKind
 }
 type RenderListResult = { html: string; nextIndex: number }
@@ -23,7 +27,8 @@ export function mobileMarkdownListHtml(
   inlineHtml: InlineHtmlRenderer,
 ): string {
   if (items.length === 0) return ''
-  return renderList({ depth: items[0]?.depth ?? 0, index: 0, inlineHtml, items, kind }).html
+  const resolvedItems = items.map((item) => ({ ...item, kind: item.kind ?? kind }))
+  return renderList({ depth: resolvedItems[0]?.depth ?? 0, index: 0, inlineHtml, items: resolvedItems, kind }).html
 }
 
 function renderList({ depth, index, inlineHtml, items, kind }: ListRenderOptions): RenderListResult {
@@ -44,7 +49,8 @@ function renderList({ depth, index, inlineHtml, items, kind }: ListRenderOptions
 function renderNextListChunk(options: ListRenderOptions): RenderListResult | null {
   const item = options.items[options.index]
   if (!item || item.depth < options.depth) return null
-  if (item.depth > options.depth) return renderList({ ...options, depth: item.depth })
+  if (item.depth > options.depth) return renderList({ ...options, depth: item.depth, kind: item.kind })
+  if (item.kind !== options.kind) return null
 
   const child = renderChildList({ ...options, index: options.index + 1 })
   return {
@@ -56,7 +62,7 @@ function renderNextListChunk(options: ListRenderOptions): RenderListResult | nul
 function renderChildList(options: ListRenderOptions): RenderListResult {
   const nextItem = options.items[options.index]
   return nextItem && nextItem.depth > options.depth
-    ? renderList({ ...options, depth: nextItem.depth })
+    ? renderList({ ...options, depth: nextItem.depth, kind: nextItem.kind })
     : { html: '', nextIndex: options.index }
 }
 
