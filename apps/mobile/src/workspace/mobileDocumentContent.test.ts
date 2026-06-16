@@ -161,6 +161,21 @@ Updated body.
     )
   })
 
+  it('keeps unsupported html comment blocks editable as markdown source', () => {
+    const html = mobileMarkdownBodyToTentapHtml([
+      'Intro',
+      '',
+      '<!--',
+      '{"fold":true}',
+      '-->',
+      '',
+      'Done',
+      '',
+    ].join('\n'))
+
+    expect(html).toBe('<p>Intro</p>\n<p>&lt;!--<br>{&quot;fold&quot;:true}<br>--&gt;</p>\n<p>Done</p>')
+  })
+
   it('hydrates nested desktop markdown lists without flattening indentation', () => {
     const html = mobileMarkdownBodyToTentapHtml('- Parent\n  - Child with **bold**\n- Sibling\n')
     const taskHtml = mobileMarkdownBodyToTentapHtml('- [x] Parent\n  - [ ] Child\n')
@@ -395,6 +410,12 @@ Updated body.
       '',
       '</details>',
     ].join('\n'))
+  })
+
+  it('keeps unsupported html comment paragraphs as editable markdown source after native saves', () => {
+    const document = paragraphDocument('<!--', '{"fold":true}', '-->')
+
+    expect(tiptapJsonToMobileMarkdown(document)).toBe(['<!--', '{"fold":true}', '-->'].join('\n'))
   })
 
   it('keeps detached indented list paragraphs as editable markdown source after native saves', () => {

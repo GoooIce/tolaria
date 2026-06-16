@@ -7,15 +7,27 @@ export function readUnsupportedHtmlBlock(
   lines: MarkdownLines,
   startIndex: number,
 ): ReadUnsupportedHtmlBlock | null {
+  if (isHtmlCommentOpenLine(lines[startIndex] ?? '')) {
+    return readUntilCloseLine(lines, startIndex, isHtmlCommentCloseLine)
+  }
+
   if (!isDetailsOpenLine(lines[startIndex] ?? '')) return null
 
+  return readUntilCloseLine(lines, startIndex, isDetailsCloseLine)
+}
+
+function readUntilCloseLine(
+  lines: MarkdownLines,
+  startIndex: number,
+  isCloseLine: (line: MarkdownLine) => boolean,
+): ReadUnsupportedHtmlBlock {
   const blockLines: MarkdownLines = []
   let index = startIndex
   while (index < lines.length) {
     const line = lines[index] ?? ''
     blockLines.push(line)
     index += 1
-    if (isDetailsCloseLine(line)) break
+    if (isCloseLine(line)) break
   }
 
   return { lines: blockLines, nextIndex: index }
@@ -30,13 +42,47 @@ export function unsupportedHtmlBlockToParagraphHtml(
 
 export function normalizeUnsupportedHtmlBlockMarkdown(markdown: string): string {
   const lines = markdown.split('\n').map(stripHardBreakMarker)
-  return isUnsupportedDetailsParagraph(lines) ? lines.join('\n') : markdown
+  return isUnsupportedHtmlSourceParagraph(lines) ? lines.join('\n') : markdown
+}
+
+function isUnsupportedHtmlSourceParagraph(lines: MarkdownLines): boolean {
+  return isUnsupportedDetailsParagraph(lines) || isUnsupportedCommentParagraph(lines)
+}
+
+function isUnsupportedCommentParagraph(lines: MarkdownLines): boolean {
+  return htmlCommentSourceChecks(lines).every(Boolean)
+}
+
+function htmlCommentSourceChecks(lines: MarkdownLines): boolean[] {
+  return [
+    lines.length > 0,
+    isHtmlCommentOpenLine(firstMarkdownLine(lines)),
+    isHtmlCommentCloseLine(lastMarkdownLine(lines)),
+  ]
 }
 
 function isUnsupportedDetailsParagraph(lines: MarkdownLines): boolean {
   return lines.length >= 2
-    && isDetailsOpenLine(lines[0] ?? '')
-    && isDetailsCloseLine(lines.at(-1) ?? '')
+    && isDetailsOpenLine(firstMarkdownLine(lines))
+    && isDetailsCloseLine(lastMarkdownLine(lines))
+}
+
+function firstMarkdownLine(lines: MarkdownLines): MarkdownLine {
+  return lines[0] || ''
+}
+
+function lastMarkdownLine(lines: MarkdownLines): MarkdownLine {
+  if (lines.length === 0) return ''
+
+  return lines[lines.length - 1] || ''
+}
+
+function isHtmlCommentOpenLine(line: MarkdownLine): boolean {
+  return line.trimStart().startsWith('<!--')
+}
+
+function isHtmlCommentCloseLine(line: MarkdownLine): boolean {
+  return line.includes('-->')
 }
 
 function isDetailsOpenLine(line: MarkdownLine): boolean {
