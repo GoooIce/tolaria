@@ -163,7 +163,32 @@ function isInlineArrayLiteral(value: FrontmatterText): boolean {
 }
 
 function parseInlineArray(value: FrontmatterText): LocalVaultFrontmatterScalar[] {
-  return value.slice(1, -1).split(',').map((item) => parseScalar(item.trim()))
+  return splitInlineArrayItems(value.slice(1, -1)).map((item) => parseScalar(item.trim()))
+}
+
+function splitInlineArrayItems(value: FrontmatterText): FrontmatterText[] {
+  const items: FrontmatterText[] = []
+  let quote: '"' | '\'' | null = null
+  let start = 0
+
+  for (let index = 0; index < value.length; index += 1) {
+    const char = value[index]
+    if (char === '\\' && quote === '"') {
+      index += 1
+      continue
+    }
+    if (isQuote(char)) {
+      quote = quote === char ? null : quote ?? char
+      continue
+    }
+    if (char === ',' && quote === null) {
+      items.push(value.slice(start, index))
+      start = index + 1
+    }
+  }
+
+  items.push(value.slice(start))
+  return items
 }
 
 function parseScalar(value: FrontmatterText): LocalVaultFrontmatterScalar | null {

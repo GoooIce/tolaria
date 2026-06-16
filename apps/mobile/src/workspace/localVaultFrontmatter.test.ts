@@ -32,4 +32,18 @@ Body.
       type: 'Note',
     }, ['type', 'Is A', 'is_a'])).toBe('Note')
   })
+
+  it('keeps quoted commas inside desktop inline array frontmatter values', () => {
+    const document = parseLocalVaultDocument(`---
+aliases: ["Mobile, UI", "Tablet"]
+tags: ['AI, UX', Design]
+score: [1, true, "Needs, Review"]
+---
+Body.
+`)
+
+    expect(frontmatterList(document.frontmatter, ['aliases'])).toEqual(['Mobile, UI', 'Tablet'])
+    expect(frontmatterList(document.frontmatter, ['tags'])).toEqual(['AI, UX', 'Design'])
+    expect(document.frontmatter.score).toEqual([1, true, 'Needs, Review'])
+  })
 })
