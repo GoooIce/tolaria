@@ -111,6 +111,12 @@ Updated body.
     expect(html).not.toContain('<h1>')
   })
 
+  it('renders angle-wrapped attachment links without leaking markdown angle syntax into hrefs', () => {
+    const html = mobileMarkdownBodyToTentapHtml('[project brief.pdf](<attachments/project brief.pdf>)\n')
+
+    expect(html).toBe('<p><a href="attachments/project brief.pdf">project brief.pdf</a></p>')
+  })
+
   it('preserves desktop highlight markdown while leaving code spans literal', () => {
     const html = mobileMarkdownBodyToTentapHtml('Use ==highlight== but keep `==literal==` as code.\n')
 
@@ -356,6 +362,26 @@ Updated body.
     }
 
     expect(tiptapJsonToMobileMarkdown(document)).toBe('See [[Project Alpha]] and [[Tolaria/Mobile UI|Mobile UI]].')
+  })
+
+  it('serializes link destinations with spaces using desktop angle syntax', () => {
+    const document: TiptapJsonNode = {
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          content: [
+            {
+              marks: [{ attrs: { href: 'attachments/project brief.pdf' }, type: 'link' }],
+              text: 'project brief.pdf',
+              type: 'text',
+            },
+          ],
+        },
+      ],
+    }
+
+    expect(tiptapJsonToMobileMarkdown(document)).toBe('[project brief.pdf](<attachments/project brief.pdf>)')
   })
 
   it('serializes display math hard breaks back to durable markdown source', () => {

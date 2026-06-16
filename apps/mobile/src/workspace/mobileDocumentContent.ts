@@ -449,8 +449,15 @@ function linkifyInlineMarkdown(markdown: MarkdownLine): string {
     ))
     .replace(/\[\[([^\]]+)]]/g, (_match, target: WikilinkTarget) => wikilinkHtml(target, target))
     .replace(/\[([^\]]+)]\(([^)]+)\)/g, (_match, label: LinkLabel, href: UrlText) => (
-      `<a href="${escapeAttribute(href)}">${label}</a>`
+      `<a href="${escapeAttribute(markdownLinkHref(href))}">${label}</a>`
     ))
+}
+
+function markdownLinkHref(href: UrlText): UrlText {
+  const destination = unescapeHtml(href).trim()
+  return destination.startsWith('<') && destination.endsWith('>')
+    ? destination.slice(1, -1)
+    : destination
 }
 
 function wikilinkHtml(target: WikilinkTarget, display: LinkLabel): string {
@@ -633,7 +640,16 @@ function linkMarkdown(text: LinkLabel, attrs: Record<string, unknown> | undefine
     const target = decodeURIComponent(href.slice(WIKILINK_HREF_PREFIX.length))
     return target === text ? `[[${target}]]` : `[[${target}|${text}]]`
   }
-  return `[${text}](${href})`
+  return `[${escapeMarkdownLinkLabel(text)}](${escapeMarkdownLinkDestination(href)})`
+}
+
+function escapeMarkdownLinkLabel(text: LinkLabel): LinkLabel {
+  return text.replace(/\\/g, '\\\\').replace(/\]/g, '\\]')
+}
+
+function escapeMarkdownLinkDestination(href: UrlText): UrlText {
+  if (/[\s<>]/u.test(href)) return `<${href.replace(/>/g, '%3E')}>`
+  return href.replace(/\\/g, '\\\\').replace(/\)/g, '\\)')
 }
 
 function plainText(nodes: TiptapJsonNode[]): string {
