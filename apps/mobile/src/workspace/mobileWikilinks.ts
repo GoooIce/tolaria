@@ -10,7 +10,7 @@ export type MobileParsedWikilink = {
 }
 
 export function parseMobileWikilink(value: WikilinkText): MobileParsedWikilink | null {
-  const match = value.match(/^\[\[([^\]|]+)(?:\|([^\]]+))?\]\]$/u)
+  const match = value.trim().match(/^\[\[([^\]|]+)(?:\|([^\]]+))?\]\]$/u)
   if (!match) return null
 
   return {

@@ -1,8 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import type { MobileNote } from './mobileWorkspaceModel'
-import { mobileNoteIdForWikilinkTarget } from './mobileWikilinks'
+import { mobileNoteIdForWikilinkTarget, parseMobileWikilink } from './mobileWikilinks'
 
 describe('mobile wikilink resolution', () => {
+  it('parses desktop wikilink frontmatter values with surrounding whitespace', () => {
+    expect(parseMobileWikilink(' [[Cafe Notes.md|Café]] ')).toEqual({
+      display: 'Café',
+      target: 'Cafe Notes.md',
+    })
+  })
+
   it('resolves aliases using the same note identity candidates as desktop', () => {
     expect(mobileNoteIdForWikilinkTarget([
       note({

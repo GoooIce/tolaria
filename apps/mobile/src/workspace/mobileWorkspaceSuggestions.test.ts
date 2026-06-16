@@ -266,7 +266,7 @@ describe('mobile workspace suggestions', () => {
     const typeDefinitions = {
       Essay: {
         relationships: {
-          depends_on: ['[[Cafe Notes.md]]'],
+          depends_on: [' [[Cafe Notes.md]] '],
         },
       },
     }
@@ -274,7 +274,7 @@ describe('mobile workspace suggestions', () => {
     expect(mobileViewValueSuggestionItems(notes, 'depends_on', 'cafe', typeDefinitions)).toEqual([
       expect.objectContaining({
         label: 'Café Notes',
-        meta: '[[Cafe Notes.md]]',
+        meta: ' [[Cafe Notes.md]] ',
         value: '[[Cafe Notes.md]]',
       }),
     ])
