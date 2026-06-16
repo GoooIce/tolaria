@@ -113,8 +113,9 @@ export function mobileFolderSuggestions(
 export function mobileViewFieldSuggestions(
   notes: MobileNote[],
   query: SuggestionQuery,
+  typeDefinitions?: MobileTypeDefinitions,
 ): ViewField[] {
-  return visibleSuggestions(viewFieldCandidates(notes), query)
+  return visibleSuggestions(viewFieldCandidates(notes, typeDefinitions), query)
 }
 
 export function mobileViewValueSuggestions(
@@ -138,15 +139,17 @@ export function mobileViewValueSuggestionItems(
 export function mobileListPropertySuggestions(
   notes: MobileNote[],
   query: SuggestionQuery,
+  typeDefinitions?: MobileTypeDefinitions,
 ): PropertyKey[] {
-  return sortedVisibleSuggestions(listPropertyCandidates(notes), query)
+  return sortedVisibleSuggestions(listPropertyCandidates(notes, typeDefinitions), query)
 }
 
 export function mobileSortablePropertySuggestions(
   notes: MobileNote[],
   query: SuggestionQuery,
+  typeDefinitions?: MobileTypeDefinitions,
 ): PropertyKey[] {
-  return sortedVisibleSuggestions(sortablePropertyCandidates(notes), query)
+  return sortedVisibleSuggestions(sortablePropertyCandidates(notes, typeDefinitions), query)
 }
 
 export function mobileDefaultListPropertyDisplay(
@@ -232,6 +235,25 @@ function typeRelationshipCandidates(
   ]
 }
 
+function allTypePropertyCandidates(typeDefinitions: MobileTypeDefinitions | undefined): PropertyKey[] {
+  return Object.values(typeDefinitions ?? {}).flatMap((definition) => {
+    return Object.entries(definition.properties ?? {})
+      .filter(([key, value]) => isTypePropertyCandidate(key, value))
+      .map(([key]) => key)
+  })
+}
+
+function allTypeRelationshipCandidates(typeDefinitions: MobileTypeDefinitions | undefined): RelationshipKey[] {
+  return Object.values(typeDefinitions ?? {}).flatMap((definition) => [
+    ...Object.entries(definition.relationships ?? {})
+      .filter(([, refs]) => refs.length > 0)
+      .map(([key]) => normalizeRelationshipKey(key)),
+    ...Object.keys(definition.properties ?? {})
+      .filter(isRelationshipSchemaKey)
+      .map(normalizeRelationshipKey),
+  ])
+}
+
 function typeDefinitionForNote(
   selectedNote: MobileNote | null,
   typeDefinitions: MobileTypeDefinitions | undefined,
@@ -264,16 +286,26 @@ function folderSuggestionCandidates(notes: MobileNote[], folderPaths: FolderPath
   ].filter(isFolderPath)
 }
 
-function viewFieldCandidates(notes: MobileNote[]): ViewField[] {
+function viewFieldCandidates(
+  notes: MobileNote[],
+  typeDefinitions: MobileTypeDefinitions | undefined,
+): ViewField[] {
   return [
     ...DESKTOP_VIEW_BUILT_IN_FIELDS,
+    ...allTypePropertyCandidates(typeDefinitions),
+    ...allTypeRelationshipCandidates(typeDefinitions),
     ...notes.flatMap((note) => propertiesForNote(note).map((property) => property.key)),
     ...notes.flatMap((note) => note.relationships.map(relationshipFrontmatterKey)),
   ]
 }
 
-function listPropertyCandidates(notes: MobileNote[]): PropertyKey[] {
+function listPropertyCandidates(
+  notes: MobileNote[],
+  typeDefinitions: MobileTypeDefinitions | undefined,
+): PropertyKey[] {
   return [
+    ...allTypePropertyCandidates(typeDefinitions),
+    ...allTypeRelationshipCandidates(typeDefinitions),
     ...notes.flatMap((note) => note.status ? ['status'] : []),
     ...notes.flatMap((note) => note.tags.length > 0 ? ['tags'] : []),
     ...notes.flatMap((note) => propertiesForNote(note).map((property) => property.key)),
@@ -281,8 +313,14 @@ function listPropertyCandidates(notes: MobileNote[]): PropertyKey[] {
   ]
 }
 
-function sortablePropertyCandidates(notes: MobileNote[]): PropertyKey[] {
-  return notes.flatMap((note) => propertiesForNote(note).map((property) => property.key))
+function sortablePropertyCandidates(
+  notes: MobileNote[],
+  typeDefinitions: MobileTypeDefinitions | undefined,
+): PropertyKey[] {
+  return [
+    ...allTypePropertyCandidates(typeDefinitions),
+    ...notes.flatMap((note) => propertiesForNote(note).map((property) => property.key)),
+  ]
 }
 
 function visibleSuggestions(

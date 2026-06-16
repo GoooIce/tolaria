@@ -483,6 +483,7 @@ function viewFilterBuilder(props: MobileWorkspaceActionSheetProps) {
       <MobileViewFilterBuilder
         group={props.viewFilters}
         notes={props.notes}
+        typeDefinitions={props.typeDefinitions}
         onChange={props.onViewFiltersChange}
       />
     </>

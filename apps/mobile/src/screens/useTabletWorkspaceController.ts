@@ -468,10 +468,12 @@ function savedViewWorkspaceActions({
     viewPropertyOptions: mobileListPropertySuggestions(
       editableViewPropertyNotes(readOnlyForm, workspaceSnapshot),
       readOnlyForm.viewPropertyQuery,
+      workspaceSnapshot.typeDefinitions,
     ),
     viewSortPropertyOptions: mobileSortablePropertySuggestions(
       editableViewPropertyNotes(readOnlyForm, workspaceSnapshot),
       '',
+      workspaceSnapshot.typeDefinitions,
     ),
   }
 }
@@ -524,11 +526,13 @@ function typeSectionWorkspaceActions({
     typePropertyOptions: mobileListPropertySuggestions(
       editableTypePropertyNotes(readOnlyForm, workspaceSnapshot),
       readOnlyForm.typePropertyQuery,
+      workspaceSnapshot.typeDefinitions,
     ),
     typeRelationshipTargetOptions: typeSchemaRelationshipTargetSuggestions(notes, readOnlyForm.typeSchemaRelationshipTarget),
     typeSortPropertyOptions: mobileSortablePropertySuggestions(
       editableTypePropertyNotes(readOnlyForm, workspaceSnapshot),
       '',
+      workspaceSnapshot.typeDefinitions,
     ),
   }
 }

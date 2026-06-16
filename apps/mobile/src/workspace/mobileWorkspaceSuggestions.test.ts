@@ -178,6 +178,35 @@ describe('mobile workspace suggestions', () => {
     expect(mobileViewValueSuggestions(notes, 'belongs_to', 'mvp')).toContain('Tolaria MVP')
   })
 
+  it('suggests Type-defined saved-view fields before they exist on note instances', () => {
+    const notes = workspaceScenarioForId('default').notes
+    const typeDefinitions = {
+      Essay: {
+        properties: {
+          EmptyList: [],
+          Priority: 'High',
+          has: 'Milestone',
+        },
+        relationships: {
+          depends_on: ['[[Mobile UI]]'],
+          related_to: [],
+        },
+      },
+    }
+
+    expect(mobileViewFieldSuggestions(notes, '', typeDefinitions)).toEqual(
+      expect.arrayContaining(['Priority', 'has', 'depends_on']),
+    )
+    expect(mobileViewFieldSuggestions(notes, '', typeDefinitions)).not.toContain('EmptyList')
+    expect(mobileListPropertySuggestions(notes, '', typeDefinitions)).toEqual(
+      expect.arrayContaining(['Priority', 'has', 'depends_on']),
+    )
+    expect(mobileSortablePropertySuggestions(notes, '', typeDefinitions)).toContain('Priority')
+    expect(mobileSortablePropertySuggestions(notes, '', typeDefinitions)).not.toEqual(
+      expect.arrayContaining(['has', 'depends_on']),
+    )
+  })
+
   it('suggests saved-view relationship values as display titles backed by canonical refs', () => {
     const notes = workspaceScenarioForId('default').notes.map((note) => note.id === 'workflow-orchestration'
       ? {

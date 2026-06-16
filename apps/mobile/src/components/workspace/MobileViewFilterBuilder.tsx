@@ -12,6 +12,7 @@ import type {
   MobileViewFilterGroup,
   MobileViewFilterNode,
   MobileViewFilterOp,
+  MobileTypeDefinitions,
 } from '../../workspace/mobileWorkspaceModel'
 import {
   mobileViewFieldSuggestions,
@@ -43,10 +44,12 @@ export function MobileViewFilterBuilder({
   group,
   notes,
   onChange,
+  typeDefinitions,
 }: {
   group: MobileViewFilterGroup
   notes: MobileNote[]
   onChange: FilterChange
+  typeDefinitions?: MobileTypeDefinitions
 }) {
   return (
     <View style={styles.builder} testID="workspace-view-filter-builder">
@@ -55,6 +58,7 @@ export function MobileViewFilterBuilder({
         group={group}
         notes={notes}
         path=""
+        typeDefinitions={typeDefinitions}
         onChange={onChange}
       />
     </View>
@@ -67,12 +71,14 @@ function FilterGroupEditor({
   onChange,
   onRemove,
   path,
+  typeDefinitions,
 }: {
   group: MobileViewFilterGroup
   notes: MobileNote[]
   onChange: FilterChange
   onRemove?: () => void
   path: FilterPath
+  typeDefinitions?: MobileTypeDefinitions
 }) {
   const mode = groupMode(group)
   const nodes = groupNodes(group)
@@ -87,14 +93,15 @@ function FilterGroupEditor({
             node={node}
             notes={notes}
             path={childPath(path, index)}
+            typeDefinitions={typeDefinitions}
             onChange={(nextNode) => onChange(updateNode(group, index, nextNode))}
             onRemove={() => onChange(removeNode(group, index))}
           />
         ))}
       </View>
       <GroupActions
-        onAddCondition={() => onChange(addNode(group, defaultCondition(notes)))}
-        onAddGroup={() => onChange(addNode(group, { all: [defaultCondition(notes)] }))}
+        onAddCondition={() => onChange(addNode(group, defaultCondition(notes, typeDefinitions)))}
+        onAddGroup={() => onChange(addNode(group, { all: [defaultCondition(notes, typeDefinitions)] }))}
       />
     </View>
   )
@@ -130,15 +137,17 @@ function FilterNodeEditor({
   onChange,
   onRemove,
   path,
+  typeDefinitions,
 }: {
   node: MobileViewFilterNode
   notes: MobileNote[]
   onChange: (node: MobileViewFilterNode) => void
   onRemove: () => void
   path: FilterPath
+  typeDefinitions?: MobileTypeDefinitions
 }) {
   if (isFilterGroup(node)) {
-    return <FilterGroupEditor group={node} notes={notes} path={path} onChange={onChange} onRemove={onRemove} />
+    return <FilterGroupEditor group={node} notes={notes} path={path} typeDefinitions={typeDefinitions} onChange={onChange} onRemove={onRemove} />
   }
 
   return (
@@ -146,6 +155,7 @@ function FilterNodeEditor({
       condition={node}
       notes={notes}
       path={path}
+      typeDefinitions={typeDefinitions}
       onChange={onChange}
       onRemove={onRemove}
     />
@@ -158,15 +168,17 @@ function FilterConditionEditor({
   onChange,
   onRemove,
   path,
+  typeDefinitions,
 }: {
   condition: MobileViewFilterCondition
   notes: MobileNote[]
   onChange: ConditionChange
   onRemove: () => void
   path: FilterPath
+  typeDefinitions?: MobileTypeDefinitions
 }) {
   const pathId = testPath(path)
-  const fieldSuggestions = mobileViewFieldSuggestions(notes, condition.field)
+  const fieldSuggestions = mobileViewFieldSuggestions(notes, condition.field, typeDefinitions)
   const valueText = String(condition.value ?? '')
   const valueSuggestions = mobileViewValueSuggestionItems(notes, condition.field, valueText)
 
@@ -303,9 +315,12 @@ function IconPressable({
   )
 }
 
-function defaultCondition(notes: MobileNote[]): MobileViewFilterCondition {
+function defaultCondition(
+  notes: MobileNote[],
+  typeDefinitions?: MobileTypeDefinitions,
+): MobileViewFilterCondition {
   return {
-    field: mobileViewFieldSuggestions(notes, '')[0] ?? defaultField,
+    field: mobileViewFieldSuggestions(notes, '', typeDefinitions)[0] ?? defaultField,
     op: 'equals',
     value: '',
   }
