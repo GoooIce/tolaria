@@ -188,6 +188,17 @@ filters:
       regex: true
 `,
     }, 1)
+    const unsafeRegexView = parseMobileSavedViewFile({
+      relativePath: 'views/unsafe-regex.yml',
+      content: `name: Unsafe Regex
+filters:
+  all:
+    - field: title
+      op: contains
+      value: "(a+)+$"
+      regex: true
+`,
+    }, 2)
     const notes = [
       note({ id: 'match', title: 'Mobile QA Draft' }),
       note({ id: 'miss', title: 'Desktop QA Draft' }),
@@ -195,6 +206,9 @@ filters:
 
     expect(evaluateMobileSavedView(view!, notes).map((candidate) => candidate.id)).toEqual(['match'])
     expect(evaluateMobileSavedView(invalidRegexView!, notes)).toEqual([])
+    expect(evaluateMobileSavedView(unsafeRegexView!, [
+      note({ id: 'unsafe-would-match', title: 'aaaaaaaaaaaaaaaaaaaaaaaa' }),
+    ])).toEqual([])
   })
 
   it('matches relationship array filters with desktop wikilink semantics', () => {

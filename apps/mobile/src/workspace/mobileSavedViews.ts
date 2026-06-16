@@ -7,6 +7,7 @@ import type {
   MobileViewFilterNode,
   MobileViewFilterOp,
 } from './mobileWorkspaceModel'
+import safeRegex from 'safe-regex2'
 
 type ViewFileSource = {
   content: string
@@ -84,6 +85,7 @@ const supportedFilterOps = new Set<MobileViewFilterOp>([
 const builtInSortFields = new Set(['created', 'modified', 'status', 'title', 'type'])
 const regexFilterOps = new Set<MobileViewFilterOp>(['contains', 'equals', 'not_contains', 'not_equals'])
 const maxUserRegexLength = 256
+const regexRepeatLimit = 25
 
 const builtInFieldResolvers: Record<string, BuiltInFieldResolver> = {
   archived: (note) => scalarField(note.archived === true),
@@ -430,7 +432,8 @@ function conditionRegex(condition: MobileViewFilterCondition): RegExp | null {
   if (source.length > maxUserRegexLength) return null
 
   try {
-    return new RegExp(source, 'i')
+    const pattern = new RegExp(source, 'i')
+    return safeRegex(source, { limit: regexRepeatLimit }) ? pattern : null
   } catch {
     return null
   }
