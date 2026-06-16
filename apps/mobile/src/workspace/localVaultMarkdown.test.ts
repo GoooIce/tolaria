@@ -21,7 +21,7 @@ const desktopMarkdownFixture = [
   '> Quote with **weight**',
   '> and a second line.',
   '',
-  '```typescript',
+  '```plain text',
   'const ok = true',
   '```',
   '',
@@ -62,7 +62,7 @@ const expectedDesktopBlocks = [
     content: [{ text: 'Quote with ' }, { bold: true, text: 'weight' }, { text: ' and a second line.' }],
     kind: 'quote',
   },
-  { code: 'const ok = true', kind: 'codeBlock', language: 'typescript' },
+  { code: 'const ok = true', kind: 'codeBlock', language: 'plain text' },
   { kind: 'divider' },
   {
     content: [

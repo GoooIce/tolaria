@@ -132,6 +132,15 @@ Updated body.
     expect(html).toBe('<p>Intro</p>\n<p>$$<br>\\int_0^1 x\\,dx<br>$$</p>\n<p>Done</p>')
   })
 
+  it('hydrates fenced code info strings with spaces as one editable code block', () => {
+    const html = mobileMarkdownBodyToTentapHtml('```plain text\nprompt: keep [[literal]]\n```\n\nDone\n')
+
+    expect(html).toBe('<pre><code data-language="plain text">prompt: keep [[literal]]</code></pre>\n<p>Done</p>')
+    expect(mobileMarkdownBodyToTentapHtml('~~~mermaid\nflowchart LR\nA --> B\n~~~\n')).toBe(
+      '<pre><code data-language="mermaid">flowchart LR\nA --&gt; B</code></pre>',
+    )
+  })
+
   it('hydrates explicit markdown hard breaks as TenTap line breaks', () => {
     const html = mobileMarkdownBodyToTentapHtml('Line one  \nLine two\nSoft\nwrapped\n\nBackslash\\\nbreak\n')
 

@@ -6,6 +6,7 @@ import type {
   MobileEditorOrderedListItem,
   MobileEditorTaskItem,
 } from './mobileWorkspaceModel'
+import { isMobileMarkdownCodeFenceClose, readMobileMarkdownCodeFence } from './mobileMarkdownCodeFence'
 import { parseMobileWikilink } from './mobileWikilinks'
 
 type MarkdownBody = string
@@ -315,13 +316,13 @@ function readCodeBlock(
   lines: MarkdownLine[],
   startIndex: number,
 ): { block: Extract<MobileEditorBlock, { kind: 'codeBlock' }>; nextIndex: number } | null {
-  const fence = lines[startIndex].trim().match(/^```([A-Za-z0-9_-]+)?\s*$/)
+  const fence = readMobileMarkdownCodeFence(lines[startIndex])
   if (!fence) return null
 
   const codeLines: string[] = []
   let index = startIndex + 1
 
-  while (index < lines.length && !lines[index].trim().startsWith('```')) {
+  while (index < lines.length && !isMobileMarkdownCodeFenceClose(lines[index], fence)) {
     codeLines.push(lines[index])
     index += 1
   }
@@ -330,7 +331,7 @@ function readCodeBlock(
     block: {
       code: codeLines.join('\n'),
       kind: 'codeBlock',
-      language: fence[1] ?? null,
+      language: fence.info,
     },
     nextIndex: index < lines.length ? index + 1 : index,
   }

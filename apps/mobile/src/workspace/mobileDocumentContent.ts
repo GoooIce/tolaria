@@ -4,6 +4,7 @@ import {
   readMobileDisplayMathBlock,
 } from './mobileDisplayMath'
 import { mobileEditorBlocksToMarkdown, mobileFallbackBulletsToMarkdown } from './mobileEditorBlockMarkdown'
+import { isMobileMarkdownCodeFenceClose, readMobileMarkdownCodeFence } from './mobileMarkdownCodeFence'
 import { mobileImageNodeMarkdown, mobileMarkdownImageHtml } from './mobileMarkdownImage'
 import type { MobileNote } from './mobileWorkspaceModel'
 
@@ -113,17 +114,17 @@ function rawFrontmatterBoundary(content: MarkdownContent): { bodyStart: number }
 }
 
 function readCodeBlock(lines: MarkdownLines, startIndex: number): ReadHtmlBlockResult | null {
-  const opening = lines[startIndex]?.match(/^```\s*([A-Za-z0-9_-]+)?\s*$/)
+  const opening = readMobileMarkdownCodeFence(lines[startIndex] ?? '')
   if (!opening) return null
 
   const codeLines: string[] = []
   let index = startIndex + 1
-  while (index < lines.length && !/^```\s*$/.test(lines[index] ?? '')) {
+  while (index < lines.length && !isMobileMarkdownCodeFenceClose(lines[index] ?? '', opening)) {
     codeLines.push(lines[index] ?? '')
     index += 1
   }
 
-  const language = opening[1] ? ` data-language="${escapeAttribute(opening[1])}"` : ''
+  const language = opening.info ? ` data-language="${escapeAttribute(opening.info)}"` : ''
   return {
     html: `<pre><code${language}>${escapeHtml(codeLines.join('\n'))}</code></pre>`,
     nextIndex: index < lines.length ? index + 1 : index,
