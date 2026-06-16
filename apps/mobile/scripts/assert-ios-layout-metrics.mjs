@@ -16,6 +16,11 @@ import {
   nativeWysiwygMutationPreProofLogText,
   parseNativeWysiwygMutationProofs,
 } from '../src/qa/nativeWysiwygMutationProbe.ts'
+import {
+  assertNativeWysiwygPersistenceProofs,
+  formatNativeWysiwygPersistenceFailures,
+  parseNativeWysiwygPersistenceProofs,
+} from '../src/qa/nativeWysiwygPersistenceProbe.ts'
 
 const defaultLogWindow = '5m'
 const defaultExpoGoBundleId = 'host.exp.Exponent'
@@ -34,6 +39,10 @@ Options:
   --require-wysiwyg     Also require WYSIWYG editor layout metrics from editorMode=wysiwyg QA URLs.
   --require-wysiwyg-mutation
                        Also require the native TenTap mutation/save proof from wysiwygMutationProbe=1.
+  --require-wysiwyg-persistence
+                       Also require the native TenTap save to persist through Expo FileSystem.
+                       This route uses an isolated native vault, so it checks WYSIWYG editor metrics
+                       plus persistence proof instead of default fixture shell metrics.
   --wait <ms>           Delay after opening a URL before collecting logs. Defaults to 3000.
   --help                Show this help.
 `)
@@ -84,7 +93,7 @@ function selectDevice(requestedDevice) {
   return selected.udid
 }
 
-function collectSimulatorLogs(device, { includeWysiwygMutation, last, start }) {
+function collectSimulatorLogs(device, { includeWysiwygMutation, includeWysiwygPersistence, last, start }) {
   const timeArgs = start ? ['--start', start] : ['--last', last]
   return run('xcrun', [
     'simctl',
@@ -96,15 +105,20 @@ function collectSimulatorLogs(device, { includeWysiwygMutation, last, start }) {
     '--style',
     'compact',
     '--predicate',
-    simulatorLogPredicate(includeWysiwygMutation),
+    simulatorLogPredicate({ includeWysiwygMutation, includeWysiwygPersistence }),
   ])
 }
 
-function simulatorLogPredicate(includeWysiwygMutation) {
-  const layoutPredicate = 'eventMessage CONTAINS "TOLARIA_MOBILE_LAYOUT_METRIC"'
-  if (!includeWysiwygMutation) return layoutPredicate
+function simulatorLogPredicate({ includeWysiwygMutation, includeWysiwygPersistence }) {
+  const predicates = ['eventMessage CONTAINS "TOLARIA_MOBILE_LAYOUT_METRIC"']
+  if (includeWysiwygMutation) {
+    predicates.push('eventMessage CONTAINS "TOLARIA_MOBILE_WYSIWYG_MUTATION_PROBE"')
+  }
+  if (includeWysiwygPersistence) {
+    predicates.push('eventMessage CONTAINS "TOLARIA_MOBILE_WYSIWYG_PERSISTENCE_PROBE"')
+  }
 
-  return `${layoutPredicate} OR eventMessage CONTAINS "TOLARIA_MOBILE_WYSIWYG_MUTATION_PROBE"`
+  return predicates.join(' OR ')
 }
 
 async function openFreshProbeUrl(device, url, waitMs) {
@@ -180,47 +194,70 @@ async function main() {
   const last = readOption(args, '--last', defaultLogWindow)
   const requireWysiwyg = args.includes('--require-wysiwyg')
   const requireWysiwygMutation = args.includes('--require-wysiwyg-mutation')
+  const requireWysiwygPersistence = args.includes('--require-wysiwyg-persistence')
   const waitMs = Number(readOption(args, '--wait', '3000'))
   let logStart
 
   if (openUrl) {
     assertNativeQaOpenUrl(openUrl, 'Native iOS layout metrics')
     logStart = simulatorLogTimestamp(new Date(Date.now() - 1000))
-    await openFreshProbeUrl(device, nativeQaUrl(openUrl, { requireWysiwygMutation }), waitMs)
+    await openFreshProbeUrl(device, nativeQaUrl(openUrl, {
+      requireWysiwygMutation: requireWysiwygMutation || requireWysiwygPersistence,
+      requireWysiwygPersistence,
+    }), waitMs)
   }
 
   const logs = collectSimulatorLogs(device, {
-    includeWysiwygMutation: requireWysiwygMutation,
+    includeWysiwygMutation: requireWysiwygMutation || requireWysiwygPersistence,
+    includeWysiwygPersistence: requireWysiwygPersistence,
     last,
     start: logStart,
   })
-  const layoutLogs = requireWysiwygMutation ? nativeWysiwygMutationPreProofLogText(logs) : logs
+  const layoutLogs = requireWysiwygMutation || requireWysiwygPersistence
+    ? nativeWysiwygMutationPreProofLogText(logs)
+    : logs
   const metrics = latestNativeLayoutMetrics(parseNativeLayoutMetrics(layoutLogs))
-  const failures = [
-    ...assertNativeMobileLayoutMetrics(metrics),
-    ...(requireWysiwyg ? assertNativeWysiwygEditorLayoutMetrics(metrics) : []),
-  ]
+  const failures = nativeLayoutFailures({ metrics, requireWysiwyg, requireWysiwygPersistence })
   const mutationFailures = requireWysiwygMutation
     ? assertNativeWysiwygMutationProofs(parseNativeWysiwygMutationProofs(logs))
     : []
+  const persistenceFailures = requireWysiwygPersistence
+    ? assertNativeWysiwygPersistenceProofs(parseNativeWysiwygPersistenceProofs(logs))
+    : []
 
-  if (failures.length > 0 || mutationFailures.length > 0) {
-    throw new Error(formatNativeQaFailures({ failures, mutationFailures }))
+  if (failures.length > 0 || mutationFailures.length > 0 || persistenceFailures.length > 0) {
+    throw new Error(formatNativeQaFailures({ failures, mutationFailures, persistenceFailures }))
   }
 
   console.log(`Native iOS layout metrics passed (${Object.keys(metrics).length} metrics).`)
 }
 
-function nativeQaUrl(openUrl, { requireWysiwygMutation }) {
-  return requireWysiwygMutation
+function nativeQaUrl(openUrl, { requireWysiwygMutation, requireWysiwygPersistence }) {
+  const mutationUrl = requireWysiwygMutation
     ? appendQueryParam(openUrl, 'wysiwygMutationProbe', '1')
     : openUrl
+
+  return requireWysiwygPersistence
+    ? appendQueryParam(mutationUrl, 'wysiwygPersistenceProbe', '1')
+    : mutationUrl
 }
 
-function formatNativeQaFailures({ failures, mutationFailures }) {
+function nativeLayoutFailures({ metrics, requireWysiwyg, requireWysiwygPersistence }) {
+  if (requireWysiwygPersistence) {
+    return requireWysiwyg ? assertNativeWysiwygEditorLayoutMetrics(metrics) : []
+  }
+
+  return [
+    ...assertNativeMobileLayoutMetrics(metrics),
+    ...(requireWysiwyg ? assertNativeWysiwygEditorLayoutMetrics(metrics) : []),
+  ]
+}
+
+function formatNativeQaFailures({ failures, mutationFailures, persistenceFailures }) {
   return [
     failures.length > 0 ? `Native iOS layout metrics failed:\n${formatNativeLayoutAssertionFailures(failures)}` : '',
     mutationFailures.length > 0 ? `Native WYSIWYG mutation proof failed:\n${formatNativeWysiwygMutationFailures(mutationFailures)}` : '',
+    persistenceFailures.length > 0 ? `Native WYSIWYG persistence proof failed:\n${formatNativeWysiwygPersistenceFailures(persistenceFailures)}` : '',
   ].filter(Boolean).join('\n')
 }
 

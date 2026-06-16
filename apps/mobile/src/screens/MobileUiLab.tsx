@@ -12,6 +12,13 @@ import {
   nativeWysiwygMutationProbeEnabled,
   nativeWysiwygMutationProbeInitialContent,
 } from '../qa/nativeWysiwygMutationProbe'
+import {
+  nativeWysiwygPersistenceProbeEnabled,
+} from '../qa/nativeWysiwygPersistenceProbe'
+import {
+  nativeWysiwygPersistenceProbeRepository,
+  nativeWysiwygPersistenceProbeRequest,
+} from '../qa/nativeWysiwygPersistenceProbeRepository'
 import type { MobileNote, MobileWorkspaceSnapshot } from '../workspace/mobileWorkspaceModel'
 
 export function MobileUiLab() {
@@ -19,19 +26,28 @@ export function MobileUiLab() {
   const isWideEnoughForTablet = width >= 900
   const searchParams = useMobileUiSearchParams()
   const [nativeWorkspace, setNativeWorkspace] = useState<NativeWorkspaceSelection | null>(null)
+  const wysiwygPersistenceProbe = nativeWysiwygPersistenceProbeEnabled(searchParams)
   const scenarioId = currentScenarioId(searchParams)
   const source = currentSnapshotSource(searchParams, nativeWorkspace)
-  const repositoryRequest = {
+  const baseRepositoryRequest = {
     scenarioId,
     source,
     vaultLabel: currentVaultLabel(searchParams, nativeWorkspace),
     vaultRootUri: currentVaultRootUri(searchParams, nativeWorkspace),
   }
+  const repository = wysiwygPersistenceProbe
+    ? nativeWysiwygPersistenceProbeRepository(readOnlyWorkspaceRepository)
+    : readOnlyWorkspaceRepository
+  const repositoryRequest = wysiwygPersistenceProbe
+    ? nativeWysiwygPersistenceProbeRequest(baseRepositoryRequest)
+    : baseRepositoryRequest
   const { initialEditorEditing, initialEditorEditingMode } = initialMobileEditorStateFromMode(editorMode(searchParams))
   const layoutProbe = layoutProbeEnabled(searchParams)
-  const wysiwygMutationProbe = nativeWysiwygMutationProbeEnabled(searchParams)
-  const baseSnapshot = readOnlyWorkspaceRepository.readSnapshot(repositoryRequest)
-  const snapshot = wysiwygMutationProbe ? snapshotWithWysiwygMutationProbeContent(baseSnapshot) : baseSnapshot
+  const wysiwygMutationProbe = nativeWysiwygMutationProbeEnabled(searchParams) || wysiwygPersistenceProbe
+  const baseSnapshot = repository.readSnapshot(repositoryRequest)
+  const snapshot = wysiwygMutationProbe && !wysiwygPersistenceProbe
+    ? snapshotWithWysiwygMutationProbeContent(baseSnapshot)
+    : baseSnapshot
   const workspaceKey = mobileWorkspaceKey({
     initialEditorEditing,
     initialEditorEditingMode,
@@ -41,6 +57,7 @@ export function MobileUiLab() {
     snapshot,
     source,
     wysiwygMutationProbe,
+    wysiwygPersistenceProbe,
   })
   const handleOpenNativeVault = useCallback(async () => {
     const selection = await pickNativeWorkspaceDirectory(repositoryRequest.vaultRootUri)
@@ -55,7 +72,7 @@ export function MobileUiLab() {
         initialEditorEditingMode={initialEditorEditingMode}
         layoutProbe={layoutProbe}
         onOpenNativeVault={handleOpenNativeVault}
-        repository={readOnlyWorkspaceRepository}
+        repository={repository}
         repositoryRequest={repositoryRequest}
         snapshot={snapshot}
         wysiwygMutationProbe={wysiwygMutationProbe}
@@ -70,7 +87,7 @@ export function MobileUiLab() {
       initialEditorEditingMode={initialEditorEditingMode}
       initialState={currentPhoneState(searchParams)}
       onOpenNativeVault={handleOpenNativeVault}
-      repository={readOnlyWorkspaceRepository}
+      repository={repository}
       repositoryRequest={repositoryRequest}
       snapshot={snapshot}
     />
@@ -151,6 +168,7 @@ function mobileWorkspaceKey({
   snapshot,
   source,
   wysiwygMutationProbe,
+  wysiwygPersistenceProbe,
 }: {
   initialEditorEditing: boolean
   initialEditorEditingMode: string
@@ -160,6 +178,7 @@ function mobileWorkspaceKey({
   snapshot: ReturnType<typeof readOnlyWorkspaceRepository.readSnapshot>
   source: ReturnType<typeof currentSnapshotSource>
   wysiwygMutationProbe: boolean
+  wysiwygPersistenceProbe: boolean
 }) {
   const sourceInfo = snapshot.source
 
@@ -170,6 +189,7 @@ function mobileWorkspaceKey({
     initialEditorEditing ? 'raw-editor' : 'read-editor',
     initialEditorEditingMode,
     wysiwygMutationProbe ? 'wysiwyg-mutation-probe' : 'no-wysiwyg-mutation-probe',
+    wysiwygPersistenceProbe ? 'wysiwyg-persistence-probe' : 'no-wysiwyg-persistence-probe',
     layoutProbeMode(layoutProbe),
     sourceInfo ? sourceInfo.kind : 'fixture',
     sourceInfo ? sourceInfo.label : 'Tolaria Vault',
