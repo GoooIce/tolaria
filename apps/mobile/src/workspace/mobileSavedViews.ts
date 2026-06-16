@@ -31,6 +31,7 @@ type ResolvedMobileField =
   | { kind: 'scalar'; value: string | number | boolean | null }
 type FilterGroupKind = 'all' | 'any'
 type BuiltInFieldResolver = (note: MobileNote) => ResolvedMobileField
+type ViewEvaluationMode = MobileViewDefinition['evaluationMode'] | 'desktop'
 type IndentLevel = number
 type LineIndex = number
 type MobileTextValues = string[]
@@ -101,13 +102,17 @@ const builtInFieldResolvers: Record<string, BuiltInFieldResolver> = {
   favorite: (note) => scalarField(note.favorite),
   filename: (note) => scalarField(note.path?.split('/').at(-1) ?? note.id),
   isa: (note) => scalarField(note.type),
-  organized: (note) => scalarField(note.organized === true),
-  path: (note) => scalarField(note.path ?? note.id),
   status: (note) => scalarField(note.status),
   tags: (note) => arrayField(note.tags, 'property'),
   title: (note) => scalarField(note.title),
   type: (note) => scalarField(note.type),
 }
+const mobileInternalFieldResolvers: Record<string, BuiltInFieldResolver> = {
+  organized: (note) => scalarField(note.organized === true),
+  path: (note) => scalarField(note.path ?? note.id),
+}
+const doubleQuote = '"'
+const singleQuote = '\''
 
 export function parseMobileSavedViewFile(file: ViewFileSource, index: ViewIndex): MobileSavedView | null {
   if (!isViewFile(file.relativePath)) return null
@@ -172,8 +177,15 @@ export function mobileSavedViewOrderUpdates(views: MobileSavedView[]): MobileSav
 }
 
 export function evaluateMobileSavedView(view: MobileSavedView, notes: MobileNote[]): MobileNote[] {
-  const matchingNotes = notes.filter((note) => !note.archived && evaluateFilterGroup(view.definition.filters, note))
+  const mode = view.definition.evaluationMode ?? 'desktop'
+  const matchingNotes = notes.filter((note) => !note.archived && evaluateFilterGroup(view.definition.filters, note, mode))
   return sortMobileNotesBySort(matchingNotes, view.definition.sort)
+}
+
+export function mobileViewEvaluationModeForFilters(
+  group: MobileViewFilterGroup,
+): MobileViewDefinition['evaluationMode'] {
+  return filterGroupUsesMobileInternalField(group) ? 'mobileInternal' : undefined
 }
 
 export function mobileSavedViewId(filename: string) {
@@ -350,18 +362,52 @@ function normalizedFilterOp(value: unknown): MobileViewFilterOp {
   return supportedFilterOps.has(value as MobileViewFilterOp) ? value as MobileViewFilterOp : 'equals'
 }
 
-function evaluateFilterGroup(group: MobileViewFilterGroup, note: MobileNote): boolean {
-  if ('any' in group) return group.any.some((node) => evaluateFilterNode(node, note))
-  return group.all.every((node) => evaluateFilterNode(node, note))
+function evaluateFilterGroup(
+  group: MobileViewFilterGroup,
+  note: MobileNote,
+  mode: ViewEvaluationMode,
+): boolean {
+  if ('any' in group) return evaluateAnyFilterNodes(group.any, note, mode)
+  return evaluateAllFilterNodes(group.all, note, mode)
 }
 
-function evaluateFilterNode(node: MobileViewFilterNode, note: MobileNote): boolean {
-  if (isFilterGroup(node)) return evaluateFilterGroup(node, note)
-  return evaluateCondition(node, note)
+function evaluateAnyFilterNodes(
+  nodes: MobileViewFilterNode[],
+  note: MobileNote,
+  mode: ViewEvaluationMode,
+): boolean {
+  for (const node of nodes) {
+    if (evaluateFilterNode(node, note, mode)) return true
+  }
+  return false
 }
 
-function evaluateCondition(condition: MobileViewFilterCondition, note: MobileNote): boolean {
-  const field = resolveNoteField(note, condition.field)
+function evaluateAllFilterNodes(
+  nodes: MobileViewFilterNode[],
+  note: MobileNote,
+  mode: ViewEvaluationMode,
+): boolean {
+  for (const node of nodes) {
+    if (!evaluateFilterNode(node, note, mode)) return false
+  }
+  return true
+}
+
+function evaluateFilterNode(
+  node: MobileViewFilterNode,
+  note: MobileNote,
+  mode: ViewEvaluationMode,
+): boolean {
+  if (isFilterGroup(node)) return evaluateFilterGroup(node, note, mode)
+  return evaluateCondition(node, note, mode)
+}
+
+function evaluateCondition(
+  condition: MobileViewFilterCondition,
+  note: MobileNote,
+  mode: ViewEvaluationMode,
+): boolean {
+  const field = resolveNoteField(note, condition.field, mode)
   const emptyResult = emptyConditionResult(condition.op, field)
   if (emptyResult !== null) return emptyResult
 
@@ -494,9 +540,14 @@ function scalarSetConditionResult(condition: MobileViewFilterCondition, text: st
   return null
 }
 
-function resolveNoteField(note: MobileNote, field: FieldKey): ResolvedMobileField {
+function resolveNoteField(
+  note: MobileNote,
+  field: FieldKey,
+  mode: ViewEvaluationMode,
+): ResolvedMobileField {
   const lower = field.toLowerCase()
   return builtInFieldResolvers[lower]?.(note)
+    ?? (mode === 'mobileInternal' ? mobileInternalFieldResolvers[lower]?.(note) : null)
     ?? resolveRelationshipField(note, lower)
     ?? resolvePropertyField(note, lower)
     ?? scalarField(null)
@@ -825,7 +876,8 @@ function isQuotedScalar(value: YamlText) {
 }
 
 function isQuote(value: string | undefined): value is '"' | '\'' {
-  return value === '"' || value === '\''
+  if (value === doubleQuote) return true
+  return value === singleQuote
 }
 
 function groupKind(text: YamlText): FilterGroupKind | null {
@@ -836,6 +888,18 @@ function groupKind(text: YamlText): FilterGroupKind | null {
 
 function isFilterGroup(node: MobileViewFilterNode): node is MobileViewFilterGroup {
   return 'all' in node || 'any' in node
+}
+
+function filterGroupUsesMobileInternalField(group: MobileViewFilterGroup): boolean {
+  const nodes = 'any' in group ? group.any : group.all
+  for (const node of nodes) {
+    if (isFilterGroup(node)) {
+      if (filterGroupUsesMobileInternalField(node)) return true
+      continue
+    }
+    if (mobileInternalFieldResolvers[node.field.toLowerCase()] !== undefined) return true
+  }
+  return false
 }
 
 function relationshipKeys(relationship: MobileNote['relationships'][number]) {

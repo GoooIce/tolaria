@@ -33,6 +33,7 @@ import {
   createMobileSavedViewFilename,
   mobileSavedViewId,
   mobileSavedViewOrderUpdates,
+  mobileViewEvaluationModeForFilters,
   mobileSavedViewPath,
   moveMobileSavedView,
   nextMobileSavedViewOrder,
@@ -783,6 +784,7 @@ function createMobileView(
   const view: MobileSavedView = {
     definition: {
       ...definition,
+      evaluationMode: definition.evaluationMode ?? mobileViewEvaluationModeForFilters(definition.filters),
       order: nextMobileSavedViewOrder(existingViews),
     },
     filename,

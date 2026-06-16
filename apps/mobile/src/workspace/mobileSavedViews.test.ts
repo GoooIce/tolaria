@@ -11,9 +11,7 @@ import {
 import type { MobileNote, MobileSavedView } from './mobileWorkspaceModel'
 
 describe('mobile saved views', () => {
-  afterEach(() => {
-    vi.useRealTimers()
-  })
+  afterEach(() => vi.useRealTimers())
 
   it('parses desktop saved-view YAML and evaluates filters against mobile notes', () => {
     const view = parseMobileSavedViewFile({
@@ -231,10 +229,12 @@ filters:
     ]).map((candidate) => candidate.id)).toEqual(['Procedures/mobile-runbook.md'])
   })
 
-  it('resolves created and modified filters through custom properties like desktop', () => {
-    const view = parseMobileSavedViewFile({ content: 'name: Custom\nfilters:\n  all:\n    - field: created\n      op: equals\n      value: 2026-06-01\n    - field: modified\n      op: equals\n      value: custom-modified\n', relativePath: 'views/custom.yml' }, 0)
-    const notes = [note({ createdAt: Date.parse('2020-01-01'), id: 'custom-property-match', modifiedAt: Date.parse('2020-01-02'), properties: [{ key: 'created', label: 'created', value: '2026-06-01' }, { key: 'modified', label: 'modified', value: 'custom-modified' }] }), note({ createdAt: Date.parse('2026-06-01'), id: 'timestamp-only', modifiedAt: Date.parse('2020-01-02') })]
+  it('resolves desktop-non-built-in filter fields through custom properties', () => {
+    const view = parseMobileSavedViewFile({ content: 'name: Custom\nfilters:\n  all:\n    - field: created\n      op: equals\n      value: 2026-06-01\n    - field: modified\n      op: equals\n      value: custom-modified\n    - field: path\n      op: equals\n      value: Roadmap\n    - field: organized\n      op: equals\n      value: planned\n', relativePath: 'views/custom.yml' }, 0)
+    const notes = [note({ createdAt: Date.parse('2020-01-01'), id: 'custom-property-match', modifiedAt: Date.parse('2020-01-02'), organized: false, path: 'Actual/Location.md', properties: [{ key: 'created', label: 'created', value: '2026-06-01' }, { key: 'modified', label: 'modified', value: 'custom-modified' }, { key: 'path', label: 'path', value: 'Roadmap' }, { key: 'organized', label: 'organized', value: 'planned' }] }), note({ createdAt: Date.parse('2026-06-01'), id: 'metadata-only-match', modifiedAt: Date.parse('2020-01-02'), organized: true, path: 'Roadmap' })]
     expect(evaluateMobileSavedView(view!, notes).map((candidate) => candidate.id)).toEqual(['custom-property-match'])
+    const internalView = { ...view!, definition: { ...view!.definition, evaluationMode: 'mobileInternal' as const, filters: { all: [{ field: 'path', op: 'equals' as const, value: 'Roadmap' }, { field: 'organized', op: 'equals' as const, value: true }] } } }
+    expect(evaluateMobileSavedView(internalView, notes).map((candidate) => candidate.id)).toEqual(['metadata-only-match'])
   })
 
   it('evaluates regex-enabled saved-view filters like desktop', () => {

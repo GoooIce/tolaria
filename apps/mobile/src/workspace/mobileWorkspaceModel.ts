@@ -161,6 +161,7 @@ export type MobileViewFilterNode = MobileViewFilterCondition | MobileViewFilterG
 
 export type MobileViewDefinition = {
   color: string | null
+  evaluationMode?: 'mobileInternal'
   filters: MobileViewFilterGroup
   icon: string | null
   listPropertiesDisplay?: string[]
