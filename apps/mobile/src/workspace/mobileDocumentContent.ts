@@ -24,6 +24,7 @@ type MarkdownLines = MarkdownLine[]
 type NoteTitleText = string
 type PlainText = string
 type ReadHtmlBlockResult = { html: HtmlSnippet; nextIndex: number }
+type ReadListSourceLinesResult = { hasContinuation: boolean; lines: MarkdownLines; nextIndex: number }
 type ReadParagraphResult = { lines: MarkdownLines; nextIndex: number }
 type ReadQuoteResult = { paragraphs: MarkdownLines[]; nextIndex: number }
 type UrlText = string
@@ -170,6 +171,7 @@ const htmlBlockReaders = [
   readQuote,
   readIndentedTextSourceBlock,
   readIndentedListSourceBlock,
+  readListContinuationSourceBlock,
   readOrderedParenListSourceBlock,
   readIrregularOrderedDotListSourceBlock,
   readList,
@@ -323,6 +325,36 @@ function readIndentedTextSourceBlock(lines: MarkdownLines, startIndex: number): 
   return sourceLinesParagraphBlock(sourceLines, index)
 }
 
+function readListContinuationSourceBlock(lines: MarkdownLines, startIndex: number): ReadHtmlBlockResult | null {
+  const source = readListSourceLines(lines, startIndex)
+  if (!source?.hasContinuation) return null
+
+  return sourceLinesParagraphBlock(source.lines, source.nextIndex)
+}
+
+function readListSourceLines(lines: MarkdownLines, startIndex: number): ReadListSourceLinesResult | null {
+  const first = listLine(lines[startIndex] ?? '')
+  if (!first) return null
+
+  const baseIndent = leadingWhitespaceLength(lines[startIndex] ?? '')
+  const sourceLines: string[] = []
+  let hasContinuation = false
+  let index = startIndex
+
+  while (index < lines.length) {
+    const line = lines[index] ?? ''
+    if (!line.trim() || isOutdentedListSourceLine(line, baseIndent)) break
+
+    hasContinuation ||= isListContinuationSourceLine(line, baseIndent)
+    if (!listLine(line) && !isListContinuationSourceLine(line, baseIndent)) break
+
+    sourceLines.push(line)
+    index += 1
+  }
+
+  return { hasContinuation, lines: sourceLines, nextIndex: index }
+}
+
 function readOrderedParenListSourceBlock(lines: MarkdownLines, startIndex: number): ReadHtmlBlockResult | null {
   if (!isOrderedParenListSourceLine(lines[startIndex] ?? '')) return null
 
@@ -449,6 +481,14 @@ function isIndentedListSourceLine(line: MarkdownLine): boolean {
   return hasLeadingWhitespace(line) && listLine(line) !== null
 }
 
+function isOutdentedListSourceLine(line: MarkdownLine, baseIndent: number): boolean {
+  return listLine(line) !== null && leadingWhitespaceLength(line) < baseIndent
+}
+
+function isListContinuationSourceLine(line: MarkdownLine, baseIndent: number): boolean {
+  return listLine(line) === null && leadingWhitespaceLength(line) > baseIndent && line.trim().length > 0
+}
+
 function isOrderedParenListSourceLine(line: MarkdownLine): boolean {
   return /^\d+\)(?:\s+.*)?$/u.test(line)
 }
@@ -474,6 +514,10 @@ function isIndentedTextSourceLine(line: MarkdownLine): boolean {
 
 function hasLeadingWhitespace(line: MarkdownLine): boolean {
   return /^\s/u.test(line)
+}
+
+function leadingWhitespaceLength(line: MarkdownLine): number {
+  return (line.match(/^\s*/u)?.[0] ?? '').replace(/\t/gu, '  ').length
 }
 
 function listDepth(indent: MarkdownLine): number {
@@ -605,6 +649,7 @@ const mobileFallbackParagraphNormalizers: MarkdownNormalizer[] = [
   normalizeUnsupportedHtmlBlockMarkdown,
   normalizeIndentedCodeFenceSourceMarkdown,
   normalizeIndentedListSourceMarkdown,
+  normalizeListContinuationSourceMarkdown,
   normalizeOrderedParenListSourceMarkdown,
   normalizeIrregularOrderedDotListSourceMarkdown,
   normalizeIndentedTextSourceMarkdown,
@@ -643,6 +688,14 @@ function normalizeIndentedListSourceMarkdown(markdown: MarkdownBody): MarkdownBo
   if (!lines.every(isIndentedListSourceLine)) return markdown
 
   return lines.join('\n')
+}
+
+function normalizeListContinuationSourceMarkdown(markdown: MarkdownBody): MarkdownBody {
+  const lines = markdown.split('\n').map(stripHardBreakMarker)
+  const source = readListSourceLines(lines, 0)
+  if (!source?.hasContinuation || source.nextIndex !== lines.length) return markdown
+
+  return source.lines.join('\n')
 }
 
 function normalizeOrderedParenListSourceMarkdown(markdown: MarkdownBody): MarkdownBody {
