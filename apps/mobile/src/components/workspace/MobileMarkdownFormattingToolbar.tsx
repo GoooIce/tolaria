@@ -123,17 +123,21 @@ const formattingCommands: FormattingCommand[] = [
 ]
 
 export function MobileMarkdownFormattingToolbar({
+  actions,
   onFormat,
 }: {
+  actions?: readonly MobileMarkdownFormatAction[]
   onFormat: (action: MobileMarkdownFormatAction) => void
 }) {
+  const visibleActions = new Set(actions ?? formattingCommands.map((command) => command.action))
+
   return (
     <View
       accessibilityLabel={mobileText('editor.formatting.toolbar')}
       style={styles.toolbar}
       testID="editor-formatting-toolbar"
     >
-      {formattingCommands.map((command) => (
+      {formattingCommands.filter((command) => visibleActions.has(command.action)).map((command) => (
         <MobileIconButton
           accessibilityLabel={command.label}
           key={command.action}

@@ -1,4 +1,4 @@
-import { RichText, TenTapStartKit, Toolbar, useEditorBridge, type EditorBridge } from '@10play/tentap-editor'
+import { RichText, TenTapStartKit, useEditorBridge, type EditorBridge } from '@10play/tentap-editor'
 import { KeyboardAvoidingView, StyleSheet, View } from 'react-native'
 import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react'
 import {
@@ -8,8 +8,10 @@ import {
   mobileNoteEditableContent,
   tiptapJsonToMobileMarkdown,
 } from '../../workspace/mobileDocumentContent'
+import type { MobileMarkdownFormatAction } from '../../workspace/mobileMarkdownFormatting'
 import type { MobileEditorBlock, MobileNote } from '../../workspace/mobileWorkspaceModel'
-import { mobileColors } from '../../ui/tokens'
+import { mobileColors, mobileSpace } from '../../ui/tokens'
+import { MobileMarkdownFormattingToolbar } from './MobileMarkdownFormattingToolbar'
 import { mobileTentapEditorCss } from './MobileWysiwygMarkdownEditorCss'
 
 type MobileWysiwygMarkdownEditorProps = {
@@ -28,6 +30,19 @@ type JsonReadableEditorBridge = EditorBridge & {
 type CssInjectableEditorBridge = EditorBridge & {
   injectCSS: (css: string, tag?: string) => void
 }
+type NativeWysiwygCommandBridge = EditorBridge & {
+  toggleBlockquote?: () => void
+  toggleBold?: () => void
+  toggleBulletList?: () => void
+  toggleCode?: () => void
+  toggleHeading?: (level: 1 | 2 | 3 | 4 | 5 | 6) => void
+  toggleHighlight?: (color: string) => void
+  toggleItalic?: () => void
+  toggleOrderedList?: () => void
+  toggleStrike?: () => void
+  toggleTaskList?: () => void
+}
+type NativeWysiwygFormatCommand = (editor: NativeWysiwygCommandBridge) => void
 
 type TimerHandle = ReturnType<typeof setTimeout>
 type NativeTentapEditorBridgeOptions = Omit<MobileWysiwygMarkdownEditorProps, 'notes'> & {
@@ -45,6 +60,34 @@ type NativeTentapEditorRefs = {
   firstEditorSerializationRef: MutableRefObject<boolean>
   hasAcceptedEditorChangeRef: MutableRefObject<boolean>
   saveTimerRef: MutableRefObject<TimerHandle | null>
+}
+
+const wysiwygFormattingActions = [
+  'bold',
+  'italic',
+  'strike',
+  'code',
+  'highlight',
+  'heading2',
+  'heading3',
+  'bulletList',
+  'orderedList',
+  'taskList',
+  'quote',
+] as const satisfies readonly MobileMarkdownFormatAction[]
+
+const wysiwygFormatCommands: Partial<Record<MobileMarkdownFormatAction, NativeWysiwygFormatCommand>> = {
+  bold: (editor) => editor.toggleBold?.(),
+  bulletList: (editor) => editor.toggleBulletList?.(),
+  code: (editor) => editor.toggleCode?.(),
+  heading2: (editor) => editor.toggleHeading?.(2),
+  heading3: (editor) => editor.toggleHeading?.(3),
+  highlight: (editor) => editor.toggleHighlight?.(mobileColors.yellowSoft),
+  italic: (editor) => editor.toggleItalic?.(),
+  orderedList: (editor) => editor.toggleOrderedList?.(),
+  quote: (editor) => editor.toggleBlockquote?.(),
+  strike: (editor) => editor.toggleStrike?.(),
+  taskList: (editor) => editor.toggleTaskList?.(),
 }
 
 export function MobileWysiwygMarkdownEditor({
@@ -76,10 +119,17 @@ function NativeTentapEditorSurface({ editor, injectEditorCss }: NativeTentapEdit
         onLoadEnd={injectEditorCss}
       />
       <KeyboardAvoidingView behavior="padding" style={nativeEditorStyles.toolbarHost}>
-        <Toolbar editor={editor} shouldHideDisabledToolbarItems />
+        <MobileMarkdownFormattingToolbar
+          actions={wysiwygFormattingActions}
+          onFormat={(action) => applyNativeWysiwygFormat(editor, action)}
+        />
       </KeyboardAvoidingView>
     </View>
   )
+}
+
+function applyNativeWysiwygFormat(editor: EditorBridge, action: MobileMarkdownFormatAction): void {
+  wysiwygFormatCommands[action]?.(editor as NativeWysiwygCommandBridge)
 }
 
 function initialNativeEditorContent(
@@ -347,5 +397,10 @@ const nativeEditorStyles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
+    backgroundColor: mobileColors.editor,
+    borderTopColor: mobileColors.border,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: mobileSpace.md,
+    paddingTop: mobileSpace.xs,
   },
 })
