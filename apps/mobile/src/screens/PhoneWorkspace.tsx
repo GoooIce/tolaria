@@ -22,6 +22,7 @@ import {
   type ReadOnlyWorkspaceRequest,
 } from '../workspace/readOnlyWorkspaceRepository'
 import { TabletEditorPanel } from './TabletEditorPanel'
+import type { EditorEditingMode } from './TabletEditorPanel'
 import { WorkspaceActionSheetHost } from './TabletWorkspace'
 import { useTabletWorkspaceController } from './useTabletWorkspaceController'
 
@@ -29,6 +30,7 @@ export type PhoneWorkspaceState = 'editor' | 'list' | 'properties' | 'sidebar'
 
 export function PhoneWorkspace({
   initialEditorEditing = false,
+  initialEditorEditingMode = 'wysiwyg',
   initialState = 'list',
   onOpenNativeVault,
   repository = fixtureReadOnlyWorkspaceRepository,
@@ -36,6 +38,7 @@ export function PhoneWorkspace({
   snapshot,
 }: {
   initialEditorEditing?: boolean
+  initialEditorEditingMode?: EditorEditingMode
   initialState?: PhoneWorkspaceState
   onOpenNativeVault?: () => void
   repository?: ReadOnlyWorkspaceRepository
@@ -58,6 +61,7 @@ export function PhoneWorkspace({
       <PhoneWorkspaceStateView
         controller={controller}
         initialEditorEditing={initialEditorEditing}
+        initialEditorEditingMode={initialEditorEditingMode}
         openEditor={openEditor}
         openList={openList}
         openProperties={openProperties}
@@ -82,6 +86,7 @@ type PhoneWorkspaceController = ReturnType<typeof useTabletWorkspaceController>
 type PhoneWorkspaceStateViewProps = {
   controller: PhoneWorkspaceController
   initialEditorEditing: boolean
+  initialEditorEditingMode: EditorEditingMode
   openEditor: (noteId?: string) => void
   openList: () => void
   openProperties: () => void
@@ -179,6 +184,7 @@ function PhoneSidebarDrawer({
 function PhoneEditorScreen({
   controller,
   initialEditorEditing,
+  initialEditorEditingMode,
   openList,
   openProperties,
   suggestionNotes,
@@ -196,6 +202,7 @@ function PhoneEditorScreen({
       <PhoneEditorBody
         controller={controller}
         initialEditorEditing={initialEditorEditing}
+        initialEditorEditingMode={initialEditorEditingMode}
         notes={suggestionNotes}
         onNavigateWikilink={handleNavigateWikilink}
       />
@@ -228,11 +235,13 @@ function PhoneEditorTopBar({
 function PhoneEditorBody({
   controller,
   initialEditorEditing,
+  initialEditorEditingMode,
   notes,
   onNavigateWikilink,
 }: {
   controller: PhoneWorkspaceController
   initialEditorEditing: boolean
+  initialEditorEditingMode: EditorEditingMode
   notes: MobileNote[]
   onNavigateWikilink: (target: string) => void
 }) {
@@ -242,6 +251,7 @@ function PhoneEditorBody({
       bullets={controller.editorBullets}
       compact
       initialEditing={initialEditorEditing}
+      initialEditingMode={initialEditorEditingMode}
       note={controller.selectedNote}
       notes={notes}
       onNavigateWikilink={onNavigateWikilink}

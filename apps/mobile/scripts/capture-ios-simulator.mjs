@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* global console, process, setTimeout */
+/* global console, process, setTimeout, URL */
 
 import { mkdir } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
@@ -7,6 +7,7 @@ import { spawnSync } from 'node:child_process'
 import { assertNativeQaOpenUrl } from '../src/qa/nativeQaUrls.ts'
 
 const defaultOutputDir = '/tmp/tolaria-mobile-ui-simulator'
+const defaultExpoGoBundleId = 'host.exp.Exponent'
 
 function printHelp() {
   console.log(`Capture the current iOS Simulator screen for mobile UI QA.
@@ -49,6 +50,10 @@ function run(command, args) {
     throw new Error(`${command} ${args.join(' ')} failed: ${detail}`)
   }
   return result.stdout
+}
+
+function tryRun(command, args) {
+  spawnSync(command, args, { encoding: 'utf8' })
 }
 
 function hasFlag(args, name) {
@@ -235,11 +240,30 @@ async function openSimulatorUrl(device, url, waitMs) {
   }
 
   assertNativeQaOpenUrl(url, 'Native iOS simulator capture')
+  if (isExpoGoUrl(url)) {
+    terminateExpoGo(device)
+    await new Promise((resolveDelay) => setTimeout(resolveDelay, 500))
+    const runId = Date.now().toString()
+    run('xcrun', ['simctl', 'openurl', device, appendQueryParam(url, 'qaRun', runId)])
+    await new Promise((resolveDelay) => setTimeout(resolveDelay, Math.max(waitMs, 9000)))
+    return
+  }
+
   const runId = Date.now().toString()
   run('xcrun', ['simctl', 'openurl', device, appendQueryParam(url, 'qaRun', `${runId}-reset`)])
   await new Promise((resolveDelay) => setTimeout(resolveDelay, Math.min(waitMs, 750)))
   run('xcrun', ['simctl', 'openurl', device, appendQueryParam(url, 'qaRun', runId)])
   await new Promise((resolveDelay) => setTimeout(resolveDelay, waitMs))
+}
+
+function isExpoGoUrl(url) {
+  const protocol = new URL(url).protocol.toLowerCase()
+  return protocol === 'exp:' || protocol === 'exps:'
+}
+
+function terminateExpoGo(device) {
+  const bundleId = process.env.MOBILE_QA_EXPO_GO_BUNDLE_ID ?? defaultExpoGoBundleId
+  tryRun('xcrun', ['simctl', 'terminate', device, bundleId])
 }
 
 function appendQueryParam(url, key, value) {

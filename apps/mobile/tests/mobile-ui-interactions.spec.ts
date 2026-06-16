@@ -47,6 +47,17 @@ test.describe('mobile UI lab interactions', () => {
     await expect(page.getByTestId('editor-title')).toHaveText('How I Run an Open Source Project')
   })
 
+  test('opens the markdown source editor from the editor toolbar', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'tablet-landscape', 'Editor source mode checks use the full-width tablet layout.')
+
+    await page.goto('/')
+    await expect(page.getByTestId('editor-source-action')).toHaveAttribute('aria-label', 'Open the raw editor')
+    await page.getByTestId('editor-source-action').click()
+    await expect(page.getByTestId('editor-markdown-input')).toBeVisible()
+    await expect(page.getByTestId('editor-formatting-toolbar')).toBeVisible()
+    await expect(page.getByTestId('editor-source-action')).toHaveAttribute('aria-label', 'Return to the editor')
+  })
+
   test('derives tablet metadata from raw frontmatter edits', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'tablet-landscape', 'Raw frontmatter parity uses the full-width tablet layout.')
 

@@ -1,13 +1,15 @@
 import {
   Check,
+  Code,
   DotsThree,
   FileText,
   PencilSimple,
   Star,
 } from 'phosphor-react-native'
 import { ScrollView, StyleSheet, View } from 'react-native'
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { MobileEditorBlocks } from '../components/workspace/MobileEditorBlocks'
+import { MobileMarkdownSourceEditor } from '../components/workspace/MobileMarkdownSourceEditor'
 import { MobileWysiwygMarkdownEditor } from '../components/workspace/MobileWysiwygMarkdownEditor'
 import { Text } from '../components/ui/text'
 import { mobileText } from '../i18n/mobileText'
@@ -23,6 +25,7 @@ type TabletEditorPanelProps = {
   bullets: string[]
   compact: boolean
   initialEditing?: boolean
+  initialEditingMode?: EditorEditingMode
   note: MobileNote | null
   notes: MobileNote[]
   onNavigateWikilink: (target: string) => void
@@ -33,9 +36,11 @@ type TabletEditorPanelProps = {
 
 type EditorToolbarProps = {
   editing: boolean
+  editingMode: EditorEditingMode
   note: MobileNote
   onOpenMoreActions: () => void
   onToggleEditing: () => void
+  onToggleSourceMode: () => void
   onToggleFavorite: () => void
 }
 
@@ -44,11 +49,14 @@ type EditorContentProps = {
   bullets: string[]
   compact: boolean
   editing: boolean
+  editingMode: EditorEditingMode
   note: MobileNote
   notes: MobileNote[]
   onNavigateWikilink: (target: string) => void
   onUpdateContent: (noteId: string, content: string) => void
 }
+
+export type EditorEditingMode = 'source' | 'wysiwyg'
 
 export function TabletEditorPanel(props: TabletEditorPanelProps) {
   const {
@@ -56,6 +64,7 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
     bullets,
     compact,
     initialEditing = false,
+    initialEditingMode = 'wysiwyg',
     note,
     notes,
     onNavigateWikilink,
@@ -64,6 +73,21 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
     onUpdateContent,
   } = props
   const [editing, setEditing] = useState(initialEditing)
+  const [editingMode, setEditingMode] = useState<EditorEditingMode>(initialEditingMode)
+  const toggleEditing = useCallback(() => {
+    setEditing((current) => {
+      if (!current) setEditingMode('wysiwyg')
+      return !current
+    })
+  }, [])
+  const toggleSourceMode = useCallback(() => {
+    if (!editing) {
+      setEditingMode('source')
+      setEditing(true)
+      return
+    }
+    setEditingMode((current) => current === 'source' ? 'wysiwyg' : 'source')
+  }, [editing])
 
   if (!note) {
     return <EmptyEditorPanel />
@@ -72,10 +96,12 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
   return (
     <MobilePanel style={panelStyles.panel} testID="editor-panel">
       <EditorToolbar
+        editingMode={editingMode}
         editing={editing}
         note={note}
         onOpenMoreActions={onOpenMoreActions}
-        onToggleEditing={() => setEditing((current) => !current)}
+        onToggleEditing={toggleEditing}
+        onToggleSourceMode={toggleSourceMode}
         onToggleFavorite={onToggleFavorite}
       />
       {editing ? (
@@ -84,6 +110,7 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
             blocks={blocks}
             bullets={bullets}
             compact={compact}
+            editingMode={editingMode}
             editing={editing}
             note={note}
             notes={notes}
@@ -97,6 +124,7 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
             blocks={blocks}
             bullets={bullets}
             compact={compact}
+            editingMode={editingMode}
             editing={editing}
             note={note}
             notes={notes}
@@ -110,12 +138,16 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
 }
 
 function EditorToolbar({
+  editingMode,
   editing,
   note,
   onOpenMoreActions,
   onToggleEditing,
+  onToggleSourceMode,
   onToggleFavorite,
 }: EditorToolbarProps) {
+  const sourceModeActive = editing && editingMode === 'source'
+
   return (
     <MobileToolbar testID="editor-toolbar">
       <FileText color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />
@@ -137,6 +169,14 @@ function EditorToolbar({
           ? <Check color={mobileColors.primary} size={desktopToolbarActionParity.iconSize} weight="bold" />
           : <PencilSimple color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />}
       </MobileIconButton>
+      <MobileIconButton
+        accessibilityLabel={mobileText(sourceModeActive ? 'editor.toolbar.rawReturn' : 'editor.toolbar.rawOpen')}
+        selected={sourceModeActive}
+        testID="editor-source-action"
+        onPress={onToggleSourceMode}
+      >
+        <Code color={sourceModeActive ? mobileColors.primary : mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />
+      </MobileIconButton>
       <MobileIconButton accessibilityLabel={mobileText('editor.toolbar.moreActions')} testID="editor-more-action" onPress={onOpenMoreActions}>
         <DotsThree color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} weight="bold" />
       </MobileIconButton>
@@ -149,15 +189,30 @@ function EditorContent({
   bullets,
   compact,
   editing,
+  editingMode,
   note,
   notes,
   onNavigateWikilink,
   onUpdateContent,
 }: EditorContentProps) {
   if (editing) {
+    if (editingMode === 'source') {
+      return (
+        <MobileMarkdownSourceEditor
+          key={`${note.id}:source`}
+          blocks={blocks}
+          bullets={bullets}
+          compact={compact}
+          note={note}
+          notes={notes}
+          onUpdateContent={onUpdateContent}
+        />
+      )
+    }
+
     return (
       <MobileWysiwygMarkdownEditor
-        key={note.id}
+        key={`${note.id}:wysiwyg`}
         blocks={blocks}
         bullets={bullets}
         compact={compact}

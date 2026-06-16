@@ -183,9 +183,16 @@ export const mobileParityInventory = [
     surface: 'Native WYSIWYG document editor',
   },
   {
-    assertions: ['single document edit user-flow checks', 'wikilink and person autocomplete user-flow checks'],
+    assertions: ['single document source edit user-flow checks', 'wikilink and person autocomplete user-flow checks'],
     contracts: ['desktopEditorParity', 'desktopToolbarActionParity'],
     desktopSource: 'RawEditorView, BlockNote markdown commands, and editor wikilink/person suggestion menus',
+    mobileFile: 'src/components/workspace/MobileMarkdownSourceEditor.tsx',
+    surface: 'Markdown source document editor',
+  },
+  {
+    assertions: ['web fallback keeps source-editor user-flow coverage available'],
+    contracts: ['desktopEditorParity', 'desktopToolbarActionParity'],
+    desktopSource: 'BlockNote/Tiptap document editing with RawEditorView fallback',
     mobileFile: 'src/components/workspace/MobileWysiwygMarkdownEditor.tsx',
     surface: 'Web fallback document editor',
   },

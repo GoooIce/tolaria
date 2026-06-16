@@ -21,11 +21,14 @@ export function MobileUiLab() {
     vaultLabel: currentVaultLabel(searchParams, nativeWorkspace),
     vaultRootUri: currentVaultRootUri(searchParams, nativeWorkspace),
   }
-  const initialEditorEditing = editorMode(searchParams) === 'raw'
+  const initialEditorMode = editorMode(searchParams)
+  const initialEditorEditing = initialEditorMode === 'raw'
+  const initialEditorEditingMode = initialEditorMode === 'raw' ? 'source' : 'wysiwyg'
   const layoutProbe = layoutProbeEnabled(searchParams)
   const snapshot = readOnlyWorkspaceRepository.readSnapshot(repositoryRequest)
   const workspaceKey = mobileWorkspaceKey({
     initialEditorEditing,
+    initialEditorEditingMode,
     layoutProbe,
     qaRun: searchParams.get('qaRun'),
     scenarioId,
@@ -42,6 +45,7 @@ export function MobileUiLab() {
       <TabletWorkspace
         key={workspaceKey}
         initialEditorEditing={initialEditorEditing}
+        initialEditorEditingMode={initialEditorEditingMode}
         layoutProbe={layoutProbe}
         onOpenNativeVault={handleOpenNativeVault}
         repository={readOnlyWorkspaceRepository}
@@ -55,6 +59,7 @@ export function MobileUiLab() {
     <PhoneWorkspace
       key={workspaceKey}
       initialEditorEditing={initialEditorEditing}
+      initialEditorEditingMode={initialEditorEditingMode}
       initialState={currentPhoneState(searchParams)}
       onOpenNativeVault={handleOpenNativeVault}
       repository={readOnlyWorkspaceRepository}
@@ -111,6 +116,7 @@ function layoutProbeEnabled(searchParams: URLSearchParams) {
 
 function mobileWorkspaceKey({
   initialEditorEditing,
+  initialEditorEditingMode,
   layoutProbe,
   qaRun,
   scenarioId,
@@ -118,6 +124,7 @@ function mobileWorkspaceKey({
   source,
 }: {
   initialEditorEditing: boolean
+  initialEditorEditingMode: string
   layoutProbe: boolean
   qaRun: string | null
   scenarioId: string | null
@@ -131,6 +138,7 @@ function mobileWorkspaceKey({
     scenarioIdOrDefault(scenarioId),
     qaRun ?? 'interactive',
     initialEditorEditing ? 'raw-editor' : 'read-editor',
+    initialEditorEditingMode,
     layoutProbeMode(layoutProbe),
     sourceInfo ? sourceInfo.kind : 'fixture',
     sourceInfo ? sourceInfo.label : 'Tolaria Vault',

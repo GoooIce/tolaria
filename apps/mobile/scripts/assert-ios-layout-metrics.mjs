@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* global console, process, setTimeout */
+/* global console, process, setTimeout, URL */
 
 import { spawnSync } from 'node:child_process'
 import {
@@ -11,6 +11,7 @@ import {
 import { assertNativeQaOpenUrl } from '../src/qa/nativeQaUrls.ts'
 
 const defaultLogWindow = '5m'
+const defaultExpoGoBundleId = 'host.exp.Exponent'
 
 function printHelp() {
   console.log(`Assert native iOS Simulator layout metrics for mobile UI QA.
@@ -50,6 +51,10 @@ function run(command, args) {
   return [result.stdout, result.stderr].filter(Boolean).join('\n')
 }
 
+function tryRun(command, args) {
+  spawnSync(command, args, { encoding: 'utf8' })
+}
+
 function listBootedDevices() {
   const json = run('xcrun', ['simctl', 'list', 'devices', 'booted', '--json'])
   const parsed = JSON.parse(json)
@@ -86,11 +91,30 @@ function collectSimulatorLogs(device, { last, start }) {
 }
 
 async function openFreshProbeUrl(device, url, waitMs) {
+  if (isExpoGoUrl(url)) {
+    terminateExpoGo(device)
+    await sleep(500)
+    const runId = Date.now().toString()
+    run('xcrun', ['simctl', 'openurl', device, appendQueryParam(withLayoutProbe(url, true), 'qaRun', runId)])
+    await sleep(Math.max(waitMs, 9000))
+    return
+  }
+
   const runId = Date.now().toString()
   run('xcrun', ['simctl', 'openurl', device, appendQueryParam(withLayoutProbe(url, false), 'qaRun', `${runId}-reset`)])
   await sleep(Math.min(waitMs, 750))
   run('xcrun', ['simctl', 'openurl', device, appendQueryParam(withLayoutProbe(url, true), 'qaRun', runId)])
   await sleep(waitMs)
+}
+
+function isExpoGoUrl(url) {
+  const protocol = new URL(url).protocol.toLowerCase()
+  return protocol === 'exp:' || protocol === 'exps:'
+}
+
+function terminateExpoGo(device) {
+  const bundleId = process.env.MOBILE_QA_EXPO_GO_BUNDLE_ID ?? defaultExpoGoBundleId
+  tryRun('xcrun', ['simctl', 'terminate', device, bundleId])
 }
 
 function withLayoutProbe(url, enabled) {

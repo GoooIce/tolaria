@@ -25,6 +25,7 @@ import type {
   SearchQuery,
   SidebarLabel,
 } from './tabletWorkspaceNavigation'
+import type { EditorEditingMode } from './TabletEditorPanel'
 
 export type TabletPanel = 'noteList' | 'properties' | 'sidebar'
 export type TabletReadOnlyForm = {
@@ -80,6 +81,7 @@ export type TabletWorkspaceChromeProps = {
   editorBlocks: MobileEditorBlock[]
   editorBullets: string[]
   initialEditorEditing?: boolean
+  initialEditorEditingMode?: EditorEditingMode
   layoutProbe?: boolean
   noteListProperties: string[]
   noteListSubtitle: NoteCountText

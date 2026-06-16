@@ -20,6 +20,7 @@ import { useTabletWorkspaceController } from './useTabletWorkspaceController'
 
 export function TabletWorkspace({
   initialEditorEditing = false,
+  initialEditorEditingMode = 'wysiwyg',
   layoutProbe = false,
   onOpenNativeVault,
   repository = fixtureReadOnlyWorkspaceRepository,
@@ -27,6 +28,7 @@ export function TabletWorkspace({
   snapshot,
 }: {
   initialEditorEditing?: boolean
+  initialEditorEditingMode?: TabletWorkspaceChromeProps['initialEditorEditingMode']
   layoutProbe?: boolean
   onOpenNativeVault?: () => void
   repository?: ReadOnlyWorkspaceRepository
@@ -42,6 +44,7 @@ export function TabletWorkspace({
         compactTablet={compactTablet}
         defaultPropertiesVisible={defaultPropertiesVisible}
         initialEditorEditing={initialEditorEditing}
+        initialEditorEditingMode={initialEditorEditingMode}
         layoutProbe={layoutProbe}
         {...controller}
       />
@@ -71,6 +74,7 @@ function TabletWorkspaceChrome(props: TabletWorkspaceChromeProps) {
     editorBlocks,
     editorBullets,
     initialEditorEditing,
+    initialEditorEditingMode,
     layoutProbe,
     noteListProperties,
     noteListSubtitle,
@@ -151,6 +155,7 @@ function TabletWorkspaceChrome(props: TabletWorkspaceChromeProps) {
         bullets={editorBullets}
         compact={compactTablet}
         initialEditing={initialEditorEditing}
+        initialEditingMode={initialEditorEditingMode}
         note={selectedNote}
         notes={suggestionNotes}
         onNavigateWikilink={handleNavigateWikilink}
