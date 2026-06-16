@@ -84,4 +84,20 @@ Body.
     expect(frontmatterProperties(document.frontmatter)).toEqual({ owner: 'Giulia' })
     expect(frontmatterRelationships(document.frontmatter)).toEqual({ belongs_to: ['[[New Project]]'] })
   })
+
+  it('keeps desktop blank scalar frontmatter values unless list items follow', () => {
+    const document = parseLocalVaultDocument(`---
+type: Book
+start date:
+rating:
+tags:
+  - Reading
+---
+Body.
+`)
+
+    expect(document.frontmatter['start date']).toBe('')
+    expect(document.frontmatter.rating).toBe('')
+    expect(frontmatterList(document.frontmatter, ['tags'])).toEqual(['Reading'])
+  })
 })

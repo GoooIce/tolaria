@@ -117,6 +117,7 @@ function parseFrontmatterLines(lines: FrontmatterLine[]): LocalVaultFrontmatter 
 
     const { key, value } = keyValue
     if (!value) {
+      assignFrontmatterValue(frontmatter, key, '')
       listKey = key
       continue
     }
