@@ -351,7 +351,7 @@ function serializeBlockNode(node: TiptapJsonNode): MarkdownBody {
 }
 
 const blockNodeSerializers: Record<string, (node: TiptapJsonNode) => MarkdownBody> = {
-  paragraph: (node) => normalizeMobileDisplayMathMarkdown(serializeInlineChildren(node.content ?? [])),
+  paragraph: (node) => normalizeMobileFallbackParagraphMarkdown(serializeInlineChildren(node.content ?? [])),
   heading: (node) => `${'#'.repeat(headingLevel(node))} ${serializeInlineChildren(node.content ?? [])}`.trimEnd(),
   bulletList: (node) => serializeList(node, 'bullet'),
   orderedList: (node) => serializeList(node, 'ordered'),
@@ -361,6 +361,37 @@ const blockNodeSerializers: Record<string, (node: TiptapJsonNode) => MarkdownBod
   horizontalRule: () => '---',
   image: imageMarkdown,
   table: tableMarkdown,
+}
+
+function normalizeMobileFallbackParagraphMarkdown(markdown: MarkdownBody): MarkdownBody {
+  const displayMathMarkdown = normalizeMobileDisplayMathMarkdown(markdown)
+  if (displayMathMarkdown !== markdown) return displayMathMarkdown
+
+  return normalizeUnsupportedTableMarkdown(markdown)
+}
+
+function normalizeUnsupportedTableMarkdown(markdown: MarkdownBody): MarkdownBody {
+  const lines = markdown.split('\n').map(stripHardBreakMarker)
+  if (!isUnsupportedTableParagraph(lines)) return markdown
+
+  return lines.join('\n')
+}
+
+function isUnsupportedTableParagraph(lines: MarkdownLines): boolean {
+  const header = lines[0] ?? ''
+  const divider = lines[1] ?? ''
+  return lines.length >= 2
+    && lines.every(isMarkdownTableLine)
+    && header.includes('|')
+    && isMarkdownTableDivider(divider)
+}
+
+function isMarkdownTableLine(line: MarkdownLine): boolean {
+  return line.includes('|')
+}
+
+function stripHardBreakMarker(line: MarkdownLine): MarkdownLine {
+  return line.endsWith('  ') ? line.slice(0, -2) : line
 }
 
 function serializeInlineChildren(nodes: TiptapJsonNode[]): string {

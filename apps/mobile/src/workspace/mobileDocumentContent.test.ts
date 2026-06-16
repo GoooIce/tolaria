@@ -237,6 +237,30 @@ Updated body.
     expect(tiptapJsonToMobileMarkdown(document)).toBe('Line one  \nLine two')
   })
 
+  it('keeps unsupported table paragraphs as editable markdown table lines after native saves', () => {
+    const document: TiptapJsonNode = {
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          content: [
+            { text: '| Surface | Target |', type: 'text' },
+            { type: 'hardBreak' },
+            { text: '| --- | --- |', type: 'text' },
+            { type: 'hardBreak' },
+            { text: '| Editor | WYSIWYG |', type: 'text' },
+          ],
+        },
+      ],
+    }
+
+    expect(tiptapJsonToMobileMarkdown(document)).toBe([
+      '| Surface | Target |',
+      '| --- | --- |',
+      '| Editor | WYSIWYG |',
+    ].join('\n'))
+  })
+
   it('serializes TenTap image nodes back to portable markdown images', () => {
     const document: TiptapJsonNode = {
       type: 'doc',
