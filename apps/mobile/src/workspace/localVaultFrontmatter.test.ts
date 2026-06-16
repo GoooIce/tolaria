@@ -48,6 +48,21 @@ Body.
     expect(document.frontmatter.score).toEqual([1, true, 'Needs, Review'])
   })
 
+  it.each([
+    ['inline arrays', 'owner: [Luca]\ntags: [Design, Mobile]'],
+    ['YAML lists', 'owner:\n  - Luca\ntags:\n  - Design\n  - Mobile'],
+  ])('collapses one-item %s to scalars like desktop', (_format, frontmatter) => {
+    const document = parseLocalVaultDocument(`---
+${frontmatter}
+---
+Body.
+`)
+
+    expect(document.frontmatter.owner).toBe('Luca')
+    expect(document.frontmatter.tags).toEqual(['Design', 'Mobile'])
+    expect(frontmatterList(document.frontmatter, ['owner'])).toEqual(['Luca'])
+  })
+
   it('ignores desktop block-scalar frontmatter placeholders instead of exposing bogus properties', () => {
     const document = parseLocalVaultDocument(`---
 summary: |
@@ -129,19 +144,4 @@ Body.
     expect(document.frontmatter.values).toEqual(['null', 'null'])
   })
 
-  it('collapses one-item frontmatter lists to scalars like desktop', () => {
-    const document = parseLocalVaultDocument(`---
-owner:
-  - Luca
-tags:
-  - Design
-  - Mobile
----
-Body.
-`)
-
-    expect(document.frontmatter.owner).toBe('Luca')
-    expect(document.frontmatter.tags).toEqual(['Design', 'Mobile'])
-    expect(frontmatterList(document.frontmatter, ['owner'])).toEqual(['Luca'])
-  })
 })

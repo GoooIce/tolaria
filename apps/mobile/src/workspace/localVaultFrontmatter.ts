@@ -185,8 +185,8 @@ function isInlineArrayLiteral(value: FrontmatterText): boolean {
   return value.startsWith('[') && value.endsWith(']') && !value.startsWith('[[')
 }
 
-function parseInlineArray(value: FrontmatterText): LocalVaultFrontmatterScalar[] {
-  return splitInlineArrayItems(value.slice(1, -1)).map((item) => parseScalar(item.trim()))
+function parseInlineArray(value: FrontmatterText): LocalVaultFrontmatterValue {
+  return collapseList(splitInlineArrayItems(value.slice(1, -1)).map((item) => parseScalar(item.trim())))
 }
 
 function splitInlineArrayItems(value: FrontmatterText): FrontmatterText[] {
