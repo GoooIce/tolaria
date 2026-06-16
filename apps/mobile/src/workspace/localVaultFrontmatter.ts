@@ -1,5 +1,5 @@
 export type LocalVaultFrontmatterValue = LocalVaultFrontmatterScalar | LocalVaultFrontmatterScalar[]
-type LocalVaultFrontmatterScalar = string | number | boolean | null
+export type LocalVaultFrontmatterScalar = string | number | boolean | null
 type FrontmatterBody = string
 type FrontmatterKey = string
 type FrontmatterLine = string
@@ -16,6 +16,13 @@ export type LocalVaultDocument = {
 
 const FRONTMATTER_OPEN = /^---\r?\n/
 const FRONTMATTER_CLOSE = /\r?\n---(?:\r?\n|$)/
+
+export function serializeLocalVaultFrontmatterScalar(value: LocalVaultFrontmatterScalar): string {
+  if (typeof value === 'boolean' || typeof value === 'number') return String(value)
+  if (value === null) return 'null'
+  if (shouldQuoteFrontmatterScalar(value)) return JSON.stringify(value)
+  return value
+}
 
 export function parseLocalVaultDocument(content: MarkdownContent): LocalVaultDocument {
   const open = content.match(FRONTMATTER_OPEN)
@@ -246,4 +253,8 @@ function stringValue(value: LocalVaultFrontmatterValue | undefined): string | nu
   if (typeof value === 'string') return value
   if (Array.isArray(value) && typeof value[0] === 'string') return value[0]
   return null
+}
+
+function shouldQuoteFrontmatterScalar(value: string): boolean {
+  return value === '' || /[:#\n\r]/u.test(value) || /^[\s[{]/u.test(value) || /\s$/u.test(value)
 }

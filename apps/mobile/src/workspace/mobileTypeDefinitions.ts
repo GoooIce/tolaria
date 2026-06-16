@@ -2,6 +2,7 @@ import {
   frontmatterProperties,
   frontmatterRelationships,
   parseLocalVaultDocument,
+  serializeLocalVaultFrontmatterScalar,
   type LocalVaultFrontmatter,
   type LocalVaultFrontmatterValue,
 } from './localVaultFrontmatter'
@@ -250,10 +251,7 @@ function serializeFrontmatterEntry(
 }
 
 function serializeScalar(value: Exclude<LocalVaultFrontmatterValue, LocalVaultFrontmatterValue[]>): string {
-  if (typeof value === 'boolean' || typeof value === 'number') return String(value)
-  if (value === null) return 'null'
-  if (value === '' || /[:#\n\r]/u.test(value)) return JSON.stringify(value)
-  return value
+  return serializeLocalVaultFrontmatterScalar(value)
 }
 
 function slugifyTypeName(value: TypeName): string {

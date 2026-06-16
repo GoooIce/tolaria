@@ -697,7 +697,7 @@ describe('applyMobileWorkspaceEdit', () => {
     expect(note.rawContent).toContain('Status: Active')
     expect(note.rawContent).toContain('tags:\n  - Design\n  - Mobile')
     expect(note.rawContent).toContain('priority: High')
-    expect(note.rawContent).toContain('belongs_to:\n  - [[Tolaria MVP]]')
+    expect(note.rawContent).toContain('belongs_to:\n  - "[[Tolaria MVP]]"')
     expect(result.writes).toEqual([{
       content: note.rawContent,
       kind: 'createNote',
@@ -732,7 +732,7 @@ describe('applyMobileWorkspaceEdit', () => {
       title: 'New Dependency',
       type: 'Note',
     })
-    expect(updatedSource?.rawContent).toContain('related_to:\n  - [[Tolaria/Mobile UI/new-dependency]]')
+    expect(updatedSource?.rawContent).toContain('related_to:\n  - "[[Tolaria/Mobile UI/new-dependency]]"')
     expect(updatedSource?.relationships.find((relationship) => relationship.key === 'related_to')?.values).toContainEqual(
       expect.objectContaining({
         id: target?.id,
@@ -1150,8 +1150,8 @@ function expectTypeSchemaDefaultWrite(
   expect(typeWrite?.path).toBe('procedure.md')
   expect(typeWrite?.content).toContain('Priority: High')
   expect(typeWrite?.content).toContain('has: Milestone')
-  expect(typeWrite?.content).toContain('belongs_to:\n  - [[Tolaria MVP]]')
-  expect(typeWrite?.content).toContain('depends_on:\n  - [[Project Board]]')
+  expect(typeWrite?.content).toContain('belongs_to:\n  - "[[Tolaria MVP]]"')
+  expect(typeWrite?.content).toContain('depends_on:\n  - "[[Project Board]]"')
 }
 
 function noteById(snapshot: MobileWorkspaceSnapshot, noteId: NoteId): MobileNote {
