@@ -215,7 +215,6 @@ function parseScalar(value: FrontmatterText): LocalVaultFrontmatterScalar | null
   const clean = unquote(value)
   const lower = clean.toLowerCase()
 
-  if (lower === 'null') return null
   if (lower === 'true' || lower === 'yes') return true
   if (lower === 'false' || lower === 'no') return false
   if (!quoted && isNumericScalar(clean)) return Number(clean)

@@ -114,4 +114,18 @@ Body.
     expect(document.frontmatter.rating).toBe('3.5')
     expect(document.frontmatter.order).toBe(3.5)
   })
+
+  it('keeps null frontmatter scalars as literal strings like desktop', () => {
+    const document = parseLocalVaultDocument(`---
+empty: null
+quoted: "null"
+values: [null, "null"]
+---
+Body.
+`)
+
+    expect(document.frontmatter.empty).toBe('null')
+    expect(document.frontmatter.quoted).toBe('null')
+    expect(document.frontmatter.values).toEqual(['null', 'null'])
+  })
 })
