@@ -148,7 +148,7 @@ function applyConditionDefault(
     return
   }
 
-  if (isRelationshipDefaultField(key)) {
+  if (isRelationshipDefaultField(key, values)) {
     defaults.relationships[normalizeRelationshipKey(key)] = stringDefaults(values).map(wikilinkRef)
     return
   }
@@ -223,8 +223,12 @@ function propertyFieldKey(field: string): string {
   return field.trim().replace(/^property:/iu, '').trim()
 }
 
-function isRelationshipDefaultField(key: string): boolean {
-  return relationshipDefaultFields.has(key) || key.startsWith('has_')
+function isRelationshipDefaultField(key: string, values: unknown[] = []): boolean {
+  return relationshipDefaultFields.has(key) || key.startsWith('has_') || hasWikilinkDefault(values)
+}
+
+function hasWikilinkDefault(values: unknown[]): boolean {
+  return stringDefaults(values).some((value) => value.includes('[['))
 }
 
 function mergeDefaults(target: MutableCreateDefaults, source: MutableCreateDefaults) {

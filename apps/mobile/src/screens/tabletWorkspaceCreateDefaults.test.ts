@@ -89,7 +89,9 @@ describe('tablet workspace create-note defaults', () => {
             { field: 'path', op: 'contains', value: 'Writing/Launch' },
             { field: 'tags', op: 'any_of', value: ['Design', 'Mobile'] },
             { field: 'Priority', op: 'equals', value: 'High' },
+            { field: 'started_on', op: 'equals', value: '2026-06-01' },
             { field: 'belongs_to', op: 'equals', value: 'Tolaria MVP' },
+            { field: 'depends_on', op: 'equals', value: '[[Tolaria/Mobile UI]]' },
             { field: 'organized', op: 'equals', value: false },
           ],
         },
@@ -102,8 +104,11 @@ describe('tablet workspace create-note defaults', () => {
     }])).toEqual({
       folderPath: 'Writing/Launch',
       organized: false,
-      properties: { Priority: 'High' },
-      relationships: { belongs_to: ['[[Tolaria MVP]]'] },
+      properties: { Priority: 'High', started_on: '2026-06-01' },
+      relationships: {
+        belongs_to: ['[[Tolaria MVP]]'],
+        depends_on: ['[[Tolaria/Mobile UI]]'],
+      },
       tags: ['Design', 'Mobile'],
     })
   })
