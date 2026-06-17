@@ -383,7 +383,6 @@ function createWorkspaceActions({
       closeAction,
       defaults: createNoteDefaultsForSelection(
         navigation.sidebarSelection,
-        workspaceSnapshot.views ?? [],
         workspaceSnapshot.typeDefinitions,
       ),
       title: readOnlyForm.createTitle,
