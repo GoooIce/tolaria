@@ -213,8 +213,18 @@ function mobileTypeDefinitionProperties(frontmatter: LocalVaultFrontmatter): Rec
 function frontmatterValue(frontmatter: LocalVaultFrontmatter, keys: string[]) {
   for (const key of keys) {
     if (Object.hasOwn(frontmatter, key)) return frontmatter[key]
+
+    const normalizedKey = normalizedFrontmatterLookupKey(key)
+    const normalizedMatch = Object.entries(frontmatter).find(([candidateKey]) => (
+      normalizedFrontmatterLookupKey(candidateKey) === normalizedKey
+    ))
+    if (normalizedMatch) return normalizedMatch[1]
   }
   return undefined
+}
+
+function normalizedFrontmatterLookupKey(key: string): string {
+  return key.trim().toLowerCase().replace(/\s+/g, '_')
 }
 
 function frontmatterText(frontmatter: LocalVaultFrontmatter, keys: string[]) {

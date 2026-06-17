@@ -292,6 +292,34 @@ _organized: false
     )
   })
 
+  it('normalizes desktop Type document metadata aliases before building mobile navigation', () => {
+    const snapshot = buildLocalVaultWorkspaceSnapshot({
+      files: [
+        vaultFile('types/project.md', `---
+Is A: Type
+Color: red
+Icon: folder
+Order: 2
+Sidebar Label: Client Work
+Sort: property:Priority:asc
+Visible: false
+---
+# Project
+`),
+      ],
+      vaultLabel: 'Laputa',
+      vaultPath: '/Users/luca/Laputa',
+    })
+
+    expect(snapshot.typeDefinitions?.Project).toMatchObject({
+      icon: 'folder',
+      label: 'Client Work',
+      order: 2,
+      sort: 'property:Priority:asc',
+      visible: false,
+    })
+  })
+
   it('derives sidebar primary counts, type counts, and folder paths from local vault notes', () => {
     const snapshot = buildLocalVaultWorkspaceSnapshot({
       files: [
