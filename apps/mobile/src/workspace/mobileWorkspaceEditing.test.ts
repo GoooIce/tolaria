@@ -535,6 +535,54 @@ describe('applyMobileWorkspaceEdit', () => {
     }])
   })
 
+  it('keeps rebuilt Inbox counts empty when only organized or Type documents are active', () => {
+    const base = workspaceScenarioForId('default')
+    const organizedNote = {
+      ...base.notes[0],
+      archived: false,
+      id: 'organized-note',
+      organized: true,
+      rawContent: '---\ntype: Essay\n_organized: true\n---\n# Organized\n',
+      title: 'Organized',
+      type: 'Essay',
+    }
+    const typeDocument = {
+      ...base.notes[1],
+      archived: false,
+      id: 'type-document',
+      organized: false,
+      rawContent: '---\ntype: Type\n---\n# Type\n',
+      title: 'Type',
+      type: 'Type',
+    }
+    const archivedNote = {
+      ...base.notes[2],
+      archived: true,
+      id: 'archived-note',
+      organized: false,
+      title: 'Archived',
+      type: 'Essay',
+    }
+
+    const snapshot = applyMobileWorkspaceEdit({
+      ...base,
+      allNotes: [organizedNote, typeDocument, archivedNote],
+      notes: [organizedNote, typeDocument, archivedNote],
+      selectedNoteId: organizedNote.id,
+    }, {
+      noteId: organizedNote.id,
+      organized: true,
+      type: 'setOrganized',
+    })
+
+    expect(snapshot.noteListSubtitle).toBe('0 open notes')
+    expect(sidebarItems(snapshot, 'primary')).toEqual([
+      expect.objectContaining({ count: '0', id: 'inbox' }),
+      expect.objectContaining({ count: '2', id: 'all-notes' }),
+      expect.objectContaining({ count: '1', id: 'archive' }),
+    ])
+  })
+
   it('deletes notes from the visible and complete note pools with a delete write', () => {
     const base = workspaceScenarioForId('default')
     const result = applyMobileWorkspaceEditWithWrites({ ...base, allNotes: base.notes }, {

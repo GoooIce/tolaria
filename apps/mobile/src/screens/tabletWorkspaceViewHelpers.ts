@@ -61,6 +61,7 @@ function primaryViewFilters(
   if (selection.id === 'inbox') return allFilters([
     { field: 'archived', op: 'equals', value: false },
     { field: 'organized', op: 'equals', value: false },
+    { field: 'type', op: 'not_equals', value: 'Type' },
   ])
 
   return allFilters([{ field: 'title', op: 'contains', value: notes[0]?.title ?? selection.label }])

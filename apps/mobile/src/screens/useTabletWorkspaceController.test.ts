@@ -29,4 +29,21 @@ describe('tablet workspace controller view helpers', () => {
       all: [{ field: 'path', op: 'contains', value: 'Writing/Projects' }],
     })
   })
+
+  it('creates Inbox view filters from desktop capture semantics', () => {
+    const selection: TabletSidebarSelection = {
+      id: 'inbox',
+      kind: 'item',
+      label: 'Inbox',
+      sectionId: 'primary',
+    }
+
+    expect(viewFiltersForSelection(selection, [], null, [])).toEqual({
+      all: [
+        { field: 'archived', op: 'equals', value: false },
+        { field: 'organized', op: 'equals', value: false },
+        { field: 'type', op: 'not_equals', value: 'Type' },
+      ],
+    })
+  })
 })

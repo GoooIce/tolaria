@@ -42,6 +42,7 @@ import {
   type MobileViewMoveDirection,
 } from './mobileSavedViews'
 import { buildMobileSidebarSections } from './mobileSidebarSections'
+import { isMobileInboxNote } from './mobileNoteFilters'
 import { normalizedMobileFolderPath } from './mobileWorkspaceFolders'
 import { applyMobileFolderEdit } from './mobileWorkspaceFolderEditing'
 import {
@@ -1207,9 +1208,7 @@ function wikilinkSearchText(note: MobileNote): string {
 }
 
 function noteListSubtitle(notes: MobileNote[]): string {
-  const active = notes.filter((note) => !note.archived)
-  const inbox = active.filter((note) => !note.organized)
-  const count = inbox.length > 0 ? inbox.length : active.length
+  const count = notes.filter(isMobileInboxNote).length
   return `${count.toLocaleString()} open notes`
 }
 

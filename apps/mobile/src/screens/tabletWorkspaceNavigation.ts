@@ -6,6 +6,7 @@ import type {
   MobileWorkspaceSnapshot,
 } from '../workspace/mobileWorkspaceModel'
 import { evaluateMobileSavedView, sortMobileNotesBySort } from '../workspace/mobileSavedViews'
+import { isMobileInboxNote } from '../workspace/mobileNoteFilters'
 import type {
   MobileSidebarFolderSelection,
   MobileSidebarItemSelection,
@@ -238,7 +239,7 @@ export function filterNotesBySearch(notes: MobileNote[], searchQuery: SearchQuer
 }
 
 function inboxNotes(notes: MobileNote[]) {
-  return notes.filter((note) => !note.archived && !note.organized && note.type !== 'Type')
+  return notes.filter(isMobileInboxNote)
 }
 
 function noteBelongsToFolder(note: MobileNote, selection: Extract<TabletSidebarSelection, { kind: 'folder' }>) {

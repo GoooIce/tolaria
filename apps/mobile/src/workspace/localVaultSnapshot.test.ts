@@ -97,6 +97,41 @@ Body ${index}.
     expect(snapshot.source).toMatchObject({ totalNotes: 5, visibleNotes: 2 })
   })
 
+  it('keeps local vault Inbox empty instead of falling back to active notes', () => {
+    const snapshot = buildLocalVaultWorkspaceSnapshot({
+      files: [
+        vaultFile('organized.md', `---
+type: Note
+_organized: true
+---
+# Organized
+`),
+        vaultFile('archived.md', `---
+type: Note
+_archived: true
+---
+# Archived
+`),
+        vaultFile('types/project.md', `---
+type: Type
+---
+# Project
+`),
+      ],
+      vaultLabel: 'Laputa',
+      vaultPath: '/Users/luca/Laputa',
+    })
+
+    expect(snapshot.notes).toEqual([])
+    expect(snapshot.selectedNoteId).toBeUndefined()
+    expect(snapshot.sidebarSections.find((section) => section.id === 'primary')?.items).toEqual([
+      expect.objectContaining({ count: '0', id: 'inbox' }),
+      expect.objectContaining({ count: '1', id: 'all-notes' }),
+      expect.objectContaining({ count: '1', id: 'archive' }),
+    ])
+    expect(snapshot.source).toMatchObject({ totalNotes: 2, visibleNotes: 0 })
+  })
+
   it('parses saved views into the mobile sidebar and counts matching notes', () => {
     const snapshot = buildLocalVaultWorkspaceSnapshot({
       files: [

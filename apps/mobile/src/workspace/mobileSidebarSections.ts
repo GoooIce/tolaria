@@ -1,4 +1,5 @@
 import { evaluateMobileSavedView } from './mobileSavedViews'
+import { isMobileInboxNote } from './mobileNoteFilters'
 import { mobileSidebarIconFromValue, mobileToneFromValue } from './mobileWorkspaceMetadata'
 import { buildMobileFolderTree } from './mobileWorkspaceFolders'
 import type {
@@ -53,7 +54,7 @@ export function buildMobileSidebarSections({
 }
 
 function primarySection(activeNotes: MobileNote[], archivedNotes: MobileNote[]): MobileSidebarSection {
-  const inboxNotes = activeNotes.filter((note) => !note.organized)
+  const inboxNotes = activeNotes.filter(isMobileInboxNote)
 
   return {
     id: 'primary',

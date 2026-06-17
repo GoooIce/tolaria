@@ -18,6 +18,7 @@ import {
   parseMobileSavedViewFile,
 } from './mobileSavedViews'
 import { buildMobileSidebarSections } from './mobileSidebarSections'
+import { isMobileInboxNote } from './mobileNoteFilters'
 import { normalizeMobileWikilinkTarget } from './mobileWikilinks'
 import type {
   MobileNote,
@@ -294,10 +295,7 @@ function localEntryToMobileNote(
 }
 
 function visibleNoteEntries(entries: LocalVaultEntry[]): LocalVaultEntry[] {
-  const inbox = entries.filter((entry) => !entry.archived && !entry.organized)
-  const source = inbox.length > 0 ? inbox : entries.filter((entry) => !entry.archived)
-
-  return [...source].sort(compareByModifiedDate)
+  return entries.filter(isMobileInboxNote).sort(compareByModifiedDate)
 }
 
 function compareByModifiedDate(left: LocalVaultEntry, right: LocalVaultEntry): number {

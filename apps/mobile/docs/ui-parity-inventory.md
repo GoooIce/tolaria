@@ -50,6 +50,7 @@ Type-section navigation defaults to the desktop active/open sub-filter: archived
 Favorite navigation follows the desktop note-identity behavior: a favorite sidebar item opens that active favorite note only, not every favorite or title match.
 Folder navigation defaults to the desktop active/open sub-filter while preserving descendant matching by stable folder path.
 Inbox navigation follows the desktop capture semantics: only active, unorganized, non-Type notes appear, and an empty Inbox stays empty instead of falling back to all notes.
+Inbox counts, rebuilt note-list subtitles, local-vault initial visible entries, and Inbox-derived saved-view filters use the same shared mobile Inbox predicate so Type documents and organized notes cannot drift between surfaces.
 
 ## Tablet Screens
 
