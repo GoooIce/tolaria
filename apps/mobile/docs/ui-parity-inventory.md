@@ -52,6 +52,7 @@ Folder navigation defaults to the desktop active/open sub-filter while preservin
 Folder-derived saved views keep the desktop-shaped `path contains <folder>` YAML while mobile internal evaluation applies the same folder-boundary descendant matching as sidebar folder navigation, avoiding substring or duplicate-label matches.
 Inbox navigation follows the desktop capture semantics: only active, unorganized, non-Type notes appear, and an empty Inbox stays empty instead of falling back to all notes.
 Inbox counts, rebuilt note-list subtitles, local-vault initial visible entries, and Inbox-derived saved-view filters use the same shared mobile Inbox predicate so Type documents and organized notes cannot drift between surfaces.
+Local-vault All Notes and Archive counts include markdown Type documents like desktop `isAllNotesEntry`, while Inbox continues to exclude them. Type documents render as `Type` rows with the desktop Type tone; active Type document color metadata is applied only to notes of the defined target type.
 
 ## Tablet Screens
 

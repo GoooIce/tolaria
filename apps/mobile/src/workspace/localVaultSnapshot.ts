@@ -82,6 +82,7 @@ type LocalVaultEntry = {
   title: NoteTitle
   type: NoteTypeName
   typeDefinition: MobileTypeDefinition
+  typeDefinitionTone: MobileTone
   typeTone: MobileTone
 }
 
@@ -100,9 +101,8 @@ export function buildLocalVaultWorkspaceSnapshot({
 }: LocalVaultSnapshotOptions): MobileWorkspaceSnapshot {
   const entries = applyTypeDefinitionTones(files.filter(isMarkdownFile).map(parseLocalVaultEntry))
   const typeDefinitions = localTypeDefinitions(entries)
-  const noteEntries = entries.filter((entry) => entry.type !== 'Type')
-  const allNoteEntries = [...noteEntries].sort(compareByModifiedDate)
-  const visibleEntries = visibleNoteEntries(noteEntries)
+  const allNoteEntries = [...entries].sort(compareByModifiedDate)
+  const visibleEntries = visibleNoteEntries(entries)
   const selectedEntries = visibleEntries.slice(0, maxNotes)
   const resolveRelationship = relationshipResolver(entries)
   const allNotes = allNoteEntries.map((entry) => localEntryToMobileNote(entry, resolveRelationship, vaultLabel, 'summary'))
@@ -122,7 +122,7 @@ export function buildLocalVaultWorkspaceSnapshot({
     source: {
       kind: 'localVault',
       label: vaultLabel,
-      totalNotes: noteEntries.length,
+      totalNotes: entries.length,
       vaultPath,
       visibleNotes: notes.length,
     },
@@ -135,8 +135,8 @@ export function buildLocalVaultWorkspaceSnapshot({
 function applyTypeDefinitionTones(entries: LocalVaultEntry[]): LocalVaultEntry[] {
   const tones = new Map(
     entries
-      .filter((entry) => entry.type === 'Type')
-      .map((entry) => [entry.title, entry.typeTone]),
+      .filter(isActiveTypeEntry)
+      .map((entry) => [entry.title, entry.typeDefinitionTone]),
   )
 
   return entries.map((entry) => {
@@ -179,7 +179,8 @@ function parseLocalVaultEntry(file: LocalVaultFile): LocalVaultEntry {
     title,
     type,
     typeDefinition: typeDefinitionFromFrontmatter(document.frontmatter),
-    typeTone: toneFromDesktopColor(color, type === 'Type' ? title : type),
+    typeDefinitionTone: toneFromDesktopColor(color, title),
+    typeTone: toneFromDesktopColor(null, type),
   }
 }
 
@@ -232,14 +233,18 @@ function frontmatterBoolean(frontmatter: LocalVaultFrontmatter, keys: string[]) 
 function localTypeDefinitions(entries: LocalVaultEntry[]): MobileTypeDefinitions {
   return Object.fromEntries(
     entries
-      .filter((entry) => entry.type === 'Type')
+      .filter(isActiveTypeEntry)
       .map((entry) => [entry.title, {
         ...entry.typeDefinition,
         path: entry.path,
         rawContent: entry.rawContent,
-        tone: entry.typeTone,
+        tone: entry.typeDefinitionTone,
       }]),
   )
+}
+
+function isActiveTypeEntry(entry: LocalVaultEntry): boolean {
+  return entry.type === 'Type' && !entry.archived
 }
 
 function parseViewFile(file: LocalVaultFile, index: number): MobileSavedView | null {

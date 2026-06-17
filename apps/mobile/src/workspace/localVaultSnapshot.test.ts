@@ -10,7 +10,7 @@ describe('buildLocalVaultWorkspaceSnapshot', () => {
       vaultPath: '/Users/luca/Laputa',
     })
 
-    expect(snapshot.source).toMatchObject({ kind: 'localVault', label: 'Laputa', totalNotes: 2 })
+    expect(snapshot.source).toMatchObject({ kind: 'localVault', label: 'Laputa', totalNotes: 3 })
     expect(snapshot.notes).toHaveLength(1)
     expect(snapshot.notes[0]).toMatchObject({
       aliases: ['Mobile App'],
@@ -126,10 +126,49 @@ type: Type
     expect(snapshot.selectedNoteId).toBeUndefined()
     expect(snapshot.sidebarSections.find((section) => section.id === 'primary')?.items).toEqual([
       expect.objectContaining({ count: '0', id: 'inbox' }),
+      expect.objectContaining({ count: '2', id: 'all-notes' }),
+      expect.objectContaining({ count: '1', id: 'archive' }),
+    ])
+    expect(snapshot.source).toMatchObject({ totalNotes: 3, visibleNotes: 0 })
+    expect(snapshot.allNotes?.map((note) => note.title)).toEqual(
+      expect.arrayContaining(['Project', 'Organized', 'Archived']),
+    )
+    expect(snapshot.allNotes?.find((note) => note.title === 'Project')).toMatchObject({
+      type: 'Type',
+      typeTone: 'blue',
+    })
+  })
+
+  it('keeps archived Type documents out of live type metadata while counting them as archived notes', () => {
+    const snapshot = buildLocalVaultWorkspaceSnapshot({
+      files: [
+        vaultFile('types/recipe.md', `---
+type: Type
+_archived: true
+color: orange
+---
+# Recipe
+`),
+        vaultFile('recipes/pasta.md', `---
+type: Recipe
+_organized: false
+---
+# Pasta
+`),
+      ],
+      vaultLabel: 'Laputa',
+      vaultPath: '/Users/luca/Laputa',
+    })
+
+    expect(snapshot.typeDefinitions?.Recipe).toBeUndefined()
+    expect(snapshot.sidebarSections.find((section) => section.id === 'primary')?.items).toEqual([
+      expect.objectContaining({ count: '1', id: 'inbox' }),
       expect.objectContaining({ count: '1', id: 'all-notes' }),
       expect.objectContaining({ count: '1', id: 'archive' }),
     ])
-    expect(snapshot.source).toMatchObject({ totalNotes: 2, visibleNotes: 0 })
+    expect(snapshot.sidebarSections.find((section) => section.id === 'types')?.items).toEqual([
+      expect.objectContaining({ count: '1', label: 'Recipes', tone: 'gray', typeName: 'Recipe' }),
+    ])
   })
 
   it('parses saved views into the mobile sidebar and counts matching notes', () => {
@@ -203,6 +242,7 @@ _organized: false
       expect.objectContaining({ count: '2', label: 'Client Work', typeName: 'Project' }),
       expect.objectContaining({ count: '1', label: 'Notes', typeName: 'Note' }),
       expect.objectContaining({ count: '0', label: 'Topics', tone: 'green', typeName: 'Topic' }),
+      expect.objectContaining({ count: '3', label: 'Types', tone: 'blue', typeName: 'Type' }),
     ])
     expect(typeItems).not.toEqual(
       expect.arrayContaining([expect.objectContaining({ typeName: 'Secret' })]),
@@ -238,7 +278,7 @@ _archived: true
 
     expect(snapshot.sidebarSections.find((section) => section.id === 'primary')?.items).toEqual([
       expect.objectContaining({ count: '1', id: 'inbox' }),
-      expect.objectContaining({ count: '2', id: 'all-notes' }),
+      expect.objectContaining({ count: '3', id: 'all-notes' }),
       expect.objectContaining({ count: '1', id: 'archive' }),
     ])
     expect(snapshot.sidebarSections.find((section) => section.id === 'types')?.items).toEqual(
