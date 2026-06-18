@@ -7,6 +7,7 @@ type WikilinkTarget = string
 export type MovedNoteWikilinkRewrite = {
   newTarget: WikilinkTarget
   oldTargets: Set<WikilinkTarget>
+  targetRewrites: Map<WikilinkTarget, WikilinkTarget>
 }
 
 export function noteWritePath(note: MobileNote): NotePath {
@@ -28,13 +29,13 @@ export function movedNoteWikilinkRewrite(
   previousNote: MobileNote,
   nextNote: MobileNote,
 ): MovedNoteWikilinkRewrite {
+  const newTarget = notePathStem(noteWritePath(nextNote))
+  const targetRewrites = movedNoteTargetRewrites(previousNote, newTarget)
+
   return {
-    newTarget: notePathStem(noteWritePath(nextNote)),
-    oldTargets: new Set([
-      previousNote.title,
-      notePathStem(noteWritePath(previousNote)),
-      noteFilename(noteWritePath(previousNote)).replace(/\.md$/u, ''),
-    ].filter(Boolean)),
+    newTarget,
+    oldTargets: new Set(targetRewrites.keys()),
+    targetRewrites,
   }
 }
 
@@ -57,10 +58,37 @@ function replaceMovedWikilinks(
   rewrite: MovedNoteWikilinkRewrite,
 ): MarkdownContent {
   return content.replace(/\[\[([^\]|]+)(\|[^\]]*)?\]\]/g, (match, target: string, alias: string | undefined) => {
-    return rewrite.oldTargets.has(target.trim()) ? `[[${rewrite.newTarget}${alias ?? ''}]]` : match
+    const nextTarget = rewrite.targetRewrites.get(target.trim())
+      ?? (rewrite.oldTargets.has(target.trim()) ? rewrite.newTarget : null)
+    return nextTarget ? `[[${nextTarget}${alias ?? ''}]]` : match
   })
 }
 
 function notePathStem(path: NotePath): string {
   return path.replace(/\.md$/u, '')
+}
+
+function movedNoteTargetRewrites(
+  previousNote: MobileNote,
+  newTarget: WikilinkTarget,
+): Map<WikilinkTarget, WikilinkTarget> {
+  const rewrites = new Map(localMovedNoteTargets(previousNote).map((target) => [target, newTarget]))
+  const workspaceAlias = previousNote.workspaceAlias?.trim().toLowerCase()
+  if (!workspaceAlias) return rewrites
+
+  for (const target of localMovedNoteTargets(previousNote)) {
+    rewrites.set(`${workspaceAlias}/${target}`, `${workspaceAlias}/${newTarget}`)
+  }
+
+  return rewrites
+}
+
+function localMovedNoteTargets(note: MobileNote): WikilinkTarget[] {
+  return [...new Set([
+    note.title,
+    notePathStem(noteWritePath(note)),
+    noteWritePath(note),
+    noteFilename(noteWritePath(note)).replace(/\.md$/u, ''),
+    noteFilename(noteWritePath(note)),
+  ].filter(Boolean))]
 }

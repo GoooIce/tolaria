@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { workspaceScenarioForId } from '../fixtures/workspaceFixtures'
-import { applyMobileWorkspaceEdit } from './mobileWorkspaceEditing'
+import { applyMobileWorkspaceEdit, applyMobileWorkspaceEditWithWrites } from './mobileWorkspaceEditing'
 import type { MobileNote } from './mobileWorkspaceModel'
 
 describe('mobile workspace relationship editing', () => {
@@ -64,6 +64,70 @@ describe('mobile workspace relationship editing', () => {
     expect(withRelationship.notes.find((candidate) => candidate.id === source.id)?.rawContent).toContain(
       '  - "[[team/projects/remote]]"',
     )
+  })
+
+  it('retargets alias-prefixed relationship refs when cross-workspace notes move', () => {
+    const base = workspaceScenarioForId('default')
+    const source = {
+      ...base.notes[0],
+      id: 'source.md',
+      path: 'source.md',
+      rawContent: [
+        '---',
+        'mentions:',
+        '  - [[team/projects/remote]]',
+        '---',
+        '# Source',
+        '',
+        'See [[team/projects/remote|Remote]].',
+        '',
+      ].join('\n'),
+      relationships: [],
+      workspace: 'Personal',
+      workspaceAlias: 'personal',
+    }
+    const remote = {
+      ...base.notes[1],
+      id: 'projects/remote.md',
+      path: 'projects/remote.md',
+      rawContent: '# Remote\n\nMove me.\n',
+      title: 'Remote',
+      workspace: 'Team',
+      workspaceAlias: 'team',
+    }
+    const result = applyMobileWorkspaceEditWithWrites({
+      ...base,
+      allNotes: [source, remote],
+      folderPaths: ['archive'],
+      notes: [source, remote],
+    }, {
+      folderPath: 'archive',
+      noteId: remote.id,
+      type: 'moveNoteToFolder',
+    })
+    const updatedSource = result.snapshot.allNotes?.find((note) => note.id === source.id)
+
+    expect(updatedSource?.rawContent).toContain('  - [[team/archive/remote]]')
+    expect(updatedSource?.rawContent).toContain('[[team/archive/remote|Remote]]')
+    expect(updatedSource?.relationships.find((relationship) => relationship.key === 'mentions')?.values).toContainEqual(
+      expect.objectContaining({
+        id: 'archive/remote.md',
+        ref: '[[team/archive/remote]]',
+        title: 'Remote',
+      }),
+    )
+    expect(result.writes).toEqual([
+      {
+        kind: 'moveNote',
+        path: 'projects/remote.md',
+        toPath: 'archive/remote.md',
+      },
+      {
+        content: updatedSource?.rawContent,
+        kind: 'saveNote',
+        path: 'source.md',
+      },
+    ])
   })
 })
 
