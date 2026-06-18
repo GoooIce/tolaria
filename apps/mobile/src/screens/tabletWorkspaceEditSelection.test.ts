@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { workspaceScenarioForId } from '../fixtures/workspaceFixtures'
 import { applyMobileWorkspaceEditWithWrites, type MobileWorkspaceEdit } from '../workspace/mobileWorkspaceEditing'
+import type { MobileNote } from '../workspace/mobileWorkspaceModel'
 import { selectAfterWorkspaceEdit } from './tabletWorkspaceEditSelection'
 import type { TabletSidebarSelection } from './tabletWorkspaceNavigation'
 
@@ -34,6 +35,78 @@ describe('tablet workspace edit selection', () => {
     })
 
     expect(selectedNoteIds).toEqual(['Tolaria/Mobile UI/brand-new-target.md'])
+  })
+
+  it('selects the next rendered Inbox note after organizing the selected note', () => {
+    const base = workspaceScenarioForId('default')
+    const first = inboxNote(base.notes[0], {
+      id: 'Inbox/first.md',
+      title: 'First inbox note',
+    })
+    const second = inboxNote(base.notes[1], {
+      id: 'Inbox/second.md',
+      title: 'Second inbox note',
+    })
+    const snapshot = {
+      ...base,
+      allNotes: [first, second],
+      notes: [first, second],
+      selectedNoteId: first.id,
+    }
+    const edit: MobileWorkspaceEdit = {
+      noteId: first.id,
+      organized: true,
+      type: 'setOrganized',
+    }
+    const result = applyMobileWorkspaceEditWithWrites(snapshot, edit)
+    const selectedNoteIds: Array<string | null> = []
+
+    selectAfterWorkspaceEdit({
+      edit,
+      navigation: inertNavigation(),
+      result,
+      setSelectedNoteId: (noteId) => selectedNoteIds.push(noteId),
+    })
+
+    expect(selectedNoteIds).toEqual([second.id])
+  })
+
+  it('keeps non-Inbox organize selection unchanged', () => {
+    const base = workspaceScenarioForId('default')
+    const first = inboxNote(base.notes[0], {
+      id: 'Inbox/first.md',
+      title: 'First inbox note',
+    })
+    const snapshot = {
+      ...base,
+      allNotes: [first],
+      notes: [first],
+      selectedNoteId: first.id,
+    }
+    const edit: MobileWorkspaceEdit = {
+      noteId: first.id,
+      organized: true,
+      type: 'setOrganized',
+    }
+    const result = applyMobileWorkspaceEditWithWrites(snapshot, edit)
+    const selectedNoteIds: Array<string | null> = []
+
+    selectAfterWorkspaceEdit({
+      edit,
+      navigation: inertNavigation({
+        sidebarSelection: {
+          count: '1',
+          id: 'all-notes',
+          kind: 'item',
+          label: 'All Notes',
+          sectionId: 'primary',
+        },
+      }),
+      result,
+      setSelectedNoteId: (noteId) => selectedNoteIds.push(noteId),
+    })
+
+    expect(selectedNoteIds).toEqual([])
   })
 
   it('selects a newly created Type section', () => {
@@ -83,6 +156,18 @@ describe('tablet workspace edit selection', () => {
     expect(selectedDefault).toBe(true)
   })
 })
+
+function inboxNote(source: MobileNote, overrides: Pick<MobileNote, 'id' | 'title'>): MobileNote {
+  return {
+    ...source,
+    ...overrides,
+    archived: false,
+    favorite: false,
+    organized: false,
+    path: overrides.id,
+    rawContent: `# ${overrides.title}\n\nInbox body.\n`,
+  }
+}
 
 type InertNavigationForTest = {
   selectDefaultSidebarItem: () => void

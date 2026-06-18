@@ -13,7 +13,10 @@ import {
   mobileFolderPathContains,
   renamedFolderPath,
 } from '../workspace/mobileWorkspaceFolders'
-import type { TabletSidebarSelection } from './tabletWorkspaceNavigation'
+import {
+  notesForSidebarSelection,
+  type TabletSidebarSelection,
+} from './tabletWorkspaceNavigation'
 
 type FolderEdit = Extract<MobileWorkspaceEdit, { type: 'createFolder' | 'deleteFolder' | 'renameFolder' }>
 type PathEdit = Extract<MobileWorkspaceEdit, { type: 'moveNoteToFolder' | 'renameNoteFile' }>
@@ -48,6 +51,7 @@ export function selectAfterWorkspaceEdit({
   const context = { edit, navigation, result, setSelectedNoteId }
 
   if (selectAfterCreatedNote(context)) return
+  if (selectAfterInboxOrganized(context)) return
   if (selectAfterViewEdit(context)) return
   if (selectAfterTypeEdit(context)) return
   if (selectAfterFolderMutation(context)) return
@@ -58,6 +62,24 @@ function selectAfterCreatedNote({ edit, result, setSelectedNoteId }: EditSelecti
   if (edit.type !== 'createNote' && edit.type !== 'createRelationshipTarget') return false
   if (result.snapshot.selectedNoteId) setSelectedNoteId(result.snapshot.selectedNoteId)
   return true
+}
+
+function selectAfterInboxOrganized({ edit, navigation, result, setSelectedNoteId }: EditSelectionContext) {
+  if (!isOrganizedInboxEdit(edit, navigation.sidebarSelection)) return false
+
+  const remainingInboxNotes = notesForSidebarSelection(result.snapshot, navigation.sidebarSelection)
+  setSelectedNoteId(remainingInboxNotes[0]?.id ?? null)
+  return true
+}
+
+function isOrganizedInboxEdit(edit: MobileWorkspaceEdit, selection: TabletSidebarSelection) {
+  if (edit.type !== 'setOrganized') return false
+  if (!edit.organized) return false
+  return isSelectedInbox(selection)
+}
+
+function isSelectedInbox(selection: TabletSidebarSelection) {
+  return selection.kind === 'item' && selection.sectionId === 'primary' && selection.id === 'inbox'
 }
 
 function selectAfterViewEdit({ edit, navigation, result }: EditSelectionContext) {
