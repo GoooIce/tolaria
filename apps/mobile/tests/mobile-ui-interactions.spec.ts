@@ -83,7 +83,7 @@ test.describe('mobile UI lab interactions', () => {
     test.skip(testInfo.project.name !== 'tablet-landscape', 'Saved-view ordering is exercised in the full-width tablet layout.')
 
     await page.goto('/')
-    await createSavedViewFromSidebar(page)
+    await createSavedViewFromSidebar(page, { displayPropertyQuery: 'bel', displayPropertyTestId: 'belongs-to' })
     await moveCreatedSavedView(page)
   })
 
@@ -453,18 +453,25 @@ async function navigatePhoneSwipeGestures(page: PageLike) {
 
 async function createSavedViewFromSidebar(
   page: PageLike,
-  options: { returnToInbox?: boolean } = {},
+  options: { displayPropertyQuery?: string; displayPropertyTestId?: string; returnToInbox?: boolean } = {},
 ) {
   await page.getByTestId('sidebar-section-create-views').click()
   await expect(page.getByTestId('workspace-create-view-name-input')).toBeVisible()
   await expect(page.getByTestId('workspace-create-view-name-input')).toHaveValue('')
   await expect(page.getByTestId('workspace-view-filter-value-input-0')).toHaveValue('')
   await page.getByTestId('workspace-view-filter-remove-0').click()
+  if (options.displayPropertyQuery && options.displayPropertyTestId) {
+    await page.getByTestId('workspace-view-property-search-input').fill(options.displayPropertyQuery)
+    await page.getByTestId(`workspace-view-property-option-${options.displayPropertyTestId}`).click()
+  }
   await page.getByTestId('workspace-create-view-name-input').fill('Mobile Inbox View')
   await page.getByTestId('workspace-action-sheet-createView').getByRole('button', { exact: true, name: 'Create' }).click()
   await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
   await expect(page.getByRole('button', { name: 'Mobile Inbox View' })).toBeVisible()
   await expect(page.getByTestId('note-list-toolbar-title')).toHaveText('Mobile Inbox View')
+  if (options.displayPropertyTestId) {
+    await expect(page.getByTestId('note-row-workflow-orchestration').getByText('LLM Workflow')).toBeVisible()
+  }
   if (options.returnToInbox) {
     await page.getByTestId('sidebar-item-inbox').click()
     await expect(page.getByTestId('note-list-toolbar-title')).toHaveText('Inbox')

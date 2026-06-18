@@ -413,7 +413,7 @@ function singleTextFieldConfig(props: MobileWorkspaceActionSheetProps) {
 
   if (props.action === 'createView') {
     return {
-      extraContent: viewFilterBuilder(props),
+      extraContent: editViewContent(props),
       inputLabel: mobileText('viewDialog.nameLabel'),
       inputPlaceholder: mobileText('viewDialog.namePlaceholder'),
       inputTestId: 'workspace-create-view-name-input',

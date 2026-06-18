@@ -376,6 +376,7 @@ function createWorkspaceActions({
     onCreateView: () => createView({
       applyEdit,
       closeAction,
+      displayProperties: readOnlyForm.viewDisplayProperties,
       filters: readOnlyForm.viewFilters,
       icon: readOnlyForm.viewIcon,
       name: readOnlyForm.viewName,
@@ -753,9 +754,11 @@ function openCreateView({
   setOpenAction: SetOpenAction
   updateReadOnlyForm: ReadOnlyFormUpdater
 }) {
+  updateReadOnlyForm('viewDisplayProperties', [])
   updateReadOnlyForm('viewFilters', createViewInitialFilters())
   updateReadOnlyForm('viewIcon', '')
   updateReadOnlyForm('viewName', '')
+  updateReadOnlyForm('viewPropertyQuery', '')
   updateReadOnlyForm('viewSort', '')
   updateReadOnlyForm('viewTone', null)
   setOpenAction('createView')
@@ -885,6 +888,7 @@ function createRelationshipTarget({
 function createView({
   applyEdit,
   closeAction,
+  displayProperties,
   filters,
   icon,
   name,
@@ -893,6 +897,7 @@ function createView({
 }: {
   applyEdit: (edit: MobileWorkspaceEdit) => void
   closeAction: () => void
+  displayProperties: string[]
   filters: MobileViewFilterGroup
   icon: string
   name: string
@@ -907,6 +912,7 @@ function createView({
       color: tone,
       filters,
       icon: normalizedOptionalIcon(icon),
+      listPropertiesDisplay: normalizedListPropertiesDisplay(displayProperties),
       name: trimmedName,
       sort: normalizedOptionalSort(sort),
     },
