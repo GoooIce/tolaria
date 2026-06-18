@@ -51,16 +51,7 @@ function titlePropertyPathHistoryEntry(
   const nextNote = nextPath ? noteByPath(nextSnapshot, nextPath) : null
   if (!previousNote || !nextNote || noteWritePath(previousNote) === noteWritePath(nextNote)) return null
 
-  return {
-    redoEdits: [
-      { filenameStem: filenameStem(nextNote), noteId: previousNote.id, type: 'renameNoteFile' },
-      ...contentRestoreEdits(previousSnapshot, nextSnapshot, previousNote, nextNote),
-    ],
-    undoEdits: [
-      { filenameStem: filenameStem(previousNote), noteId: nextNote.id, type: 'renameNoteFile' },
-      ...contentRestoreEdits(nextSnapshot, previousSnapshot, nextNote, previousNote),
-    ],
-  }
+  return renamedNoteContentHistoryEntry(previousSnapshot, nextSnapshot, previousNote, nextNote)
 }
 
 function contentRestoreEdits(
@@ -95,10 +86,12 @@ function movedNoteHistoryEntry(
     redoEdits: [
       ...restoreMissingFolderEdits(previousSnapshot, nextFolderPath),
       { folderPath: nextFolderPath, noteId: previousNote.id, type: 'moveNoteToFolder' },
+      ...contentRestoreEdits(previousSnapshot, nextSnapshot, previousNote, nextNote),
     ],
     undoEdits: [
       ...restoreMissingFolderEdits(nextSnapshot, previousFolderPath),
       { folderPath: previousFolderPath, noteId: nextNote.id, type: 'moveNoteToFolder' },
+      ...contentRestoreEdits(nextSnapshot, previousSnapshot, nextNote, previousNote),
     ],
   }
 }
@@ -113,9 +106,24 @@ function renamedNoteHistoryEntry(
   const nextNote = nextPath ? noteByPath(nextSnapshot, nextPath) : null
   if (!previousNote || !nextNote) return null
 
+  return renamedNoteContentHistoryEntry(previousSnapshot, nextSnapshot, previousNote, nextNote)
+}
+
+function renamedNoteContentHistoryEntry(
+  previousSnapshot: MobileWorkspaceSnapshot,
+  nextSnapshot: MobileWorkspaceSnapshot,
+  previousNote: MobileNote,
+  nextNote: MobileNote,
+): MobileWorkspaceHistoryEntry {
   return {
-    redoEdits: [{ filenameStem: filenameStem(nextNote), noteId: previousNote.id, type: 'renameNoteFile' }],
-    undoEdits: [{ filenameStem: filenameStem(previousNote), noteId: nextNote.id, type: 'renameNoteFile' }],
+    redoEdits: [
+      { filenameStem: filenameStem(nextNote), noteId: previousNote.id, type: 'renameNoteFile' },
+      ...contentRestoreEdits(previousSnapshot, nextSnapshot, previousNote, nextNote),
+    ],
+    undoEdits: [
+      { filenameStem: filenameStem(previousNote), noteId: nextNote.id, type: 'renameNoteFile' },
+      ...contentRestoreEdits(nextSnapshot, previousSnapshot, nextNote, previousNote),
+    ],
   }
 }
 

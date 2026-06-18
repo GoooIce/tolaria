@@ -192,27 +192,65 @@ describe('tablet workspace editing history', () => {
   })
 
   it('undoes and redoes note folder moves through path edits', () => {
-    const previousSnapshot = snapshotWithFolderPaths(['Tolaria/Mobile UI', 'Writing/Essays'])
-    const { redoneSnapshot, undoneSnapshot } = historyRoundTrip(previousSnapshot, {
-      folderPath: 'Writing/Essays',
-      noteId: 'workflow-orchestration',
-      type: 'moveNoteToFolder',
+    expectNotePathRoundTrip({
+      edit: {
+        folderPath: 'Writing/Essays',
+        noteId: 'workflow-orchestration',
+        type: 'moveNoteToFolder',
+      },
+      previousSnapshot: snapshotWithFolderPaths(['Tolaria/Mobile UI', 'Writing/Essays']),
+      redonePath: 'Writing/Essays/Workflow Orchestration Essay.md',
+      undonePath: 'Tolaria/Mobile UI/Workflow Orchestration Essay.md',
     })
-
-    expect(noteById(undoneSnapshot, 'workflow-orchestration').path).toBe('Tolaria/Mobile UI/Workflow Orchestration Essay.md')
-    expect(noteById(redoneSnapshot, 'workflow-orchestration').path).toBe('Writing/Essays/Workflow Orchestration Essay.md')
   })
 
   it('undoes and redoes path-backed note filename renames', () => {
-    const previousSnapshot = snapshotWithPathBackedSelectedNote()
-    const { redoneSnapshot, undoneSnapshot } = historyRoundTrip(previousSnapshot, {
-      filenameStem: 'workflow-manual',
+    expectNotePathRoundTrip({
+      edit: {
+        filenameStem: 'workflow-manual',
+        noteId: 'Tolaria/Mobile UI/Workflow Orchestration Essay.md',
+        type: 'renameNoteFile',
+      },
       noteId: 'Tolaria/Mobile UI/Workflow Orchestration Essay.md',
-      type: 'renameNoteFile',
+      previousSnapshot: snapshotWithPathBackedSelectedNote(),
+      redoneNoteId: 'Tolaria/Mobile UI/workflow-manual.md',
+      redonePath: 'Tolaria/Mobile UI/workflow-manual.md',
+      undonePath: 'Tolaria/Mobile UI/Workflow Orchestration Essay.md',
     })
+  })
 
-    expect(noteById(undoneSnapshot, 'Tolaria/Mobile UI/Workflow Orchestration Essay.md').path).toBe('Tolaria/Mobile UI/Workflow Orchestration Essay.md')
-    expect(noteById(redoneSnapshot, 'Tolaria/Mobile UI/workflow-manual.md').path).toBe('Tolaria/Mobile UI/workflow-manual.md')
+  it.each([
+    {
+      edit: {
+        filenameStem: 'manual-name',
+        noteId: 'workflow-orchestration',
+        type: 'renameNoteFile' as const,
+      },
+      label: 'filename renames',
+      redonePath: 'Tolaria/Mobile UI/manual-name.md',
+      redoneTargets: ['[[Tolaria/Mobile UI/manual-name]]', '[[Tolaria/Mobile UI/manual-name|Workflow]]'],
+    },
+    {
+      edit: {
+        folderPath: 'Writing/Essays',
+        noteId: 'workflow-orchestration',
+        type: 'moveNoteToFolder' as const,
+      },
+      label: 'folder moves',
+      previousSnapshot: { ...titleRenameHistorySnapshot(), folderPaths: ['Tolaria/Mobile UI', 'Writing/Essays'] },
+      redonePath: 'Writing/Essays/Workflow Orchestration Essay.md',
+      redoneTargets: [
+        '[[Writing/Essays/Workflow Orchestration Essay]]',
+        '[[Writing/Essays/Workflow Orchestration Essay|Workflow]]',
+      ],
+    },
+  ])('undoes and redoes $label with exact inbound wikilink content', ({ edit, previousSnapshot, redonePath, redoneTargets }) => {
+    expectExactWikilinkPathRoundTrip({
+      edit,
+      previousSnapshot: previousSnapshot ?? titleRenameHistorySnapshot(),
+      redonePath,
+      redoneTargets,
+    })
   })
 
   it('undoes and redoes title-property filename renames with inbound wikilinks', () => {
@@ -240,15 +278,16 @@ describe('tablet workspace editing history', () => {
   })
 
   it('undoes and redoes folder subtree renames through folder edits', () => {
-    const previousSnapshot = snapshotWithFolderPaths(['Tolaria', 'Tolaria/Mobile UI'])
-    const { redoneSnapshot, undoneSnapshot } = historyRoundTrip(previousSnapshot, {
-      folderPath: 'Tolaria',
-      name: 'Research',
-      type: 'renameFolder',
+    expectNotePathRoundTrip({
+      edit: {
+        folderPath: 'Tolaria',
+        name: 'Research',
+        type: 'renameFolder',
+      },
+      previousSnapshot: snapshotWithFolderPaths(['Tolaria', 'Tolaria/Mobile UI']),
+      redonePath: 'Research/Mobile UI/Workflow Orchestration Essay.md',
+      undonePath: 'Tolaria/Mobile UI/Workflow Orchestration Essay.md',
     })
-
-    expect(noteById(undoneSnapshot, 'workflow-orchestration').path).toBe('Tolaria/Mobile UI/Workflow Orchestration Essay.md')
-    expect(noteById(redoneSnapshot, 'workflow-orchestration').path).toBe('Research/Mobile UI/Workflow Orchestration Essay.md')
   })
 
   it('undoes and redoes primary note-list display property overrides', () => {
@@ -302,6 +341,53 @@ describe('tablet workspace editing history', () => {
   })
 })
 
+function expectExactWikilinkPathRoundTrip({
+  edit,
+  previousSnapshot,
+  redonePath,
+  redoneTargets,
+}: {
+  edit: MobileWorkspaceEdit
+  previousSnapshot: MobileWorkspaceSnapshot
+  redonePath: string
+  redoneTargets: string[]
+}) {
+  const { redoneSnapshot, undoneSnapshot } = expectNotePathRoundTrip({
+    edit,
+    previousSnapshot,
+    redonePath,
+    undonePath: 'Tolaria/Mobile UI/Workflow Orchestration Essay.md',
+  })
+
+  expect(noteById(undoneSnapshot, 'open-source-project').rawContent).toBe(pathHistoryRefContent())
+  for (const target of redoneTargets) {
+    expect(noteById(redoneSnapshot, 'open-source-project').rawContent).toContain(target)
+  }
+}
+
+function expectNotePathRoundTrip({
+  edit,
+  noteId = 'workflow-orchestration',
+  previousSnapshot,
+  redoneNoteId = noteId,
+  redonePath,
+  undonePath,
+}: {
+  edit: MobileWorkspaceEdit
+  noteId?: string
+  previousSnapshot: MobileWorkspaceSnapshot
+  redoneNoteId?: string
+  redonePath: string
+  undonePath: string
+}) {
+  const { redoneSnapshot, undoneSnapshot } = historyRoundTrip(previousSnapshot, edit)
+
+  expect(noteById(undoneSnapshot, noteId).path).toBe(undonePath)
+  expect(noteById(redoneSnapshot, redoneNoteId).path).toBe(redonePath)
+
+  return { redoneSnapshot, undoneSnapshot }
+}
+
 function snapshotWithEditableNote(overrides: Partial<MobileNote> & { id: string; rawContent: string }): MobileWorkspaceSnapshot {
   const base = workspaceScenarioForId('default')
   const notes = base.notes.map((note) => note.id === overrides.id ? { ...note, ...overrides } : note)
@@ -350,7 +436,7 @@ function titleRenameHistorySnapshot(): MobileWorkspaceSnapshot {
   }
   const ref = {
     ...noteById(base, 'open-source-project'),
-    rawContent: '# Ref\n\n[[Workflow Orchestration Essay]] and [[Tolaria/Mobile UI/Workflow Orchestration Essay|Workflow]]\n',
+    rawContent: pathHistoryRefContent(),
   }
 
   return {
@@ -359,6 +445,10 @@ function titleRenameHistorySnapshot(): MobileWorkspaceSnapshot {
     notes: [source, ref],
     selectedNoteId: source.id,
   }
+}
+
+function pathHistoryRefContent(): string {
+  return '# Ref\n\n[[Workflow Orchestration Essay]] and [[Tolaria/Mobile UI/Workflow Orchestration Essay|Workflow]]\n'
 }
 
 function snapshotWithEditableNotes(notesById: Array<[string, string]>): MobileWorkspaceSnapshot {
