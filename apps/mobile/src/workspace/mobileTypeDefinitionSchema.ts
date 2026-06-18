@@ -35,6 +35,7 @@ type AddTypeSchemaRelationshipRefInput = {
   key: RelationshipKey
   notes: MobileNote[]
   relationships: MobileTypeSchemaRelationship[]
+  sourceNote?: MobileNote | null
   targetRef?: WikilinkRef
   targetTitle: FormValueText
 }
@@ -100,13 +101,14 @@ export function addTypeSchemaRelationshipRef({
   key,
   notes,
   relationships,
+  sourceNote = null,
   targetRef,
   targetTitle,
 }: AddTypeSchemaRelationshipRefInput): MobileTypeSchemaRelationship[] {
-  const relationshipKey = normalizeRelationshipKey(key)
+  const relationshipKey = canonicalSchemaKey(normalizeRelationshipKey(key))
   if (!relationshipKey) return relationships
 
-  const ref = normalizedRelationshipRef(targetRef) ?? relationshipRefFromInput(targetTitle, notes)
+  const ref = normalizedRelationshipRef(targetRef) ?? relationshipRefFromInput(targetTitle, notes, sourceNote)
   return upsertRelationship(relationships, relationshipKey, ref)
 }
 
@@ -120,12 +122,13 @@ export function removeTypeSchemaRelationshipAt(
 export function typeSchemaRelationshipTargetSuggestions(
   notes: MobileNote[],
   query: QueryText,
+  sourceNote?: MobileNote | null,
 ): MobileTypeSchemaRelationshipTargetSuggestion[] {
   return mobileRelationshipTargetSuggestions(notes, query).map((note) => ({
     label: note.title,
     meta: note.path ?? note.id,
     testId: note.id,
-    value: `[[${mobileWikilinkTargetForNote(note)}]]`,
+    value: `[[${mobileWikilinkTargetForNote(note, sourceNote)}]]`,
   }))
 }
 
@@ -250,13 +253,17 @@ function upsertRelationship(
   })
 }
 
-function relationshipRefFromInput(input: FormValueText, notes: MobileNote[]): WikilinkRef | null {
+function relationshipRefFromInput(
+  input: FormValueText,
+  notes: MobileNote[],
+  sourceNote: MobileNote | null,
+): WikilinkRef | null {
   const trimmedInput = input.trim()
   if (!trimmedInput) return null
   if (parseMobileWikilink(trimmedInput)) return trimmedInput
 
   const note = mobileNoteForWikilinkTarget(notes, trimmedInput)
-  return `[[${note ? mobileWikilinkTargetForNote(note) : trimmedInput}]]`
+  return `[[${note ? mobileWikilinkTargetForNote(note, sourceNote) : trimmedInput}]]`
 }
 
 function normalizedRelationshipRef(ref: WikilinkRef | undefined): WikilinkRef | null {

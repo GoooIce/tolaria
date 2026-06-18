@@ -28,8 +28,6 @@ import type {
 import { isMobileMarkdownNote } from '../workspace/mobileNoteFilters'
 import { canMoveMobileSavedView, evaluateMobileSavedView } from '../workspace/mobileSavedViews'
 import {
-  addTypeSchemaProperty,
-  addTypeSchemaRelationshipRef,
   removeTypeSchemaPropertyAt,
   removeTypeSchemaRelationshipAt,
   typeDefinitionSchemaPatch,
@@ -71,6 +69,11 @@ import {
   openPrimaryListProperties,
   primaryNoteListWorkspaceActions,
 } from './tabletWorkspacePrimaryNoteListActions'
+import {
+  addTypeSchemaPropertyFormValue,
+  addTypeSchemaRelationshipFormValue,
+  typeSchemaSourceNote,
+} from './tabletWorkspaceTypeSchemaActions'
 import { createViewInitialFilters } from './tabletWorkspaceViewHelpers'
 
 const emptyReadOnlyForm: TabletReadOnlyForm = {
@@ -537,6 +540,7 @@ function typeSectionWorkspaceActions({
   workspaceSnapshot,
 }: Pick<WorkspaceActionsContext, 'applyEdit' | 'closeAction' | 'readOnlyForm' | 'updateReadOnlyForm' | 'workspaceSnapshot'>) {
   const notes = workspaceNotes(workspaceSnapshot)
+  const sourceNote = typeSchemaSourceNote(workspaceSnapshot, readOnlyForm.typeName)
 
   return {
     canDeleteType: Boolean(workspaceSnapshot.typeDefinitions?.[readOnlyForm.typeName]),
@@ -557,7 +561,12 @@ function typeSectionWorkspaceActions({
     onTypeSchemaPropertyNameChange: (value: string) => updateReadOnlyForm('typeSchemaPropertyName', value),
     onTypeSchemaPropertyRemove: (index: number) => updateReadOnlyForm('typeSchemaProperties', removeTypeSchemaPropertyAt(readOnlyForm.typeSchemaProperties, index)),
     onTypeSchemaPropertyValueChange: (value: string) => updateReadOnlyForm('typeSchemaPropertyValue', value),
-    onTypeSchemaRelationshipAdd: () => addTypeSchemaRelationshipFormValue({ form: readOnlyForm, notes, updateReadOnlyForm }),
+    onTypeSchemaRelationshipAdd: () => addTypeSchemaRelationshipFormValue({
+      form: readOnlyForm,
+      notes,
+      sourceNote,
+      updateReadOnlyForm,
+    }),
     onTypeSchemaRelationshipNameChange: (value: string) => updateReadOnlyForm('typeSchemaRelationshipName', value),
     onTypeSchemaRelationshipRemove: (index: number) => updateReadOnlyForm('typeSchemaRelationships', removeTypeSchemaRelationshipAt(readOnlyForm.typeSchemaRelationships, index)),
     onTypeSchemaRelationshipTargetSelect: (title: string, ref: string) => {
@@ -579,50 +588,17 @@ function typeSectionWorkspaceActions({
       readOnlyForm.typePropertyQuery,
       workspaceSnapshot.typeDefinitions,
     ),
-    typeRelationshipTargetOptions: typeSchemaRelationshipTargetSuggestions(notes, readOnlyForm.typeSchemaRelationshipTarget),
+    typeRelationshipTargetOptions: typeSchemaRelationshipTargetSuggestions(
+      notes,
+      readOnlyForm.typeSchemaRelationshipTarget,
+      sourceNote,
+    ),
     typeSortPropertyOptions: mobileSortablePropertySuggestions(
       editableTypePropertyNotes(readOnlyForm, workspaceSnapshot),
       '',
       workspaceSnapshot.typeDefinitions,
     ),
   }
-}
-
-function addTypeSchemaPropertyFormValue({
-  form,
-  updateReadOnlyForm,
-}: {
-  form: TabletReadOnlyForm
-  updateReadOnlyForm: ReadOnlyFormUpdater
-}) {
-  updateReadOnlyForm('typeSchemaProperties', addTypeSchemaProperty(
-    form.typeSchemaProperties,
-    form.typeSchemaPropertyName,
-    form.typeSchemaPropertyValue,
-  ))
-  updateReadOnlyForm('typeSchemaPropertyName', '')
-  updateReadOnlyForm('typeSchemaPropertyValue', '')
-}
-
-function addTypeSchemaRelationshipFormValue({
-  form,
-  notes,
-  updateReadOnlyForm,
-}: {
-  form: TabletReadOnlyForm
-  notes: MobileNote[]
-  updateReadOnlyForm: ReadOnlyFormUpdater
-}) {
-  updateReadOnlyForm('typeSchemaRelationships', addTypeSchemaRelationshipRef({
-    key: form.typeSchemaRelationshipName,
-    notes,
-    relationships: form.typeSchemaRelationships,
-    targetRef: form.typeSchemaRelationshipTargetRef,
-    targetTitle: form.typeSchemaRelationshipTarget,
-  }))
-  updateReadOnlyForm('typeSchemaRelationshipName', '')
-  updateReadOnlyForm('typeSchemaRelationshipTargetRef', '')
-  updateReadOnlyForm('typeSchemaRelationshipTarget', '')
 }
 
 function propertyWorkspaceActions({

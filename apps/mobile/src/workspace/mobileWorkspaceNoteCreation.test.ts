@@ -166,6 +166,38 @@ describe('mobile note creation parity', () => {
     ])
   })
 
+  it('creates same-workspace relationship target refs without adding the workspace alias prefix', () => {
+    const base = workspaceScenarioForId('default')
+    const sourceNote = {
+      ...base.notes[0],
+      rawContent: '# Workflow Orchestration Essay\n\nSource body.\n',
+      workspaceAlias: 'laputa',
+    }
+    const result = applyMobileWorkspaceEditWithWrites({
+      ...base,
+      allNotes: [sourceNote, ...base.notes.slice(1)],
+      notes: [sourceNote, ...base.notes.slice(1)],
+      source: {
+        alias: 'laputa',
+        kind: 'localVault',
+        label: 'Laputa',
+        totalNotes: base.notes.length,
+        visibleNotes: base.notes.length,
+      },
+    }, {
+      key: 'Related to',
+      sourceNoteId: sourceNote.id,
+      targetTitle: 'New Dependency',
+      type: 'createRelationshipTarget',
+    })
+    const target = result.snapshot.allNotes?.find((note) => note.path === 'Tolaria/Mobile UI/new-dependency.md')
+    const updatedSource = result.snapshot.allNotes?.find((note) => note.id === sourceNote.id)
+
+    expect(target).toMatchObject({ workspaceAlias: 'laputa' })
+    expect(updatedSource?.rawContent).toContain('related_to:\n  - "[[Tolaria/Mobile UI/new-dependency]]"')
+    expect(updatedSource?.rawContent).not.toContain('[[laputa/Tolaria/Mobile UI/new-dependency]]')
+  })
+
   it('creates relationship targets with the source Type relationship schema defaults', () => {
     expectSchemaBackedRelationshipTarget(
       applyMobileWorkspaceEditWithWrites(relationshipTargetSchemaSnapshot(), {

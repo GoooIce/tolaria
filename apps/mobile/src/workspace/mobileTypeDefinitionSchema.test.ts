@@ -88,6 +88,57 @@ describe('mobile type definition schema helpers', () => {
     ])
   })
 
+  it('formats type schema relationship refs relative to the source Type document workspace', () => {
+    const base = workspaceScenarioForId('default')
+    const sourceType = {
+      ...base.notes[0],
+      path: 'types/project.md',
+      title: 'Project',
+      type: 'Type',
+      workspace: 'Personal',
+      workspaceAlias: 'personal',
+    }
+    const remoteTarget = {
+      ...base.notes[1],
+      id: 'team/projects/alpha.md',
+      path: 'projects/alpha.md',
+      title: 'Alpha',
+      workspace: 'Team',
+      workspaceAlias: 'team',
+    }
+    const sameWorkspaceTarget = {
+      ...base.notes[2],
+      id: 'personal/projects/beta.md',
+      path: 'projects/beta.md',
+      title: 'Beta',
+      workspace: 'Personal',
+      workspaceAlias: 'personal',
+    }
+    const notes = [sourceType, remoteTarget, sameWorkspaceTarget]
+
+    expect(typeSchemaRelationshipTargetSuggestions(notes, 'Alpha', sourceType)).toEqual([
+      expect.objectContaining({
+        label: 'Alpha',
+        value: '[[team/projects/alpha]]',
+      }),
+    ])
+    expect(typeSchemaRelationshipTargetSuggestions(notes, 'Beta', sourceType)).toEqual([
+      expect.objectContaining({
+        label: 'Beta',
+        value: '[[projects/beta]]',
+      }),
+    ])
+    expect(addTypeSchemaRelationshipRef({
+      key: 'depends on',
+      notes,
+      relationships: [],
+      sourceNote: sourceType,
+      targetTitle: 'Alpha',
+    })).toEqual([
+      { key: 'depends_on', refs: ['[[team/projects/alpha]]'] },
+    ])
+  })
+
   it('uses selected type relationship refs when titles are ambiguous', () => {
     const base = workspaceScenarioForId('default')
     const notes: MobileNote[] = [

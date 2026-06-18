@@ -453,7 +453,8 @@ function createMobileNote(
       title: trimmedTitle,
       type,
       typeTone: 'gray',
-      workspace: snapshot.source?.label ?? 'Tolaria Vault',
+      workspace: snapshot.source?.label ?? snapshot.notes[0]?.workspace ?? 'Tolaria Vault',
+      workspaceAlias: snapshot.source?.alias ?? snapshot.notes[0]?.workspaceAlias ?? null,
     },
     rawContent,
     typeDefinitions: snapshot.typeDefinitions,
@@ -840,6 +841,7 @@ function createRelationshipTarget(
 
   const nextSnapshot = snapshotWithRelationshipTargetRef({
     relationshipKey,
+    sourceNote,
     sourceNoteId: sourceNote.id,
     targetNote,
     targetSnapshot,
@@ -861,16 +863,18 @@ function createRelationshipTarget(
 
 function snapshotWithRelationshipTargetRef({
   relationshipKey,
+  sourceNote,
   sourceNoteId,
   targetNote,
   targetSnapshot,
 }: {
   relationshipKey: FrontmatterKey
+  sourceNote: MobileNote
   sourceNoteId: NoteId
   targetNote: MobileNote
   targetSnapshot: MobileWorkspaceSnapshot
 }): MobileWorkspaceSnapshot {
-  const targetRef = `[[${wikilinkTargetForNote(targetNote)}]]`
+  const targetRef = `[[${wikilinkTargetForNote(targetNote, sourceNote)}]]`
   const context = {
     relationshipKey,
     sourceNoteId,
