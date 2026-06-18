@@ -120,18 +120,18 @@ function workspacePersistenceProbeRootUri(): string | null {
 }
 
 function workspacePersistenceProbeWrites(seedSnapshot: MobileWorkspaceSnapshot) {
-  const relationshipTargetWrites = applyMobileWorkspaceEditWithWrites(seedSnapshot, {
-    key: 'related_to',
-    sourceNoteId: relationshipSourcePath,
-    targetTitle: 'Native Related Target',
-    type: 'createRelationshipTarget',
-  }).writes
-  const typeRenameWrites = applyMobileWorkspaceEditWithWrites(seedSnapshot, {
-    nextTypeName: renamedTypeName,
-    type: 'renameTypeDefinition',
-    typeName: renamedTypeSourceName,
-  }).writes
+  return [
+    ...workspacePersistenceNoteWrites(),
+    ...workspacePersistenceViewWrites(),
+    workspacePersistenceConfigWrite(),
+    ...workspacePersistenceFolderWrites(),
+    ...workspacePersistenceTypeWrites(),
+    ...workspacePersistenceRelationshipTargetWrites(seedSnapshot),
+    ...workspacePersistenceTypeRenameWrites(seedSnapshot),
+  ]
+}
 
+function workspacePersistenceNoteWrites() {
   return [
     {
       content: mobileCreatedNoteContent(),
@@ -148,6 +148,11 @@ function workspacePersistenceProbeWrites(seedSnapshot: MobileWorkspaceSnapshot) 
       path: 'Writing/Seed.md',
       toPath: movedNotePath,
     },
+  ]
+}
+
+function workspacePersistenceViewWrites() {
+  return [
     {
       content: mobilePersistenceViewContent(),
       kind: 'saveView' as const,
@@ -157,6 +162,21 @@ function workspacePersistenceProbeWrites(seedSnapshot: MobileWorkspaceSnapshot) 
       kind: 'deleteView' as const,
       path: 'views/old-native-proof.yml',
     },
+  ]
+}
+
+function workspacePersistenceConfigWrite() {
+  return {
+    config: {
+      allNotes: { noteListProperties: ['status', 'belongs_to'] },
+      inbox: { explicitOrganization: true, noteListProperties: ['tags'] },
+    },
+    kind: 'saveVaultConfig' as const,
+  }
+}
+
+function workspacePersistenceFolderWrites() {
+  return [
     {
       kind: 'renameFolder' as const,
       path: 'Folders/Queue',
@@ -170,6 +190,11 @@ function workspacePersistenceProbeWrites(seedSnapshot: MobileWorkspaceSnapshot) 
       kind: 'deleteFolder' as const,
       path: 'Scratch',
     },
+  ]
+}
+
+function workspacePersistenceTypeWrites() {
+  return [
     {
       content: typeDefinitionContent(typeName, 'green'),
       kind: 'createNote' as const,
@@ -179,9 +204,24 @@ function workspacePersistenceProbeWrites(seedSnapshot: MobileWorkspaceSnapshot) 
       kind: 'deleteNote' as const,
       path: `Types/${oldTypeName}.md`,
     },
-    ...relationshipTargetWrites,
-    ...typeRenameWrites,
   ]
+}
+
+function workspacePersistenceRelationshipTargetWrites(seedSnapshot: MobileWorkspaceSnapshot) {
+  return applyMobileWorkspaceEditWithWrites(seedSnapshot, {
+    key: 'related_to',
+    sourceNoteId: relationshipSourcePath,
+    targetTitle: 'Native Related Target',
+    type: 'createRelationshipTarget',
+  }).writes
+}
+
+function workspacePersistenceTypeRenameWrites(seedSnapshot: MobileWorkspaceSnapshot) {
+  return applyMobileWorkspaceEditWithWrites(seedSnapshot, {
+    nextTypeName: renamedTypeName,
+    type: 'renameTypeDefinition',
+    typeName: renamedTypeSourceName,
+  }).writes
 }
 
 function seedWorkspacePersistenceProbeWrites() {
@@ -252,6 +292,7 @@ function workspacePersistenceProof(
     renamedTypeSchemaRefsHydrated: renamedTypeSchemaRefsHydrated(snapshot),
     savedViewHydrated: viewExists(snapshot, 'Mobile Persistence'),
     typeDefinitionHydrated: snapshot.typeDefinitions?.[typeName]?.tone === 'green',
+    vaultConfigHydrated: vaultConfigHydrated(snapshot),
   }
 }
 
@@ -270,6 +311,16 @@ function typeDefinitionExists(snapshot: MobileWorkspaceSnapshot, name: string) {
 
 function viewExists(snapshot: MobileWorkspaceSnapshot, name: string) {
   return snapshot.views?.some((view) => view.definition.name === name) === true
+}
+
+function vaultConfigHydrated(snapshot: MobileWorkspaceSnapshot) {
+  return joinedProperties(snapshot.noteListPropertyOverrides?.allNotes) === 'status|belongs_to'
+    && joinedProperties(snapshot.noteListPropertyOverrides?.inbox) === 'tags'
+    && snapshot.vaultConfig?.inbox?.explicitOrganization === true
+}
+
+function joinedProperties(properties: string[] | undefined) {
+  return properties?.join('|') ?? ''
 }
 
 function folderPathStartsWith(snapshot: MobileWorkspaceSnapshot, pathPrefix: string) {

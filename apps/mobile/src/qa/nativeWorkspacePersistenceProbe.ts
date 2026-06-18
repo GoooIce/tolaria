@@ -16,6 +16,7 @@ export type NativeWorkspacePersistenceProof = {
   renamedTypeSchemaRefsHydrated: boolean
   savedViewHydrated: boolean
   typeDefinitionHydrated: boolean
+  vaultConfigHydrated: boolean
 }
 
 export type NativeWorkspacePersistenceAssertionFailure = {
@@ -68,6 +69,7 @@ export function assertNativeWorkspacePersistenceProofs(
     proofFailure(latest.renamedTypeDefinitionHydrated, 'workspace.persistence.renameType', 'Renamed Type documents rehydrate from reducer-generated native writes'),
     proofFailure(latest.renamedTypeAssignedNoteHydrated, 'workspace.persistence.renameType.assignedNote', 'Assigned notes rehydrate with renamed Type frontmatter and retargeted links'),
     proofFailure(latest.renamedTypeSchemaRefsHydrated, 'workspace.persistence.renameType.schemaRefs', 'Type schema relationship refs rehydrate with renamed Type wikilinks'),
+    proofFailure(latest.vaultConfigHydrated, 'workspace.persistence.vaultConfig', 'Primary note-list config rehydrates from native vault-scoped config storage'),
   ].filter((failure): failure is NativeWorkspacePersistenceAssertionFailure => failure !== null)
 }
 
@@ -110,6 +112,7 @@ function parsedWorkspacePersistenceProof(value: unknown): NativeWorkspacePersist
     renamedTypeSchemaRefsHydrated: value.renamedTypeSchemaRefsHydrated,
     savedViewHydrated: value.savedViewHydrated,
     typeDefinitionHydrated: value.typeDefinitionHydrated,
+    vaultConfigHydrated: value.vaultConfigHydrated,
   }
 }
 
@@ -135,6 +138,7 @@ const workspacePersistenceProofKeys = [
   'renamedTypeSchemaRefsHydrated',
   'savedViewHydrated',
   'typeDefinitionHydrated',
+  'vaultConfigHydrated',
 ] satisfies Array<keyof NativeWorkspacePersistenceProof>
 
 function proofFailure(

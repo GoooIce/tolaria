@@ -54,6 +54,17 @@ describe('native workspace persistence probe', () => {
     ])
   })
 
+  it('reports incomplete vault config persistence proofs', () => {
+    const proof = {
+      ...passingWorkspaceProof(),
+      vaultConfigHydrated: false,
+    }
+
+    expect(assertNativeWorkspacePersistenceProofs([proof]).map((failure) => failure.id)).toEqual([
+      'workspace.persistence.vaultConfig',
+    ])
+  })
+
   it('ignores malformed and incomplete proof lines', () => {
     const logText = [
       'TOLARIA_MOBILE_WORKSPACE_PERSISTENCE_PROBE not-json',
@@ -83,5 +94,6 @@ function passingWorkspaceProof(): NativeWorkspacePersistenceProof {
     renamedTypeSchemaRefsHydrated: true,
     savedViewHydrated: true,
     typeDefinitionHydrated: true,
+    vaultConfigHydrated: true,
   }
 }
