@@ -703,13 +703,14 @@ function rebuildSnapshot(
   notes: MobileNote[],
   allNotes = notes,
 ): MobileWorkspaceSnapshot {
+  const derivableAllNotes = snapshot.allNotes ? notesWithDetailedNotes(allNotes, notes) : allNotes
   const derivedById = new Map(
-    allNotes
+    derivableAllNotes
       .map((note) => [note.id, deriveMobileNote(note, snapshot.typeDefinitions)] as const)
       .filter((entry): entry is readonly [NoteId, DerivedNote] => entry[1] !== null),
   )
-  const relationshipTargets = allNotes.map((note) => derivedById.get(note.id)?.note ?? note)
-  const resolvedAllNotes = allNotes.map((note) => {
+  const relationshipTargets = derivableAllNotes.map((note) => derivedById.get(note.id)?.note ?? note)
+  const resolvedAllNotes = derivableAllNotes.map((note) => {
     const derived = derivedById.get(note.id)
     if (!derived) return note
 
@@ -738,6 +739,11 @@ function rebuildSnapshot(
       views: snapshot.views,
     }),
   }
+}
+
+function notesWithDetailedNotes(notes: MobileNote[], detailedNotes: MobileNote[]): MobileNote[] {
+  const detailedById = new Map(detailedNotes.map((note) => [note.id, note]))
+  return notes.map((note) => detailedById.get(note.id) ?? note)
 }
 
 function deriveMobileNote(note: MobileNote, typeDefinitions?: MobileTypeDefinitions): DerivedNote | null {

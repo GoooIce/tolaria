@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { workspaceScenarioForId } from '../fixtures/workspaceFixtures'
+import { buildLocalVaultWorkspaceSnapshot } from './localVaultSnapshot'
 import type { MobileNote } from './mobileWorkspaceModel'
 import {
   applyMobileWorkspaceEdit,
@@ -185,6 +186,37 @@ describe('mobile note creation parity', () => {
     ])
   })
 
+  it('persists source relationship refs from local-vault relationship target creation', () => {
+    const snapshot = buildLocalVaultWorkspaceSnapshot({
+      files: [
+        localVaultFile('Relationships/Source.md', [
+          '---',
+          'type: Essay',
+          'status: Draft',
+          '---',
+          '# Relationship Source',
+          '',
+          'Create a relationship target from this note.',
+          '',
+        ].join('\n')),
+      ],
+      vaultLabel: 'Tolaria Vault',
+      vaultPath: '/tmp/tolaria-vault',
+    })
+    const result = applyMobileWorkspaceEditWithWrites(snapshot, {
+      key: 'related_to',
+      sourceNoteId: 'Relationships/Source.md',
+      targetTitle: 'Native Related Target',
+      type: 'createRelationshipTarget',
+    })
+
+    expect(result.writes).toContainEqual({
+      content: expect.stringContaining('related_to:\n  - "[[Relationships/native-related-target]]"'),
+      kind: 'saveNote',
+      path: 'Relationships/Source.md',
+    })
+  })
+
   it('creates same-workspace relationship target refs without adding the workspace alias prefix', () => {
     const base = workspaceScenarioForId('default')
     const sourceNote = {
@@ -285,6 +317,17 @@ describe('mobile note creation parity', () => {
     expect(result.snapshot.selectedNoteId).toBe(sourceNote.id)
   })
 })
+
+function localVaultFile(relativePath: string, content: string) {
+  return {
+    absolutePath: `/tmp/tolaria-vault/${relativePath}`,
+    content,
+    createdAt: null,
+    modifiedAt: null,
+    relativePath,
+    size: content.length,
+  }
+}
 
 function relationshipTargetSchemaSnapshot() {
   const base = workspaceScenarioForId('default')

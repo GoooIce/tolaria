@@ -19,6 +19,8 @@ const createdNotePath = 'Writing/Drafts/Mobile Created.md'
 const movedNotePath = 'Research/Seed.md'
 const oldTypeName = 'Retired Proof'
 const oldViewName = 'Old Native Proof'
+const relationshipSourcePath = 'Relationships/Source.md'
+const relationshipTargetPath = 'Relationships/native-related-target.md'
 const renamedTypeAssignedNotePath = 'Writing/Type Rename Assigned.md'
 const renamedTypeName = 'Rename Target'
 const renamedTypePath = 'rename-target.md'
@@ -87,9 +89,14 @@ async function logWorkspacePersistenceProof(
   const renamedAssignedContent = renamedAssignedNote
     ? await baseRepository.readNoteContent(renamedAssignedNote, request)
     : null
+  const relationshipSource = noteByPath(snapshot, relationshipSourcePath)
+  const relationshipSourceContent = relationshipSource
+    ? await baseRepository.readNoteContent(relationshipSource, request)
+    : null
 
   console.info(nativeWorkspacePersistenceLogLine(workspacePersistenceProof(snapshot, {
     movedContent,
+    relationshipSourceContent,
     renamedAssignedContent,
   })))
 }
@@ -113,6 +120,12 @@ function workspacePersistenceProbeRootUri(): string | null {
 }
 
 function workspacePersistenceProbeWrites(seedSnapshot: MobileWorkspaceSnapshot) {
+  const relationshipTargetWrites = applyMobileWorkspaceEditWithWrites(seedSnapshot, {
+    key: 'related_to',
+    sourceNoteId: relationshipSourcePath,
+    targetTitle: 'Native Related Target',
+    type: 'createRelationshipTarget',
+  }).writes
   const typeRenameWrites = applyMobileWorkspaceEditWithWrites(seedSnapshot, {
     nextTypeName: renamedTypeName,
     type: 'renameTypeDefinition',
@@ -166,6 +179,7 @@ function workspacePersistenceProbeWrites(seedSnapshot: MobileWorkspaceSnapshot) 
       kind: 'deleteNote' as const,
       path: `Types/${oldTypeName}.md`,
     },
+    ...relationshipTargetWrites,
     ...typeRenameWrites,
   ]
 }
@@ -198,6 +212,11 @@ function seedWorkspacePersistenceProbeWrites() {
       path: renamedTypeSourcePath,
     },
     {
+      content: relationshipSourceContent(),
+      kind: 'createNote' as const,
+      path: relationshipSourcePath,
+    },
+    {
       content: renamedTypeSchemaCarrierContent(),
       kind: 'createNote' as const,
       path: 'schema-carrier.md',
@@ -214,6 +233,7 @@ function workspacePersistenceProof(
   snapshot: MobileWorkspaceSnapshot,
   content: {
     movedContent: string | null
+    relationshipSourceContent: string | null
     renamedAssignedContent: string | null
   },
 ): NativeWorkspacePersistenceProof {
@@ -225,6 +245,8 @@ function workspacePersistenceProof(
     folderRenameApplied: folderRenameApplied(snapshot),
     movedNoteContentPreserved: movedContentPreserved(content.movedContent),
     persistedToNativeRepository: snapshot.source?.kind === 'localVault',
+    relationshipSourceRefHydrated: relationshipSourceRefHydrated(content.relationshipSourceContent),
+    relationshipTargetHydrated: snapshotContainsNotePath(snapshot, relationshipTargetPath),
     renamedTypeAssignedNoteHydrated: renamedTypeAssignedNoteHydrated(snapshot, content.renamedAssignedContent),
     renamedTypeDefinitionHydrated: renamedTypeDefinitionHydrated(snapshot),
     renamedTypeSchemaRefsHydrated: renamedTypeSchemaRefsHydrated(snapshot),
@@ -256,6 +278,11 @@ function folderPathStartsWith(snapshot: MobileWorkspaceSnapshot, pathPrefix: str
 
 function movedContentPreserved(content: string | null) {
   return content?.includes('saved before moving through native persistence') === true
+}
+
+function relationshipSourceRefHydrated(content: string | null) {
+  return content?.includes('related_to:') === true
+    && content.includes('native-related-target')
 }
 
 function renamedTypeDefinitionHydrated(snapshot: MobileWorkspaceSnapshot) {
@@ -321,6 +348,19 @@ function mobileCreatedNoteContent() {
     '# Mobile Created',
     '',
     'Created through native workspace persistence.',
+    '',
+  ].join('\n')
+}
+
+function relationshipSourceContent() {
+  return [
+    '---',
+    'type: Essay',
+    'status: Draft',
+    '---',
+    '# Relationship Source',
+    '',
+    'Create a relationship target from this note.',
     '',
   ].join('\n')
 }

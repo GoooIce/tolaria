@@ -9,6 +9,8 @@ export type NativeWorkspacePersistenceProof = {
   folderRenameApplied: boolean
   movedNoteContentPreserved: boolean
   persistedToNativeRepository: boolean
+  relationshipSourceRefHydrated: boolean
+  relationshipTargetHydrated: boolean
   renamedTypeAssignedNoteHydrated: boolean
   renamedTypeDefinitionHydrated: boolean
   renamedTypeSchemaRefsHydrated: boolean
@@ -55,6 +57,8 @@ export function assertNativeWorkspacePersistenceProofs(
     proofFailure(latest.persistedToNativeRepository, 'workspace.persistence.native', 'Workspace writes ran through the native Expo filesystem repository'),
     proofFailure(latest.createdNoteHydrated, 'workspace.persistence.createNote', 'Created notes rehydrate from the native vault snapshot'),
     proofFailure(latest.movedNoteContentPreserved, 'workspace.persistence.moveNote', 'Saved and moved note content is read back from the native repository'),
+    proofFailure(latest.relationshipTargetHydrated, 'workspace.persistence.relationshipTarget', 'Relationship target creation rehydrates the reducer-created target note'),
+    proofFailure(latest.relationshipSourceRefHydrated, 'workspace.persistence.relationshipSourceRef', 'Relationship target creation rehydrates the saved source note relationship ref'),
     proofFailure(latest.savedViewHydrated, 'workspace.persistence.saveView', 'Saved desktop-compatible views rehydrate from native views/*.yml'),
     proofFailure(latest.deletedViewRemoved, 'workspace.persistence.deleteView', 'Deleted native view files disappear from the mobile snapshot'),
     proofFailure(latest.folderRenameApplied, 'workspace.persistence.renameFolder', 'Renamed native folders rehydrate with the destination path'),
@@ -99,6 +103,8 @@ function parsedWorkspacePersistenceProof(value: unknown): NativeWorkspacePersist
     folderRenameApplied: value.folderRenameApplied,
     movedNoteContentPreserved: value.movedNoteContentPreserved,
     persistedToNativeRepository: value.persistedToNativeRepository,
+    relationshipSourceRefHydrated: value.relationshipSourceRefHydrated,
+    relationshipTargetHydrated: value.relationshipTargetHydrated,
     renamedTypeAssignedNoteHydrated: value.renamedTypeAssignedNoteHydrated,
     renamedTypeDefinitionHydrated: value.renamedTypeDefinitionHydrated,
     renamedTypeSchemaRefsHydrated: value.renamedTypeSchemaRefsHydrated,
@@ -122,6 +128,8 @@ const workspacePersistenceProofKeys = [
   'folderRenameApplied',
   'movedNoteContentPreserved',
   'persistedToNativeRepository',
+  'relationshipSourceRefHydrated',
+  'relationshipTargetHydrated',
   'renamedTypeAssignedNoteHydrated',
   'renamedTypeDefinitionHydrated',
   'renamedTypeSchemaRefsHydrated',

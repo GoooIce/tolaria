@@ -41,6 +41,19 @@ describe('native workspace persistence probe', () => {
     ])
   })
 
+  it('reports incomplete relationship target persistence proofs', () => {
+    const proof = {
+      ...passingWorkspaceProof(),
+      relationshipSourceRefHydrated: false,
+      relationshipTargetHydrated: false,
+    }
+
+    expect(assertNativeWorkspacePersistenceProofs([proof]).map((failure) => failure.id)).toEqual([
+      'workspace.persistence.relationshipTarget',
+      'workspace.persistence.relationshipSourceRef',
+    ])
+  })
+
   it('ignores malformed and incomplete proof lines', () => {
     const logText = [
       'TOLARIA_MOBILE_WORKSPACE_PERSISTENCE_PROBE not-json',
@@ -63,6 +76,8 @@ function passingWorkspaceProof(): NativeWorkspacePersistenceProof {
     folderRenameApplied: true,
     movedNoteContentPreserved: true,
     persistedToNativeRepository: true,
+    relationshipSourceRefHydrated: true,
+    relationshipTargetHydrated: true,
     renamedTypeAssignedNoteHydrated: true,
     renamedTypeDefinitionHydrated: true,
     renamedTypeSchemaRefsHydrated: true,
