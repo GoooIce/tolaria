@@ -45,6 +45,7 @@ import {
   type MobileViewMoveDirection,
 } from './mobileSavedViews'
 import { buildMobileSidebarSections } from './mobileSidebarSections'
+import { mobileCreateRelationshipTargetDefaults } from './mobileCreateNoteDefaults'
 import { isMobileInboxNote } from './mobileNoteFilters'
 import { normalizedMobileFolderPath } from './mobileWorkspaceFolders'
 import { applyMobileFolderEdit } from './mobileWorkspaceFolderEditing'
@@ -823,7 +824,12 @@ function createRelationshipTarget(
   const targetResult = createMobileNoteResult(
     snapshot,
     targetTitle,
-    relationshipTargetDefaults(sourceNote, edit.defaults),
+    mobileCreateRelationshipTargetDefaults({
+      defaults: edit.defaults,
+      relationshipKey,
+      sourceNote,
+      typeDefinitions: snapshot.typeDefinitions,
+    }),
   )
   const targetSnapshot = targetResult.snapshot
   const targetNote = workspaceNoteById(targetSnapshot, targetSnapshot.selectedNoteId ?? '')
@@ -889,25 +895,6 @@ function addRelationshipRefToNoteList(
       context.typeDefinitions,
     )
   })
-}
-
-function relationshipTargetDefaults(
-  sourceNote: MobileNote,
-  defaults: MobileCreateNoteDefaults = {},
-): MobileCreateNoteDefaults {
-  const folderPath = defaults.folderPath ?? noteFolderPath(sourceNote)
-  return {
-    ...defaults,
-    ...(folderPath ? { folderPath } : {}),
-    type: defaults.type ?? 'Note',
-  }
-}
-
-function noteFolderPath(note: MobileNote): FolderPath | undefined {
-  const path = note.path ?? note.id
-  const parts = path.split('/').filter(Boolean)
-  parts.pop()
-  return parts.length > 0 ? parts.join('/') : undefined
 }
 
 function createMobileView(

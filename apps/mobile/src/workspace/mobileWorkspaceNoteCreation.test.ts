@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { workspaceScenarioForId } from '../fixtures/workspaceFixtures'
+import type { MobileNote } from './mobileWorkspaceModel'
 import {
   applyMobileWorkspaceEdit,
   applyMobileWorkspaceEditWithWrites,
+  type MobileWorkspaceEditResult,
 } from './mobileWorkspaceEditing'
 
 describe('mobile note creation parity', () => {
@@ -164,6 +166,17 @@ describe('mobile note creation parity', () => {
     ])
   })
 
+  it('creates relationship targets with the source Type relationship schema defaults', () => {
+    expectSchemaBackedRelationshipTarget(
+      applyMobileWorkspaceEditWithWrites(relationshipTargetSchemaSnapshot(), {
+        key: 'has',
+        sourceNoteId: 'workflow-orchestration',
+        targetTitle: 'Launch Beta',
+        type: 'createRelationshipTarget',
+      }),
+    )
+  })
+
   it('blocks named note creation when the desktop target path already exists', () => {
     const base = workspaceScenarioForId('default')
     const existingNote = {
@@ -221,3 +234,93 @@ describe('mobile note creation parity', () => {
     expect(result.snapshot.selectedNoteId).toBe(sourceNote.id)
   })
 })
+
+function relationshipTargetSchemaSnapshot() {
+  const base = workspaceScenarioForId('default')
+  const sourceNote = {
+    ...base.notes[0],
+    rawContent: '# Workflow Orchestration Essay\n\nSource body.\n',
+  }
+
+  return {
+    ...base,
+    allNotes: [sourceNote, ...base.notes.slice(1)],
+    notes: [sourceNote, ...base.notes.slice(1)],
+    selectedNoteId: sourceNote.id,
+    typeDefinitions: {
+      ...base.typeDefinitions,
+      Essay: {
+        ...base.typeDefinitions?.Essay,
+        properties: {
+          ...base.typeDefinitions?.Essay?.properties,
+          has: 'Milestone',
+        },
+      },
+      Milestone: {
+        properties: {
+          Priority: 'High',
+          status: 'Planned',
+        },
+        template: '## Outcome\n\n',
+        tone: 'yellow' as const,
+      },
+    },
+  }
+}
+
+function expectSchemaBackedRelationshipTarget(result: MobileWorkspaceEditResult) {
+  const target = schemaTargetNote(result)
+  const updatedSource = schemaUpdatedSourceNote(result)
+
+  expectSchemaTargetNote(target)
+  expectSchemaSourceNote(updatedSource)
+  expectSchemaTargetWrites(result, target, updatedSource)
+}
+
+function schemaTargetNote(result: MobileWorkspaceEditResult): MobileNote {
+  const note = result.snapshot.allNotes?.find((candidate) => candidate.path === 'Tolaria/Mobile UI/launch-beta.md')
+  expect(note).toBeDefined()
+  return note!
+}
+
+function schemaUpdatedSourceNote(result: MobileWorkspaceEditResult): MobileNote {
+  const note = result.snapshot.allNotes?.find((candidate) => candidate.id === 'workflow-orchestration')
+  expect(note).toBeDefined()
+  return note!
+}
+
+function expectSchemaTargetNote(target: MobileNote) {
+  expect(target).toMatchObject({
+    status: 'Planned',
+    title: 'Launch Beta',
+    type: 'Milestone',
+    typeTone: 'yellow',
+  })
+  expect(target.rawContent).toContain('type: Milestone')
+  expect(target.rawContent).toContain('Priority: High')
+  expect(target.rawContent).toContain('status: Planned')
+  expect(target.rawContent).toContain('## Outcome')
+}
+
+function expectSchemaSourceNote(updatedSource: MobileNote) {
+  expect(updatedSource.rawContent).toContain('has:\n  - "[[Tolaria/Mobile UI/launch-beta]]"')
+}
+
+function expectSchemaTargetWrites(
+  result: MobileWorkspaceEditResult,
+  target: MobileNote,
+  updatedSource: MobileNote,
+) {
+  expect(result.writes).toEqual([
+    {
+      content: target.rawContent,
+      kind: 'createNote',
+      path: 'Tolaria/Mobile UI/launch-beta.md',
+    },
+    {
+      content: updatedSource.rawContent,
+      kind: 'saveNote',
+      path: 'Tolaria/Mobile UI/Workflow Orchestration Essay.md',
+    },
+  ])
+}
