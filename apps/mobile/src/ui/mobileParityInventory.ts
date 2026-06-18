@@ -85,6 +85,13 @@ export const mobileParityInventory = [
     surface: 'Note list panel',
   },
   {
+    assertions: ['note-list bulk-selection user-flow checks'],
+    contracts: ['desktopNoteItemParity'],
+    desktopSource: 'BulkActionBar and NoteList multi-select actions',
+    mobileFile: 'src/components/workspace/MobileNoteListBulkActionBar.tsx',
+    surface: 'Note-list bulk action bar',
+  },
+  {
     assertions: ['properties computed styles'],
     contracts: ['desktopPanelParity', 'desktopPropertyParity', 'desktopRelationshipParity'],
     desktopSource: 'InspectorHeader, propertyPanelLayout, RelationshipsPanel',

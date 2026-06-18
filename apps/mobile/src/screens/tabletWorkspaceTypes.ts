@@ -95,6 +95,9 @@ export type TabletWorkspaceChromeProps = {
   notes: MobileNote[]
   onAddProperty: (key?: string) => void
   onAddRelationship: (key?: string) => void
+  onBulkArchiveNotes: (noteIds: string[], archived: boolean) => void
+  onBulkDeleteNotes: (noteIds: string[]) => void
+  onBulkOrganizeNotes: (noteIds: string[]) => void
   onChangeNoteType: () => void
   onChangeNoteTypeInputChange: (value: ReadOnlyFormValue) => void
   onCloseAction: () => void

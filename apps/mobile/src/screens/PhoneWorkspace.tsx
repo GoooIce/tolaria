@@ -171,6 +171,11 @@ function PhoneNoteListScreen({
     <View {...swipeHandlers} style={styles.screen} testID="phone-note-list-screen">
       <MobileNoteListPanel
         compact
+        bulkActions={{
+          onArchive: controller.onBulkArchiveNotes,
+          onDelete: controller.onBulkDeleteNotes,
+          onOrganize: controller.onBulkOrganizeNotes,
+        }}
         displayPropertyKeys={controller.noteListProperties}
         fullWidth
         leading={(

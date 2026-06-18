@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { Linking, useWindowDimensions } from 'react-native'
 import { PhoneWorkspace, type PhoneWorkspaceState } from './PhoneWorkspace'
 import { TabletWorkspace } from './TabletWorkspace'
@@ -35,6 +35,7 @@ import {
   nativeWorkspacePersistenceProbeRepository,
   nativeWorkspacePersistenceProbeRequest,
 } from '../qa/nativeWorkspacePersistenceProbeRepository'
+import { setMobileLayoutMetricSinkUrl } from '../qa/mobileLayoutProbe'
 import type { MobileNote, MobileWorkspaceSnapshot } from '../workspace/mobileWorkspaceModel'
 
 export function MobileUiLab() {
@@ -59,6 +60,7 @@ export function MobileUiLab() {
   )
   const { initialEditorEditing, initialEditorEditingMode } = initialMobileEditorStateFromMode(editorMode(searchParams))
   const layoutProbe = layoutProbeEnabled(searchParams)
+  const metricSinkUrl = layoutProbe ? searchParams.get('metricSink') : null
   const sourceSelectionProbe = nativeSourceSelectionProbeEnabled(searchParams)
   const wysiwygAutocompleteProbe = nativeWysiwygAutocompleteProbeEnabled(searchParams)
   const wysiwygWikilinkInsertProbe = nativeWysiwygWikilinkInsertProbeEnabled(searchParams)
@@ -86,6 +88,11 @@ export function MobileUiLab() {
     const selection = await pickNativeWorkspaceDirectory(repositoryRequest.vaultRootUri)
     if (selection) setNativeWorkspace(selection)
   }, [repositoryRequest.vaultRootUri])
+
+  useLayoutEffect(() => {
+    setMobileLayoutMetricSinkUrl(metricSinkUrl)
+    return () => setMobileLayoutMetricSinkUrl(null)
+  }, [metricSinkUrl])
 
   if (isWideEnoughForTablet) {
     return (

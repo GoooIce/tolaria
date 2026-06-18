@@ -137,6 +137,43 @@ test.describe('mobile UI lab interactions', () => {
     await renameSelectedFileToTitle(page)
   })
 
+  test('bulk-selects tablet note-list rows and applies desktop note actions', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'tablet-landscape', 'Bulk note actions use the full-width tablet layout.')
+
+    await page.goto('/')
+    await bulkSelectDefaultNotes(page)
+    await expect(page.getByTestId('note-list-bulk-selected-count')).toHaveText('2 selected')
+    await page.getByTestId('note-list-bulk-clear').click()
+    await expect(page.getByTestId('note-list-bulk-action-bar')).toBeHidden()
+    await expect(page.getByTestId('note-row-workflow-orchestration')).toBeVisible()
+
+    await bulkSelectDefaultNotes(page)
+    await page.getByTestId('note-list-bulk-archive').click()
+    await expect(page.getByTestId('note-row-workflow-orchestration')).toBeHidden()
+    await expect(page.getByTestId('note-row-open-source-project')).toBeHidden()
+
+    await page.getByTestId('sidebar-item-archive').click()
+    await expect(page.getByTestId('note-list-toolbar-title')).toHaveText('Archive')
+    await expect(page.getByTestId('note-row-workflow-orchestration')).toBeVisible()
+    await bulkSelectDefaultNotes(page)
+    await page.getByTestId('note-list-bulk-archive').click()
+    await expect(page.getByTestId('note-row-workflow-orchestration')).toBeHidden()
+
+    await page.getByTestId('sidebar-item-inbox').click()
+    await expect(page.getByTestId('note-row-workflow-orchestration')).toBeVisible()
+    await bulkSelectDefaultNotes(page)
+    await page.getByTestId('note-list-bulk-organize').click()
+    await expect(page.getByTestId('note-row-workflow-orchestration')).toBeHidden()
+    await expect(page.getByTestId('note-row-open-source-project')).toBeHidden()
+
+    await page.getByTestId('sidebar-item-all-notes').click()
+    await expect(page.getByTestId('note-row-workflow-orchestration')).toBeVisible()
+    await bulkSelectDefaultNotes(page)
+    await page.getByTestId('note-list-bulk-delete').click()
+    await expect(page.getByTestId('note-row-workflow-orchestration')).toBeHidden()
+    await expect(page.getByTestId('note-row-open-source-project')).toBeHidden()
+  })
+
   test('exercises reducer-backed phone workspace flows', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'phone-portrait', 'Phone real-workspace checks run on the phone layout.')
 
@@ -730,6 +767,12 @@ async function createAndDeleteTypeSection(page: PageLike) {
 
 async function longPress(page: PageLike, testId: string) {
   await longPressLocator(page, page.getByTestId(testId), testId)
+}
+
+async function bulkSelectDefaultNotes(page: PageLike) {
+  await longPress(page, 'note-row-workflow-orchestration')
+  await page.getByTestId('note-row-open-source-project').click()
+  await expect(page.getByTestId('note-list-bulk-action-bar')).toBeVisible()
 }
 
 async function swipeHorizontally(

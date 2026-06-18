@@ -556,6 +556,12 @@ files:
     noteList.properties.searchLabel: de1bc9695d5e79a75296abf74dc25056
     noteList.properties.noMatches: 1627ecc53b9e97c94b2b6b1b93a58721
     noteList.properties.reorder: c0955c7efaa1ce90d449a23cbc52b553
+    noteList.bulk.selectedCount: ef1b031573031a3eca39e4b16e1eacec
+    noteList.bulk.organize: 4fe16f9723e5e7439b08b4e7f1aee487
+    noteList.bulk.archive: a7dbf2dca186b14deb97e29276fae346
+    noteList.bulk.unarchive: 7b1b9d413d6f5fbeba5efca399e63c3b
+    noteList.bulk.delete: f9b4ed4f762aadfc0be766815ec897fa
+    noteList.bulk.clear: 80ffff123555bd5173345bc8f144edeb
     noteList.changes.restoreNote: d6e99303c0e0b7b2abce06fe9214788b
     noteList.changes.discardChanges: 98313f623bb6f464b9a154eca0b99bf3
     noteList.changes.restoreDescription: 45e13380b0538e6cbff330f99c260c0a

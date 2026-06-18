@@ -2,6 +2,7 @@
 /* global console, process, setTimeout, URL */
 
 import { spawnSync } from 'node:child_process'
+import { createServer } from 'node:http'
 import {
   assertNativeMobileLayoutMetrics,
   assertNativeWysiwygEditorLayoutMetrics,
@@ -39,6 +40,8 @@ Options:
   --require-wysiwyg     Also require WYSIWYG editor layout metrics from editorMode=wysiwyg QA URLs.
   --require-wysiwyg-mutation
                        Also require the native TenTap mutation/save proof from wysiwygMutationProbe=1.
+                       This route checks WYSIWYG editor metrics plus mutation proof instead of
+                       default fixture shell metrics.
   --require-wysiwyg-persistence
                        Also require the native TenTap save to persist through Expo FileSystem.
                        This route uses an isolated native vault, so it checks WYSIWYG editor metrics
@@ -58,6 +61,30 @@ function readOption(args, name, fallback) {
   }
 
   return value
+}
+
+function parseOptions(args) {
+  if (args.includes('--help')) return { help: true }
+
+  return {
+    help: false,
+    last: readOption(args, '--last', defaultLogWindow),
+    openUrl: readOption(args, '--open-url', undefined),
+    requestedDevice: readOption(args, '--device', process.env.MOBILE_QA_SIMULATOR_UDID),
+    requireWysiwyg: args.includes('--require-wysiwyg'),
+    requireWysiwygMutation: args.includes('--require-wysiwyg-mutation'),
+    requireWysiwygPersistence: args.includes('--require-wysiwyg-persistence'),
+    waitMs: readWaitMs(args),
+  }
+}
+
+function readWaitMs(args) {
+  const waitMs = Number(readOption(args, '--wait', '3000'))
+  if (!Number.isFinite(waitMs) || waitMs < 0) {
+    throw new Error('--wait must be a non-negative number of milliseconds')
+  }
+
+  return waitMs
 }
 
 function run(command, args) {
@@ -162,6 +189,67 @@ function appendQueryParam(url, key, value) {
   return `${url}${separator}${encodeURIComponent(key)}=${encodeURIComponent(value)}`
 }
 
+async function startMetricSinkServer() {
+  const metrics = []
+  const server = createServer((request, response) => {
+    if (request.method !== 'POST') {
+      response.statusCode = 404
+      response.end()
+      return
+    }
+
+    collectRequestBody(request)
+      .then((body) => {
+        metrics.push(JSON.parse(body))
+        response.statusCode = 204
+        response.end()
+      })
+      .catch(() => {
+        response.statusCode = 400
+        response.end()
+      })
+  })
+
+  await listenOnLoopback(server)
+  const { port } = server.address()
+
+  return {
+    close: () => closeServer(server),
+    logText: () => metrics.map(metricLogLine).join('\n'),
+    url: `http://127.0.0.1:${port}`,
+  }
+}
+
+function collectRequestBody(request) {
+  return new Promise((resolve, reject) => {
+    let body = ''
+    request.setEncoding('utf8')
+    request.on('data', (chunk) => { body += chunk })
+    request.on('end', () => resolve(body))
+    request.on('error', reject)
+  })
+}
+
+function listenOnLoopback(server) {
+  return new Promise((resolve, reject) => {
+    server.once('error', reject)
+    server.listen(0, '127.0.0.1', () => {
+      server.off('error', reject)
+      resolve()
+    })
+  })
+}
+
+function closeServer(server) {
+  return new Promise((resolve, reject) => {
+    server.close((error) => (error ? reject(error) : resolve()))
+  })
+}
+
+function metricLogLine(metric) {
+  return `TOLARIA_MOBILE_LAYOUT_METRIC ${JSON.stringify(metric)}`
+}
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
@@ -183,53 +271,96 @@ function padTimestampPart(value) {
 }
 
 async function main() {
-  const args = process.argv.slice(2)
-  if (args.includes('--help')) {
+  const options = parseOptions(process.argv.slice(2))
+  if (options.help) {
     printHelp()
     return
   }
 
-  const device = selectDevice(readOption(args, '--device', process.env.MOBILE_QA_SIMULATOR_UDID))
-  const openUrl = readOption(args, '--open-url', undefined)
-  const last = readOption(args, '--last', defaultLogWindow)
-  const requireWysiwyg = args.includes('--require-wysiwyg')
-  const requireWysiwygMutation = args.includes('--require-wysiwyg-mutation')
-  const requireWysiwygPersistence = args.includes('--require-wysiwyg-persistence')
-  const waitMs = Number(readOption(args, '--wait', '3000'))
-  let logStart
+  await runNativeQa(options)
+}
 
-  if (openUrl) {
-    assertNativeQaOpenUrl(openUrl, 'Native iOS layout metrics')
-    logStart = simulatorLogTimestamp(new Date(Date.now() - 1000))
-    await openFreshProbeUrl(device, nativeQaUrl(openUrl, {
-      requireWysiwygMutation: requireWysiwygMutation || requireWysiwygPersistence,
-      requireWysiwygPersistence,
-    }), waitMs)
+async function runNativeQa(options) {
+  const device = selectDevice(options.requestedDevice)
+  const metricSink = options.openUrl ? await startMetricSinkServer() : null
+
+  try {
+    const logStart = await openProbeIfRequested({ device, metricSink, options })
+    const evidence = collectNativeQaEvidence({ device, logStart, metricSink, options })
+    const metrics = latestNativeLayoutMetrics(parseNativeLayoutMetrics(layoutLogText(evidence.layoutLogs, options)))
+    const { failures, mutationFailures, persistenceFailures } = nativeQaFailures({
+      metrics,
+      options,
+      proofLogs: evidence.proofLogs,
+    })
+
+    if (failures.length > 0 || mutationFailures.length > 0 || persistenceFailures.length > 0) {
+      throw new Error(formatNativeQaFailures({ failures, mutationFailures, persistenceFailures }))
+    }
+
+    console.log(`Native iOS layout metrics passed (${Object.keys(metrics).length} metrics).`)
+  } finally {
+    await metricSink?.close()
   }
+}
 
-  const logs = collectSimulatorLogs(device, {
-    includeWysiwygMutation: requireWysiwygMutation || requireWysiwygPersistence,
-    includeWysiwygPersistence: requireWysiwygPersistence,
-    last,
+async function openProbeIfRequested({ device, metricSink, options }) {
+  if (!options.openUrl) return undefined
+
+  assertNativeQaOpenUrl(options.openUrl, 'Native iOS layout metrics')
+  const logStart = simulatorLogTimestamp(new Date(Date.now() - 1000))
+  await openFreshProbeUrl(
+    device,
+    metricSinkUrl(nativeQaUrl(options.openUrl, {
+      requireWysiwygMutation: requiresWysiwygMutationProof(options),
+      requireWysiwygPersistence: options.requireWysiwygPersistence,
+    }), metricSink),
+    options.waitMs,
+  )
+  return logStart
+}
+
+function collectNativeQaEvidence({ device, logStart, metricSink, options }) {
+  const simulatorLogs = collectSimulatorLogs(device, {
+    includeWysiwygMutation: requiresWysiwygMutationProof(options),
+    includeWysiwygPersistence: options.requireWysiwygPersistence,
+    last: options.last,
     start: logStart,
   })
-  const layoutLogs = requireWysiwygMutation || requireWysiwygPersistence
-    ? nativeWysiwygMutationPreProofLogText(logs)
-    : logs
-  const metrics = latestNativeLayoutMetrics(parseNativeLayoutMetrics(layoutLogs))
-  const failures = nativeLayoutFailures({ metrics, requireWysiwyg, requireWysiwygPersistence })
-  const mutationFailures = requireWysiwygMutation
-    ? assertNativeWysiwygMutationProofs(parseNativeWysiwygMutationProofs(logs))
-    : []
-  const persistenceFailures = requireWysiwygPersistence
-    ? assertNativeWysiwygPersistenceProofs(parseNativeWysiwygPersistenceProofs(logs))
-    : []
 
-  if (failures.length > 0 || mutationFailures.length > 0 || persistenceFailures.length > 0) {
-    throw new Error(formatNativeQaFailures({ failures, mutationFailures, persistenceFailures }))
+  return {
+    layoutLogs: metricSink ? metricSink.logText() : simulatorLogs,
+    proofLogs: simulatorLogs,
   }
+}
 
-  console.log(`Native iOS layout metrics passed (${Object.keys(metrics).length} metrics).`)
+function layoutLogText(logs, options) {
+  return requiresWysiwygMutationProof(options) ? nativeWysiwygMutationPreProofLogText(logs) : logs
+}
+
+function nativeQaFailures({ metrics, options, proofLogs }) {
+  return {
+    failures: nativeLayoutFailures({
+      metrics,
+      requireWysiwyg: options.requireWysiwyg,
+      requireWysiwygMutation: options.requireWysiwygMutation,
+      requireWysiwygPersistence: options.requireWysiwygPersistence,
+    }),
+    mutationFailures: options.requireWysiwygMutation
+      ? assertNativeWysiwygMutationProofs(parseNativeWysiwygMutationProofs(proofLogs))
+      : [],
+    persistenceFailures: options.requireWysiwygPersistence
+      ? assertNativeWysiwygPersistenceProofs(parseNativeWysiwygPersistenceProofs(proofLogs))
+      : [],
+  }
+}
+
+function requiresWysiwygMutationProof(options) {
+  return options.requireWysiwygMutation || options.requireWysiwygPersistence
+}
+
+function metricSinkUrl(url, metricSink) {
+  return metricSink ? appendQueryParam(url, 'metricSink', metricSink.url) : url
 }
 
 function nativeQaUrl(openUrl, { requireWysiwygMutation, requireWysiwygPersistence }) {
@@ -242,8 +373,8 @@ function nativeQaUrl(openUrl, { requireWysiwygMutation, requireWysiwygPersistenc
     : mutationUrl
 }
 
-function nativeLayoutFailures({ metrics, requireWysiwyg, requireWysiwygPersistence }) {
-  if (requireWysiwygPersistence) {
+function nativeLayoutFailures({ metrics, requireWysiwyg, requireWysiwygMutation, requireWysiwygPersistence }) {
+  if (requireWysiwygMutation || requireWysiwygPersistence) {
     return requireWysiwyg ? assertNativeWysiwygEditorLayoutMetrics(metrics) : []
   }
 

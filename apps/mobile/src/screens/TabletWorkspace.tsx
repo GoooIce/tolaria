@@ -153,6 +153,9 @@ function TabletNoteListHost({
   noteListSubtitle,
   noteListTitle,
   notes,
+  onBulkArchiveNotes,
+  onBulkDeleteNotes,
+  onBulkOrganizeNotes,
   onOpenCreateNote,
   onOpenSearch,
   onSelectNote,
@@ -166,6 +169,11 @@ function TabletNoteListHost({
     <View {...gestures.noteListSwipe} style={styles.panelHost}>
       <MobileNoteListPanel
         compact={compactTablet}
+        bulkActions={{
+          onArchive: onBulkArchiveNotes,
+          onDelete: onBulkDeleteNotes,
+          onOrganize: onBulkOrganizeNotes,
+        }}
         displayPropertyKeys={noteListProperties}
         layoutProbe={layoutProbe}
         neighborhood={noteListNeighborhood}

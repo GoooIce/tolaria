@@ -62,6 +62,7 @@ import {
 import { useTabletWorkspaceNavigation } from './tabletWorkspaceNavigation'
 import type { TabletReadOnlyForm } from './tabletWorkspaceTypes'
 import { createNoteDefaultsForSelection } from './tabletWorkspaceCreateDefaults'
+import { tabletWorkspaceBulkNoteActions } from './tabletWorkspaceBulkActions'
 import { selectAfterWorkspaceEdit } from './tabletWorkspaceEditSelection'
 import { useWorkspaceEditPipeline } from './tabletWorkspacePersistence'
 import {
@@ -744,6 +745,7 @@ function editorWorkspaceActions({
     onDeleteNote: () => {
       if (selectedNote) applyEdit({ noteId: selectedNote.id, type: 'deleteNote' })
     },
+    ...tabletWorkspaceBulkNoteActions(applyEdit),
     onSetOrganized: (organized: boolean) => {
       if (selectedNote) applyEdit({ noteId: selectedNote.id, organized, type: 'setOrganized' })
     },

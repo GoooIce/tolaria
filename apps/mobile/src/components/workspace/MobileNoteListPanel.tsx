@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode } from 'react'
+import { useCallback, useMemo, useState, type ReactNode } from 'react'
 import { MagnifyingGlass, Plus } from 'phosphor-react-native'
 import { FlatList, StyleSheet, View } from 'react-native'
 import { Text } from '../ui/text'
@@ -14,10 +14,29 @@ import { mobileColors, mobileSpace, mobileType } from '../../ui/tokens'
 import { mobileNoteRowChips } from '../../workspace/mobileNoteDisplay'
 import type { MobileNeighborhood, MobileNeighborhoodGroup } from '../../workspace/mobileNeighborhood'
 import type { MobileNote, MobileTypeDefinitions } from '../../workspace/mobileWorkspaceModel'
+import { MobileNoteListBulkActionBar } from './MobileNoteListBulkActionBar'
 import { MobileTypeIcon } from './MobileWorkspaceIcons'
+import {
+  addMobileNoteListSelection,
+  mobileNoteListSelectionIsArchived,
+  selectedMobileNoteListIds,
+  selectedMobileNoteListNotes,
+  toggleMobileNoteListSelection,
+} from './mobileNoteListBulkSelection'
 import { noteTypeColor, noteTypeSoftColor } from './mobileWorkspaceTone'
 
+type MobileNoteListBulkActions = {
+  onArchive: (noteIds: string[], archived: boolean) => void
+  onDelete: (noteIds: string[]) => void
+  onOrganize: (noteIds: string[]) => void
+}
+type MobileNoteListSelectionState = {
+  noteIds: ReadonlySet<string>
+  scope: string
+}
+
 type MobileNoteListPanelProps = {
+  bulkActions?: MobileNoteListBulkActions
   compact: boolean
   displayPropertyKeys?: string[]
   fullWidth?: boolean
@@ -37,6 +56,7 @@ type MobileNoteListPanelProps = {
 
 export function MobileNoteListPanel(props: MobileNoteListPanelProps) {
   const {
+    bulkActions,
     compact,
     displayPropertyKeys = [],
     fullWidth = false,
@@ -55,6 +75,12 @@ export function MobileNoteListPanel(props: MobileNoteListPanelProps) {
   } = props
   const activeNoteId = selectedNoteId ?? notes[0]?.id ?? null
   const layoutProbe = useMobileLayoutProbe(layoutProbeEnabled)
+  const bulkSelection = useMobileNoteListBulkSelection({
+    bulkActions,
+    neighborhood,
+    notes,
+    onSelectNote,
+  })
 
   return (
     <MobilePanel {...layoutProbe.probe('noteList.panel')} style={[styles.panel, compact ? styles.panelCompact : null, fullWidth ? styles.panelFullWidth : null]} testID="note-list-panel">
@@ -73,41 +99,232 @@ export function MobileNoteListPanel(props: MobileNoteListPanelProps) {
         </MobileIconButton>
       </MobileToolbar>
       {searchQuery ? <SearchPill searchQuery={searchQuery} /> : null}
-      {neighborhood ? (
-        <NeighborhoodNoteList
-          activeNoteId={activeNoteId}
-          displayPropertyKeys={displayPropertyKeys}
-          layoutProbe={layoutProbe.probe}
-          neighborhood={neighborhood}
-          typeDefinitions={typeDefinitions}
-          onSelectNote={onSelectNote}
-        />
-      ) : notes.length === 0 ? (
-        <NoteListEmptyState searchQuery={searchQuery} />
-      ) : (
-        <FlatList
-          {...layoutProbe.probe('noteList.list')}
-          contentContainerStyle={styles.listContent}
-          data={notes}
-          extraData={selectedNoteId}
-          initialNumToRender={16}
-          keyExtractor={(note) => note.id}
-          renderItem={({ item: note }) => noteRow({
-            activeNoteId,
-            displayPropertyKeys,
-            layoutProbe: layoutProbe.probe,
-            note,
-            typeDefinitions,
-            onSelectNote,
-          })}
-          removeClippedSubviews
-          showsVerticalScrollIndicator={false}
-          windowSize={5}
-        />
-      )}
+      <NoteListContent
+        activeNoteId={activeNoteId}
+        bulkSelection={bulkSelection}
+        displayPropertyKeys={displayPropertyKeys}
+        layoutProbe={layoutProbe.probe}
+        neighborhood={neighborhood}
+        notes={notes}
+        onSelectNote={onSelectNote}
+        searchQuery={searchQuery}
+        selectedNoteId={selectedNoteId}
+        typeDefinitions={typeDefinitions}
+      />
+      <BulkSelectionBar bulkActions={bulkActions} bulkSelection={bulkSelection} />
       {layoutProbeEnabled ? <MobileLayoutProbeReadout metrics={layoutProbe.metrics} testID="note-list-layout-metrics" /> : null}
     </MobilePanel>
   )
+}
+
+function NoteListContent({
+  activeNoteId,
+  bulkSelection,
+  displayPropertyKeys,
+  layoutProbe,
+  neighborhood,
+  notes,
+  onSelectNote,
+  searchQuery,
+  selectedNoteId,
+  typeDefinitions,
+}: {
+  activeNoteId: string | null
+  bulkSelection: ReturnType<typeof useMobileNoteListBulkSelection>
+  displayPropertyKeys: string[]
+  layoutProbe: MobileLayoutProbe
+  neighborhood: MobileNeighborhood | null
+  notes: MobileNote[]
+  onSelectNote: (noteId: string) => void
+  searchQuery?: string
+  selectedNoteId: string | null
+  typeDefinitions?: MobileTypeDefinitions
+}) {
+  if (neighborhood) {
+    return (
+      <NeighborhoodNoteList
+        activeNoteId={activeNoteId}
+        displayPropertyKeys={displayPropertyKeys}
+        layoutProbe={layoutProbe}
+        neighborhood={neighborhood}
+        typeDefinitions={typeDefinitions}
+        onSelectNote={onSelectNote}
+      />
+    )
+  }
+
+  if (notes.length === 0) return <NoteListEmptyState searchQuery={searchQuery} />
+
+  return (
+    <FlatList
+      {...layoutProbe('noteList.list')}
+      contentContainerStyle={styles.listContent}
+      data={notes}
+      extraData={bulkSelection.rowExtraData(selectedNoteId)}
+      initialNumToRender={16}
+      keyExtractor={(note) => note.id}
+      renderItem={({ item: note }) => noteRow({
+        activeNoteId,
+        displayPropertyKeys,
+        layoutProbe,
+        multiSelected: bulkSelection.selectedNoteIds.has(note.id),
+        note,
+        onBeginSelection: bulkSelection.beginSelection,
+        typeDefinitions,
+        onSelectNote: bulkSelection.pressNote,
+      })}
+      removeClippedSubviews
+      showsVerticalScrollIndicator={false}
+      windowSize={5}
+    />
+  )
+}
+
+function BulkSelectionBar({
+  bulkActions,
+  bulkSelection,
+}: {
+  bulkActions?: MobileNoteListBulkActions
+  bulkSelection: ReturnType<typeof useMobileNoteListBulkSelection>
+}) {
+  if (!bulkActions || bulkSelection.selectedNotes.length === 0) return null
+
+  return (
+    <MobileNoteListBulkActionBar
+      archivedMode={mobileNoteListSelectionIsArchived(bulkSelection.selectedNotes)}
+      count={bulkSelection.selectedNotes.length}
+      onArchiveToggle={bulkSelection.archiveSelected}
+      onClear={bulkSelection.clearSelection}
+      onDelete={bulkSelection.deleteSelected}
+      onOrganize={bulkSelection.organizeSelected}
+    />
+  )
+}
+
+function useMobileNoteListBulkSelection({
+  bulkActions,
+  neighborhood,
+  notes,
+  onSelectNote,
+}: {
+  bulkActions?: MobileNoteListBulkActions
+  neighborhood: MobileNeighborhood | null
+  notes: MobileNote[]
+  onSelectNote: (noteId: string) => void
+}) {
+  const selectionEnabled = Boolean(bulkActions && !neighborhood)
+  const emptySelection = useMemo(() => new Set<string>(), [])
+  const [selectionState, setSelectionState] = useState<MobileNoteListSelectionState>({
+    noteIds: emptySelection,
+    scope: '',
+  })
+  const visibleNoteIds = useMemo(() => notes.map((note) => note.id), [notes])
+  const visibleNoteIdsSignature = visibleNoteIds.join('\u0000')
+  const selectionScope = selectionEnabled ? visibleNoteIdsSignature : ''
+  const selectedNoteIds = scopedSelectedNoteIds({ emptySelection, selectionScope, selectionState })
+  const selectedNotes = useMemo(
+    () => selectedMobileNoteListNotes(notes, selectedNoteIds),
+    [notes, selectedNoteIds],
+  )
+  const selectedNoteIdsSignature = [...selectedNoteIds].join('\u0000')
+  const clearSelection = useCallback(() => {
+    setSelectionState({ noteIds: new Set(), scope: selectionScope })
+  }, [selectionScope])
+
+  const beginSelection = useCallback((noteId: string) => {
+    if (!selectionEnabled) return
+    setSelectionState((current) => selectionWithNote(current, selectionScope, noteId, addMobileNoteListSelection))
+  }, [selectionEnabled, selectionScope])
+
+  const pressNote = useCallback((noteId: string) => {
+    if (shouldSelectNoteImmediately(selectionEnabled, selectedNoteIds)) {
+      onSelectNote(noteId)
+      return
+    }
+    setSelectionState((current) => selectionWithNote(current, selectionScope, noteId, toggleMobileNoteListSelection))
+  }, [onSelectNote, selectedNoteIds, selectionEnabled, selectionScope])
+
+  const selectedIdsInOrder = useCallback(() => selectedMobileNoteListIds(notes, selectedNoteIds), [notes, selectedNoteIds])
+
+  const runBulkAction = useCallback((action: (noteIds: string[]) => void) => {
+    const noteIds = selectedIdsInOrder()
+    if (noteIds.length > 0) {
+      clearSelection()
+      action(noteIds)
+    }
+  }, [clearSelection, selectedIdsInOrder])
+  const archiveSelected = useArchiveSelectionAction({ bulkActions, runBulkAction, selectedNotes })
+
+  return {
+    archiveSelected,
+    beginSelection,
+    clearSelection,
+    deleteSelected: useOptionalBulkAction(bulkActions?.onDelete, runBulkAction),
+    organizeSelected: useOptionalBulkAction(bulkActions?.onOrganize, runBulkAction),
+    pressNote,
+    rowExtraData: useCallback((selectedNoteId: string | null) => (
+      `${selectedNoteId ?? ''}:${selectedNoteIdsSignature}`
+    ), [selectedNoteIdsSignature]),
+    selectedNoteIds,
+    selectedNotes,
+  }
+}
+
+function scopedSelectedNoteIds({
+  emptySelection,
+  selectionScope,
+  selectionState,
+}: {
+  emptySelection: ReadonlySet<string>
+  selectionScope: string
+  selectionState: MobileNoteListSelectionState
+}) {
+  return selectionState.scope === selectionScope ? selectionState.noteIds : emptySelection
+}
+
+function selectionWithNote(
+  current: MobileNoteListSelectionState,
+  selectionScope: string,
+  noteId: string,
+  updateSelection: (noteIds: ReadonlySet<string>, noteId: string) => ReadonlySet<string>,
+): MobileNoteListSelectionState {
+  return {
+    noteIds: updateSelection(scopedNoteSelection(current, selectionScope), noteId),
+    scope: selectionScope,
+  }
+}
+
+function shouldSelectNoteImmediately(selectionEnabled: boolean, selectedNoteIds: ReadonlySet<string>) {
+  return !selectionEnabled || selectedNoteIds.size === 0
+}
+
+function useArchiveSelectionAction({
+  bulkActions,
+  runBulkAction,
+  selectedNotes,
+}: {
+  bulkActions?: MobileNoteListBulkActions
+  runBulkAction: (action: (noteIds: string[]) => void) => void
+  selectedNotes: MobileNote[]
+}) {
+  return useCallback(() => {
+    if (!bulkActions) return
+    const archived = !mobileNoteListSelectionIsArchived(selectedNotes)
+    runBulkAction((noteIds) => bulkActions.onArchive(noteIds, archived))
+  }, [bulkActions, runBulkAction, selectedNotes])
+}
+
+function useOptionalBulkAction(
+  action: ((noteIds: string[]) => void) | undefined,
+  runBulkAction: (action: (noteIds: string[]) => void) => void,
+) {
+  return useCallback(() => {
+    if (action) runBulkAction(action)
+  }, [action, runBulkAction])
+}
+
+function scopedNoteSelection(state: MobileNoteListSelectionState, scope: string) {
+  return state.scope === scope ? state.noteIds : new Set<string>()
 }
 
 type NeighborhoodRow =
@@ -197,7 +414,9 @@ function noteRow({
   displayPropertyKeys,
   forceSelected = false,
   layoutProbe,
+  multiSelected = false,
   note,
+  onBeginSelection,
   onSelectNote,
   typeDefinitions,
 }: {
@@ -205,7 +424,9 @@ function noteRow({
   displayPropertyKeys: string[]
   forceSelected?: boolean
   layoutProbe: MobileLayoutProbe
+  multiSelected?: boolean
   note: MobileNote
+  onBeginSelection?: (noteId: string) => void
   onSelectNote: (noteId: string) => void
   typeDefinitions?: MobileTypeDefinitions
 }) {
@@ -214,6 +435,7 @@ function noteRow({
       chips={<NoteRowChips displayPropertyKeys={displayPropertyKeys} note={note} typeDefinitions={typeDefinitions} />}
       layoutProbe={layoutProbe}
       metricId={`noteList.item.${note.id}`}
+      multiSelected={multiSelected}
       selected={forceSelected || note.id === activeNoteId}
       selectedBackgroundColor={noteTypeSoftColor(note.typeTone)}
       selectedBorderColor={noteTypeColor(note.typeTone)}
@@ -221,6 +443,7 @@ function noteRow({
       testID={`note-row-${note.id}`}
       title={note.title}
       trailing={<MobileTypeIcon fileKind={note.fileKind} size={16} tone={note.typeTone} type={note.type} />}
+      onLongPress={onBeginSelection ? () => onBeginSelection(note.id) : undefined}
       onPress={() => onSelectNote(note.id)}
     />
   )

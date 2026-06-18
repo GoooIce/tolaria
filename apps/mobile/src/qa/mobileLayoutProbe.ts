@@ -18,6 +18,11 @@ type LayoutProbeGlobal = typeof globalThis & {
 }
 
 const emptyProbeProps = {}
+let metricSinkUrl: string | null = null
+
+export function setMobileLayoutMetricSinkUrl(url: string | null) {
+  metricSinkUrl = url
+}
 
 export function useMobileLayoutProbe(enabled: boolean) {
   const [metrics, setMetrics] = useState<MobileLayoutMetrics>({})
@@ -82,7 +87,18 @@ function publishMetric(metric: MobileLayoutMetric) {
 
   if (Platform.OS !== 'web') {
     console.info(`TOLARIA_MOBILE_LAYOUT_METRIC ${JSON.stringify(metric)}`)
+    publishMetricToSink(metric)
   }
+}
+
+function publishMetricToSink(metric: MobileLayoutMetric) {
+  if (!metricSinkUrl) return
+
+  void fetch(metricSinkUrl, {
+    body: JSON.stringify(metric),
+    headers: { 'content-type': 'application/json' },
+    method: 'POST',
+  }).catch(() => undefined)
 }
 
 function roundMetric(value: number) {

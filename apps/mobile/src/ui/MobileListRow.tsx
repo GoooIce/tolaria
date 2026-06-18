@@ -11,6 +11,8 @@ type MobileListRowProps = {
   layoutProbe?: MobileLayoutProbe
   meta?: string
   metricId?: string
+  multiSelected?: boolean
+  onLongPress?: () => void
   onPress?: () => void
   selected?: boolean
   selectedBackgroundColor?: string
@@ -19,6 +21,11 @@ type MobileListRowProps = {
   testID?: string
   title: string
   trailing?: ReactNode
+}
+type MobileListRowState = {
+  accessibilitySelected: boolean
+  desktopSelected: boolean
+  multiSelected: boolean
 }
 
 const baseContentStyle = {
@@ -29,30 +36,28 @@ const baseContentStyle = {
 } as const
 
 export function MobileListRow(props: MobileListRowProps) {
-  const selected = props.selected ?? false
-  const frameColors = selected ? {
-    backgroundColor: props.selectedBackgroundColor,
-    borderLeftColor: props.selectedBorderColor,
-  } : null
+  const rowState = mobileListRowState(props)
 
   return (
     <View
       {...rowProbeProps(props.layoutProbe, props.metricId, 'frame')}
       testID={props.testID}
-      style={[styles.frame, selected ? styles.selected : null, frameColors]}
+      style={mobileListRowFrameStyle(props, rowState)}
     >
       <Pressable
         {...rowProbeProps(props.layoutProbe, props.metricId, 'body')}
+        accessibilityState={{ selected: rowState.accessibilitySelected }}
         accessibilityRole="button"
+        onLongPress={props.onLongPress}
         onPress={props.onPress}
-        style={selected ? styles.baseSelected : styles.base}
+        style={rowState.desktopSelected ? styles.baseSelected : styles.base}
       >
         <View {...rowProbeProps(props.layoutProbe, props.metricId, 'header')} style={styles.header}>
           {props.leading}
           <Text
             {...rowProbeProps(props.layoutProbe, props.metricId, 'title')}
             numberOfLines={1}
-            style={[styles.title, selected ? styles.titleSelected : null]}
+            style={[styles.title, rowState.desktopSelected ? styles.titleSelected : null]}
           >
             {props.title}
           </Text>
@@ -66,6 +71,32 @@ export function MobileListRow(props: MobileListRowProps) {
       </Pressable>
     </View>
   )
+}
+
+function mobileListRowState(props: MobileListRowProps): MobileListRowState {
+  const selected = props.selected ?? false
+  const multiSelected = props.multiSelected ?? false
+
+  return {
+    accessibilitySelected: selected || multiSelected,
+    desktopSelected: selected && !multiSelected,
+    multiSelected,
+  }
+}
+
+function mobileListRowFrameStyle(props: MobileListRowProps, state: MobileListRowState) {
+  return [
+    styles.frame,
+    state.desktopSelected ? styles.selected : null,
+    state.multiSelected ? styles.multiSelected : mobileListRowSelectedColors(props, state),
+  ]
+}
+
+function mobileListRowSelectedColors(props: MobileListRowProps, state: MobileListRowState) {
+  return state.desktopSelected ? {
+    backgroundColor: props.selectedBackgroundColor,
+    borderLeftColor: props.selectedBorderColor,
+  } : null
 }
 
 const styles = StyleSheet.create({
@@ -98,6 +129,9 @@ const styles = StyleSheet.create({
   meta: {
     color: mobileColors.textMuted,
     fontSize: mobileType.caption,
+  },
+  multiSelected: {
+    backgroundColor: mobileColors.primarySoft,
   },
   selected: {
     borderLeftWidth: desktopNoteItemParity.borderLeftWidth,
