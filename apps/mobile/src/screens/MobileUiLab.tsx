@@ -19,6 +19,9 @@ import {
   nativeWysiwygPersistenceProbeEnabled,
 } from '../qa/nativeWysiwygPersistenceProbe'
 import {
+  nativeWysiwygWikilinkInsertProbeEnabled,
+} from '../qa/nativeWysiwygWikilinkInsertProbe'
+import {
   nativeWysiwygPersistenceProbeRepository,
   nativeWysiwygPersistenceProbeRequest,
 } from '../qa/nativeWysiwygPersistenceProbeRepository'
@@ -47,6 +50,7 @@ export function MobileUiLab() {
   const { initialEditorEditing, initialEditorEditingMode } = initialMobileEditorStateFromMode(editorMode(searchParams))
   const layoutProbe = layoutProbeEnabled(searchParams)
   const sourceSelectionProbe = nativeSourceSelectionProbeEnabled(searchParams)
+  const wysiwygWikilinkInsertProbe = nativeWysiwygWikilinkInsertProbeEnabled(searchParams)
   const wysiwygMutationProbe = nativeWysiwygMutationProbeEnabled(searchParams) || wysiwygPersistenceProbe
   const baseSnapshot = repository.readSnapshot(repositoryRequest)
   const snapshot = wysiwygMutationProbe && !wysiwygPersistenceProbe
@@ -61,6 +65,7 @@ export function MobileUiLab() {
     snapshot,
     source,
     sourceSelectionProbe,
+    wysiwygWikilinkInsertProbe,
     wysiwygMutationProbe,
     wysiwygPersistenceProbe,
   })
@@ -81,6 +86,7 @@ export function MobileUiLab() {
         repositoryRequest={repositoryRequest}
         sourceSelectionProbe={sourceSelectionProbe}
         snapshot={snapshot}
+        wysiwygWikilinkInsertProbe={wysiwygWikilinkInsertProbe}
         wysiwygMutationProbe={wysiwygMutationProbe}
       />
     )
@@ -174,6 +180,7 @@ function mobileWorkspaceKey({
   snapshot,
   source,
   sourceSelectionProbe,
+  wysiwygWikilinkInsertProbe,
   wysiwygMutationProbe,
   wysiwygPersistenceProbe,
 }: {
@@ -185,6 +192,7 @@ function mobileWorkspaceKey({
   snapshot: ReturnType<typeof readOnlyWorkspaceRepository.readSnapshot>
   source: ReturnType<typeof currentSnapshotSource>
   sourceSelectionProbe: boolean
+  wysiwygWikilinkInsertProbe: boolean
   wysiwygMutationProbe: boolean
   wysiwygPersistenceProbe: boolean
 }) {
@@ -197,6 +205,7 @@ function mobileWorkspaceKey({
     initialEditorEditing ? 'raw-editor' : 'read-editor',
     initialEditorEditingMode,
     sourceSelectionProbe ? 'source-selection-probe' : 'no-source-selection-probe',
+    wysiwygWikilinkInsertProbe ? 'wysiwyg-wikilink-insert-probe' : 'no-wysiwyg-wikilink-insert-probe',
     wysiwygMutationProbe ? 'wysiwyg-mutation-probe' : 'no-wysiwyg-mutation-probe',
     wysiwygPersistenceProbe ? 'wysiwyg-persistence-probe' : 'no-wysiwyg-persistence-probe',
     layoutProbeMode(layoutProbe),

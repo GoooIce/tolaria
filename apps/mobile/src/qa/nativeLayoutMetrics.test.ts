@@ -48,7 +48,7 @@ describe('native layout metrics', () => {
     })
     expect(nativeWysiwygEditorMetricContract).toEqual({
       minFormHeight: 320,
-      toolbarActionCount: 15,
+      toolbarActionCount: 16,
       toolbarActionGap: mobileSpace.xs,
       toolbarActionSize: desktopToolbarActionParity.iconButtonSize,
       toolbarHostPaddingHorizontal: mobileSpace.md,
@@ -219,6 +219,7 @@ const wysiwygToolbarActions = [
   'strike',
   'code',
   'highlight',
+  'wikilink',
   'heading1',
   'heading2',
   'heading3',

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { MobileNote } from './mobileWorkspaceModel'
-import { mobileNoteIdForWikilinkTarget, parseMobileWikilink } from './mobileWikilinks'
+import { mobileNoteIdForWikilinkTarget, mobileWikilinkHref, parseMobileWikilink } from './mobileWikilinks'
 
 describe('mobile wikilink resolution', () => {
   it('parses desktop wikilink frontmatter values with surrounding whitespace', () => {
@@ -8,6 +8,10 @@ describe('mobile wikilink resolution', () => {
       display: 'Café',
       target: 'Cafe Notes.md',
     })
+  })
+
+  it('builds the native TenTap href used for Tolaria wikilink marks', () => {
+    expect(mobileWikilinkHref('Tolaria/Mobile UI')).toBe('tolaria://wikilink/Tolaria%2FMobile%20UI')
   })
 
   it('resolves aliases using the same note identity candidates as desktop', () => {

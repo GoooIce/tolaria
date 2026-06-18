@@ -9,6 +9,8 @@ type MobileWikilinkResolutionKey = {
   lastSegment: string
 }
 
+const mobileWikilinkHrefPrefix = 'tolaria://wikilink/'
+
 export type MobileParsedWikilink = {
   display: string
   target: WikilinkTarget
@@ -100,6 +102,10 @@ export function mobileNoteForWikilinkTarget(
 
 export function mobileWikilinkTargetForNote(note: MobileNote): WikilinkTarget {
   return (note.path ?? note.id).replace(/\.[^.]+$/u, '')
+}
+
+export function mobileWikilinkHref(target: WikilinkTarget): string {
+  return `${mobileWikilinkHrefPrefix}${encodeURIComponent(target)}`
 }
 
 export function mobileNoteIdForWikilinkTarget(

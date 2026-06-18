@@ -17,11 +17,22 @@ import {
   type NativeWysiwygCommandBridge,
 } from './MobileWysiwygFormatCommands'
 import { nativeWysiwygDocumentContentFromJson } from './MobileWysiwygDocumentSerialization'
+import { MobileWysiwygWikilinkPicker } from './MobileWysiwygWikilinkPicker'
+import {
+  nativeWysiwygDocumentWithInsertedWikilink,
+  type NativeWysiwygSelection,
+  type NativeWysiwygWikilinkPayload,
+} from './MobileWysiwygWikilinkBridgeModel'
 import {
   nativeWysiwygMutationLogLine,
   nativeWysiwygMutationProbeContent,
   nativeWysiwygMutationProof,
 } from '../../qa/nativeWysiwygMutationProbe'
+import {
+  nativeWysiwygWikilinkInsertLogLine,
+  nativeWysiwygWikilinkInsertProbePayload,
+  nativeWysiwygWikilinkInsertProof,
+} from '../../qa/nativeWysiwygWikilinkInsertProbe'
 
 type MobileWysiwygMarkdownEditorProps = {
   blocks: MobileEditorBlock[]
@@ -31,11 +42,21 @@ type MobileWysiwygMarkdownEditorProps = {
   note: MobileNote
   notes: MobileNote[]
   onUpdateContent: (noteId: string, content: string) => void
+  wysiwygWikilinkInsertProbe?: boolean
   wysiwygMutationProbe?: boolean
 }
 
 type JsonReadableEditorBridge = EditorBridge & {
   getJSON: () => Promise<unknown>
+}
+
+type EditorStateReadableBridge = EditorBridge & {
+  getEditorState: () => {
+    selection?: {
+      from?: unknown
+      to?: unknown
+    }
+  }
 }
 
 type CssInjectableEditorBridge = EditorBridge & {
@@ -49,7 +70,9 @@ type NativeTentapEditorBridgeOptions = Omit<MobileWysiwygMarkdownEditorProps, 'n
 type NativeTentapEditorSurfaceProps = {
   editor: EditorBridge
   injectEditorCss: () => void
+  insertWikilink: (payload: NativeWysiwygWikilinkPayload) => void
   layoutProbe?: MobileLayoutProbe
+  notes: MobileNote[]
 }
 type NativeTentapEditorRefs = {
   acceptsEditorChangesRef: MutableRefObject<boolean>
@@ -71,7 +94,9 @@ export function MobileWysiwygMarkdownEditor({
   compact,
   layoutProbe,
   note,
+  notes,
   onUpdateContent,
+  wysiwygWikilinkInsertProbe = false,
   wysiwygMutationProbe = false,
 }: MobileWysiwygMarkdownEditorProps) {
   const bridge = useNativeTentapEditorBridge({
@@ -81,13 +106,33 @@ export function MobileWysiwygMarkdownEditor({
     initialDocumentContent: initialNativeEditorContent({ blocks, bullets, note }),
     note,
     onUpdateContent,
+    wysiwygWikilinkInsertProbe,
     wysiwygMutationProbe,
   })
 
-  return <NativeTentapEditorSurface {...bridge} layoutProbe={layoutProbe} />
+  return <NativeTentapEditorSurface {...bridge} layoutProbe={layoutProbe} notes={notes} />
 }
 
-function NativeTentapEditorSurface({ editor, injectEditorCss, layoutProbe }: NativeTentapEditorSurfaceProps) {
+function NativeTentapEditorSurface({
+  editor,
+  injectEditorCss,
+  insertWikilink,
+  layoutProbe,
+  notes,
+}: NativeTentapEditorSurfaceProps) {
+  const [wikilinkPickerOpen, setWikilinkPickerOpen] = useState(false)
+  const handleFormat = useCallback((action: Parameters<typeof applyNativeWysiwygFormat>[1]) => {
+    if (action === 'wikilink') {
+      setWikilinkPickerOpen(true)
+      return
+    }
+    applyNativeWysiwygFormat(editor as NativeWysiwygCommandBridge, action)
+  }, [editor])
+  const handleInsertWikilink = useCallback((payload: NativeWysiwygWikilinkPayload) => {
+    insertWikilink(payload)
+    setWikilinkPickerOpen(false)
+  }, [insertWikilink])
+
   return (
     <View {...probeProps(layoutProbe, 'editor.wysiwyg.form')} style={nativeEditorStyles.container} testID="editor-wysiwyg-form">
       <RichText
@@ -106,9 +151,16 @@ function NativeTentapEditorSurface({ editor, injectEditorCss, layoutProbe }: Nat
           actions={nativeWysiwygFormattingActions}
           layoutProbe={layoutProbe}
           metricId="editor.wysiwyg.toolbar"
-          onFormat={(action) => applyNativeWysiwygFormat(editor as NativeWysiwygCommandBridge, action)}
+          onFormat={handleFormat}
         />
       </KeyboardAvoidingView>
+      {wikilinkPickerOpen ? (
+        <MobileWysiwygWikilinkPicker
+          notes={notes}
+          onClose={() => setWikilinkPickerOpen(false)}
+          onSelect={handleInsertWikilink}
+        />
+      ) : null}
     </View>
   )
 }
@@ -131,6 +183,7 @@ function useNativeTentapEditorBridge({
   initialDocumentContent,
   note,
   onUpdateContent,
+  wysiwygWikilinkInsertProbe = false,
   wysiwygMutationProbe = false,
 }: NativeTentapEditorBridgeOptions) {
   const initialBody = mobileDocumentBody(initialDocumentContent)
@@ -144,9 +197,11 @@ function useNativeTentapEditorBridge({
     noteId: note.id,
     onUpdateContent,
     refs,
+    wikilinkInsertProbeEnabled: wysiwygWikilinkInsertProbe,
   })
   const scheduleDocumentFlush = useScheduleDocumentFlush(refs, flushEditorDocument)
   const injectEditorCss = useEditorCssInjection({ compact, refs })
+  const insertWikilink = useNativeWysiwygWikilinkInserter({ flushEditorDocument, refs })
 
   const editor = useEditorBridge({
     avoidIosKeyboard: true,
@@ -158,10 +213,11 @@ function useNativeTentapEditorBridge({
   useEditorBridgeRef(refs.editorRef, editor)
   useEditableContentRef({ blocks, bullets, note, refs })
   useResetEditorChangeGate({ initialContent, noteId: note.id, refs })
+  useNativeWysiwygWikilinkInsertProbe({ enabled: wysiwygWikilinkInsertProbe, flushEditorDocument, refs })
   useNativeWysiwygMutationProbe({ enabled: wysiwygMutationProbe, flushEditorDocument, refs })
   useFlushOnUnmount(refs, flushEditorDocument)
 
-  return { editor, injectEditorCss }
+  return { editor, injectEditorCss, insertWikilink }
 }
 
 function useNativeTentapEditorRefs(initialDocumentContent: string): NativeTentapEditorRefs {
@@ -198,12 +254,14 @@ function useFlushEditorDocument({
   noteId,
   onUpdateContent,
   refs,
+  wikilinkInsertProbeEnabled,
 }: {
   initialBodyHasContent: boolean
   mutationProbeEnabled: boolean
   noteId: string
   onUpdateContent: (noteId: string, content: string) => void
   refs: NativeTentapEditorRefs
+  wikilinkInsertProbeEnabled: boolean
 }) {
   return useCallback(() => {
     flushEditorDocumentFromBridge({
@@ -212,8 +270,9 @@ function useFlushEditorDocument({
       noteId,
       onUpdateContent,
       refs,
+      wikilinkInsertProbeEnabled,
     })
-  }, [initialBodyHasContent, mutationProbeEnabled, noteId, onUpdateContent, refs])
+  }, [initialBodyHasContent, mutationProbeEnabled, noteId, onUpdateContent, refs, wikilinkInsertProbeEnabled])
 }
 
 function flushEditorDocumentFromBridge({
@@ -222,12 +281,14 @@ function flushEditorDocumentFromBridge({
   noteId,
   onUpdateContent,
   refs,
+  wikilinkInsertProbeEnabled,
 }: {
   initialBodyHasContent: boolean
   mutationProbeEnabled: boolean
   noteId: string
   onUpdateContent: (noteId: string, content: string) => void
   refs: NativeTentapEditorRefs
+  wikilinkInsertProbeEnabled: boolean
 }) {
   const editor = refs.editorRef.current
   if (!isJsonReadableEditorBridge(editor)) return
@@ -240,6 +301,7 @@ function flushEditorDocumentFromBridge({
       noteId,
       onUpdateContent,
       refs,
+      wikilinkInsertProbeEnabled,
     }))
     .catch((error: unknown) => {
       console.warn('[mobile-editor] Failed to read TenTap JSON:', error)
@@ -253,6 +315,7 @@ function writeEditorJsonToMarkdown({
   noteId,
   onUpdateContent,
   refs,
+  wikilinkInsertProbeEnabled,
 }: {
   initialBodyHasContent: boolean
   json: unknown
@@ -260,6 +323,7 @@ function writeEditorJsonToMarkdown({
   noteId: string
   onUpdateContent: (noteId: string, content: string) => void
   refs: NativeTentapEditorRefs
+  wikilinkInsertProbeEnabled: boolean
 }) {
   const nextContent = nativeWysiwygDocumentContentFromJson({
     currentContent: refs.contentRef.current,
@@ -271,6 +335,7 @@ function writeEditorJsonToMarkdown({
   if (!nextContent.skipped && nextContent.content !== refs.contentRef.current) {
     onUpdateContent(noteId, nextContent.content)
     if (mutationProbeEnabled) publishNativeWysiwygMutationProof(noteId, nextContent.content)
+    if (wikilinkInsertProbeEnabled) publishNativeWysiwygWikilinkInsertProof(noteId, nextContent.content)
   }
 }
 
@@ -306,6 +371,118 @@ function publishNativeWysiwygMutationProof(noteId: string, content: string): voi
   if (Platform.OS === 'web') return
 
   console.info(nativeWysiwygMutationLogLine(nativeWysiwygMutationProof({ content, noteId })))
+}
+
+function publishNativeWysiwygWikilinkInsertProof(noteId: string, content: string): void {
+  if (Platform.OS === 'web') return
+
+  console.info(nativeWysiwygWikilinkInsertLogLine(nativeWysiwygWikilinkInsertProof({ content, noteId })))
+}
+
+function useNativeWysiwygWikilinkInserter({
+  flushEditorDocument,
+  refs,
+}: {
+  flushEditorDocument: () => void
+  refs: NativeTentapEditorRefs
+}) {
+  const { editorRef, hasAcceptedEditorChangeRef, saveTimerRef } = refs
+
+  return useCallback((payload: NativeWysiwygWikilinkPayload) => {
+    void insertWikilinkIntoNativeEditor(editorRef.current, payload)
+      .then((inserted) => {
+        if (!inserted) return
+
+        hasAcceptedEditorChangeRef.current = true
+        if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+        saveTimerRef.current = setTimeout(flushEditorDocument, 250)
+      })
+      .catch((error: unknown) => {
+        console.warn('[mobile-editor] Failed to insert native WYSIWYG wikilink:', error)
+      })
+  }, [editorRef, flushEditorDocument, hasAcceptedEditorChangeRef, saveTimerRef])
+}
+
+async function insertWikilinkIntoNativeEditor(
+  editor: EditorBridge | null,
+  payload: NativeWysiwygWikilinkPayload,
+): Promise<boolean> {
+  if (!isJsonReadableEditorBridge(editor) || !isContentSettableEditorBridge(editor)) return false
+
+  const json = await editor.getJSON()
+  const nextJson = nativeWysiwygDocumentWithInsertedWikilink({
+    json,
+    payload,
+    selection: nativeWysiwygEditorSelection(editor),
+  })
+  if (!nextJson) return false
+
+  editor.setContent(nextJson)
+  return true
+}
+
+function nativeWysiwygEditorSelection(editor: EditorBridge): NativeWysiwygSelection | undefined {
+  if (!isEditorStateReadableBridge(editor)) return undefined
+
+  const selection = editor.getEditorState().selection
+  if (typeof selection?.from !== 'number' || typeof selection.to !== 'number') return undefined
+
+  return {
+    from: selection.from,
+    to: selection.to,
+  }
+}
+
+function useNativeWysiwygWikilinkInsertProbe({
+  enabled,
+  flushEditorDocument,
+  refs,
+}: {
+  enabled: boolean
+  flushEditorDocument: () => void
+  refs: NativeTentapEditorRefs
+}) {
+  const hasInsertedProbeWikilinkRef = useRef(false)
+
+  useEffect(() => {
+    if (!enabled) {
+      hasInsertedProbeWikilinkRef.current = false
+      return undefined
+    }
+    if (hasInsertedProbeWikilinkRef.current) return undefined
+
+    let insertTimer: TimerHandle | null = null
+    const insertWhenReady = () => {
+      if (!refs.acceptsEditorChangesRef.current) {
+        insertTimer = setTimeout(insertWhenReady, 250)
+        return
+      }
+
+      const editor = refs.editorRef.current
+      hasInsertedProbeWikilinkRef.current = true
+      void insertWikilinkIntoNativeEditor(editor, nativeWysiwygWikilinkInsertProbePayload())
+        .then((inserted) => {
+          if (!inserted) {
+            hasInsertedProbeWikilinkRef.current = false
+            return
+          }
+
+          refs.hasAcceptedEditorChangeRef.current = true
+          refs.saveTimerRef.current = setTimeout(flushEditorDocument, 500)
+        })
+        .catch((error: unknown) => {
+          hasInsertedProbeWikilinkRef.current = false
+          console.warn('[mobile-editor] Failed to run native WYSIWYG wikilink insert probe:', error)
+        })
+    }
+
+    insertTimer = setTimeout(insertWhenReady, 250)
+
+    return () => {
+      if (insertTimer) clearTimeout(insertTimer)
+      if (refs.saveTimerRef.current) clearTimeout(refs.saveTimerRef.current)
+    }
+  }, [enabled, flushEditorDocument, refs])
 }
 
 function useScheduleDocumentFlush(
@@ -408,6 +585,10 @@ function isJsonReadableEditorBridge(editor: EditorBridge | null): editor is Json
 
 function isCssInjectableEditorBridge(editor: EditorBridge | null): editor is CssInjectableEditorBridge {
   return typeof (editor as Partial<CssInjectableEditorBridge> | null)?.injectCSS === 'function'
+}
+
+function isEditorStateReadableBridge(editor: EditorBridge | null): editor is EditorStateReadableBridge {
+  return typeof (editor as Partial<EditorStateReadableBridge> | null)?.getEditorState === 'function'
 }
 
 function isContentSettableEditorBridge(editor: EditorBridge | null): editor is ContentSettableEditorBridge {

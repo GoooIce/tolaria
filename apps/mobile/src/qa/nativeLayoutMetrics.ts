@@ -97,6 +97,7 @@ const wysiwygToolbarActionMetricIds = [
   'editor.wysiwyg.toolbar.action.strike',
   'editor.wysiwyg.toolbar.action.code',
   'editor.wysiwyg.toolbar.action.highlight',
+  'editor.wysiwyg.toolbar.action.wikilink',
   'editor.wysiwyg.toolbar.action.heading1',
   'editor.wysiwyg.toolbar.action.heading2',
   'editor.wysiwyg.toolbar.action.heading3',

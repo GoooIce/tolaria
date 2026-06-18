@@ -183,6 +183,13 @@ export const mobileParityInventory = [
     surface: 'Native WYSIWYG document editor',
   },
   {
+    assertions: ['WYSIWYG wikilink picker suggestion tests', 'native iOS WYSIWYG wikilink insertion proof'],
+    contracts: ['desktopEditorParity', 'desktopToolbarActionParity'],
+    desktopSource: 'BlockNote wikilink suggestion menu and shared wikilink autocomplete candidates',
+    mobileFile: 'src/components/workspace/MobileWysiwygWikilinkPicker.tsx',
+    surface: 'Native WYSIWYG wikilink picker',
+  },
+  {
     assertions: ['single document source edit user-flow checks', 'native source selection preservation proof', 'wikilink and person autocomplete user-flow checks'],
     contracts: ['desktopEditorParity', 'desktopToolbarActionParity'],
     desktopSource: 'RawEditorView, BlockNote markdown commands, and editor wikilink/person suggestion menus',

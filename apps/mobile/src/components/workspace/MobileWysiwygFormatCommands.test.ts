@@ -33,8 +33,8 @@ describe('native WYSIWYG format commands', () => {
     expect(calledMethods(editor)).toEqual([method])
   })
 
-  it('keeps source-only markdown commands out of the native WYSIWYG toolbar', () => {
-    const sourceOnlyActions: MobileMarkdownFormatAction[] = ['wikilink', 'divider', 'codeBlock', 'table']
+  it('keeps source-only block markdown commands out of the native WYSIWYG toolbar', () => {
+    const sourceOnlyActions: MobileMarkdownFormatAction[] = ['divider', 'codeBlock', 'table']
 
     expect(nativeWysiwygFormattingActions).not.toEqual(expect.arrayContaining(sourceOnlyActions))
 
@@ -43,6 +43,10 @@ describe('native WYSIWYG format commands', () => {
       applyNativeWysiwygFormat(editor, action)
       expect(calledMethods(editor)).toEqual([])
     }
+  })
+
+  it('keeps wikilink visible as a native picker action', () => {
+    expect(nativeWysiwygFormattingActions).toContain('wikilink')
   })
 })
 

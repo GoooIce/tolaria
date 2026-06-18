@@ -37,6 +37,7 @@ type TabletEditorPanelProps = {
   onToggleFavorite: () => void
   onUpdateContent: (noteId: string, content: string) => void
   sourceSelectionProbe?: boolean
+  wysiwygWikilinkInsertProbe?: boolean
   wysiwygMutationProbe?: boolean
 }
 
@@ -62,6 +63,7 @@ type EditorContentProps = {
   onNavigateWikilink: (target: string) => void
   onUpdateContent: (noteId: string, content: string) => void
   sourceSelectionProbe?: boolean
+  wysiwygWikilinkInsertProbe?: boolean
   wysiwygMutationProbe?: boolean
 }
 
@@ -82,6 +84,7 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
     onToggleFavorite,
     onUpdateContent,
     sourceSelectionProbe = false,
+    wysiwygWikilinkInsertProbe = false,
     wysiwygMutationProbe = false,
   } = props
   const [editing, setEditing] = useState(initialEditing)
@@ -131,6 +134,7 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
             onNavigateWikilink={onNavigateWikilink}
             onUpdateContent={onUpdateContent}
             sourceSelectionProbe={sourceSelectionProbe}
+            wysiwygWikilinkInsertProbe={wysiwygWikilinkInsertProbe}
             wysiwygMutationProbe={wysiwygMutationProbe}
           />
         </View>
@@ -148,6 +152,7 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
             onNavigateWikilink={onNavigateWikilink}
             onUpdateContent={onUpdateContent}
             sourceSelectionProbe={sourceSelectionProbe}
+            wysiwygWikilinkInsertProbe={wysiwygWikilinkInsertProbe}
             wysiwygMutationProbe={wysiwygMutationProbe}
           />
         </ScrollView>
@@ -216,6 +221,7 @@ function EditorContent({
   onNavigateWikilink,
   onUpdateContent,
   sourceSelectionProbe = false,
+  wysiwygWikilinkInsertProbe = false,
   wysiwygMutationProbe = false,
 }: EditorContentProps) {
   if (editing) {
@@ -244,6 +250,7 @@ function EditorContent({
         note={note}
         notes={notes}
         onUpdateContent={onUpdateContent}
+        wysiwygWikilinkInsertProbe={wysiwygWikilinkInsertProbe}
         wysiwygMutationProbe={wysiwygMutationProbe}
       />
     )

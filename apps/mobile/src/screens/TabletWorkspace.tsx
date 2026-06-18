@@ -27,6 +27,7 @@ export function TabletWorkspace({
   repositoryRequest,
   sourceSelectionProbe = false,
   snapshot,
+  wysiwygWikilinkInsertProbe = false,
   wysiwygMutationProbe = false,
 }: {
   initialEditorEditing?: boolean
@@ -37,6 +38,7 @@ export function TabletWorkspace({
   repositoryRequest?: ReadOnlyWorkspaceRequest
   sourceSelectionProbe?: boolean
   snapshot: MobileWorkspaceSnapshot
+  wysiwygWikilinkInsertProbe?: boolean
   wysiwygMutationProbe?: boolean
 }) {
   const controller = useTabletWorkspaceController({ repository, repositoryRequest, snapshot })
@@ -51,6 +53,7 @@ export function TabletWorkspace({
         initialEditorEditingMode={initialEditorEditingMode}
         layoutProbe={layoutProbe}
         sourceSelectionProbe={sourceSelectionProbe}
+        wysiwygWikilinkInsertProbe={wysiwygWikilinkInsertProbe}
         wysiwygMutationProbe={wysiwygMutationProbe}
         {...controller}
       />
@@ -184,6 +187,7 @@ type TabletEditorPanelHostProps = Pick<
   | 'onUpdateNoteContent'
   | 'selectedNote'
   | 'sourceSelectionProbe'
+  | 'wysiwygWikilinkInsertProbe'
   | 'wysiwygMutationProbe'
 > & {
   onNavigateWikilink: (target: string) => void
@@ -204,6 +208,7 @@ function TabletEditorPanelHost({
   selectedNote,
   sourceSelectionProbe,
   suggestionNotes,
+  wysiwygWikilinkInsertProbe,
   wysiwygMutationProbe,
 }: TabletEditorPanelHostProps) {
   return (
@@ -221,6 +226,7 @@ function TabletEditorPanelHost({
       onToggleFavorite={onToggleFavorite}
       onUpdateContent={onUpdateNoteContent}
       sourceSelectionProbe={sourceSelectionProbe}
+      wysiwygWikilinkInsertProbe={wysiwygWikilinkInsertProbe}
       wysiwygMutationProbe={wysiwygMutationProbe}
     />
   )
