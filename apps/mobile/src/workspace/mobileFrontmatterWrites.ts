@@ -2,6 +2,10 @@ import type {
   LocalVaultFrontmatter,
   LocalVaultFrontmatterValue,
 } from './localVaultFrontmatter'
+import {
+  parseLocalVaultDocument,
+  serializeLocalVaultFrontmatterScalar,
+} from './localVaultFrontmatter'
 
 type FrontmatterKey = string
 
@@ -43,6 +47,28 @@ export const writeMobileFrontmatterValue = (
   return nextFrontmatter
 }
 
+export function writeMobileFrontmatterContentValue(
+  content: string,
+  key: FrontmatterKey,
+  value: LocalVaultFrontmatterValue | undefined,
+): string {
+  const document = parseLocalVaultDocument(content)
+  return serializeMobileLocalVaultDocument(
+    writeMobileFrontmatterValue(document.frontmatter, key, value),
+    document.body,
+  )
+}
+
+export function serializeMobileLocalVaultDocument(
+  frontmatter: LocalVaultFrontmatter,
+  body: string,
+): string {
+  const entries = Object.entries(frontmatter).filter(([, value]) => value !== null && value !== undefined)
+  if (entries.length === 0) return body
+
+  return `---\n${entries.map(([key, value]) => serializeFrontmatterEntry(key, value)).join('\n')}\n---\n${body}`
+}
+
 function canonicalFrontmatterWriteRule(
   key: FrontmatterKey,
 ): CanonicalFrontmatterWriteRule | null {
@@ -73,4 +99,15 @@ function shouldRemoveFrontmatterValue(
 
 function normalizedFrontmatterKey(key: FrontmatterKey): FrontmatterKey {
   return key.trim().toLowerCase().replaceAll(' ', '_')
+}
+
+function serializeFrontmatterEntry(
+  key: FrontmatterKey,
+  value: LocalVaultFrontmatterValue,
+): string {
+  if (Array.isArray(value)) {
+    return `${key}:\n${value.map((item) => `  - ${serializeLocalVaultFrontmatterScalar(item)}`).join('\n')}`
+  }
+
+  return `${key}: ${serializeLocalVaultFrontmatterScalar(value)}`
 }

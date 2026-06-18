@@ -4,13 +4,14 @@ import {
   typeDefinitionsWithPatch,
   type MobileTypeDefinitionPatch,
 } from './mobileTypeDefinitions'
+import { renameMobileTypeDefinition } from './mobileWorkspaceTypeRename'
 import type { MobileViewMoveDirection } from './mobileSavedViews'
 import type { MobileNote, MobileSidebarItem, MobileTypeDefinitions, MobileWorkspaceSnapshot } from './mobileWorkspaceModel'
 import type { MobileWorkspaceEdit, MobileWorkspaceEditResult } from './mobileWorkspaceEditing'
 
 type NoteTitle = string
 type MobileTypeEdit = Extract<MobileWorkspaceEdit, {
-  type: 'createTypeDefinition' | 'deleteTypeDefinition' | 'moveTypeSection' | 'updateTypeDefinition'
+  type: 'createTypeDefinition' | 'deleteTypeDefinition' | 'moveTypeSection' | 'renameTypeDefinition' | 'updateTypeDefinition'
 }>
 type RebuildMobileWorkspaceSnapshot = (
   snapshot: MobileWorkspaceSnapshot,
@@ -33,6 +34,7 @@ export function applyMobileTypeEdit(
   if (edit.type === 'createTypeDefinition') return createMobileTypeDefinition(snapshot, edit.typeName, rebuildSnapshot)
   if (edit.type === 'deleteTypeDefinition') return deleteMobileTypeDefinition(snapshot, edit.typeName, rebuildSnapshot)
   if (edit.type === 'moveTypeSection') return moveMobileTypeSection(snapshot, edit.typeName, edit.direction, rebuildSnapshot)
+  if (edit.type === 'renameTypeDefinition') return renameMobileTypeDefinition(snapshot, edit, rebuildSnapshot)
   return updateMobileTypeDefinition(snapshot, edit.typeName, edit.patch, rebuildSnapshot)
 }
 

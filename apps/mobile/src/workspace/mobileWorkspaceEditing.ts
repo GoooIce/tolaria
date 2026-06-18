@@ -130,10 +130,11 @@ export type MobileWorkspaceEdit =
   | { direction: MobileViewMoveDirection; type: 'moveTypeSection'; typeName: NoteTitle }
   | { type: 'createTypeDefinition'; typeName: NoteTitle }
   | { type: 'deleteTypeDefinition'; typeName: NoteTitle }
+  | { nextTypeName: NoteTitle; type: 'renameTypeDefinition'; typeName: NoteTitle }
   | { definition: MobileTypeDefinition; type: 'restoreTypeDefinition'; typeName: NoteTitle }
   | { patch: MobileTypeDefinitionPatch; type: 'updateTypeDefinition'; typeName: NoteTitle }
 type MobileViewEdit = Extract<MobileWorkspaceEdit, { type: 'createView' | 'deleteView' | 'moveView' | 'updateView' }>
-type MobileTypeEdit = Extract<MobileWorkspaceEdit, { type: 'createTypeDefinition' | 'deleteTypeDefinition' | 'moveTypeSection' | 'updateTypeDefinition' }>
+type MobileTypeEdit = Extract<MobileWorkspaceEdit, { type: 'createTypeDefinition' | 'deleteTypeDefinition' | 'moveTypeSection' | 'renameTypeDefinition' | 'updateTypeDefinition' }>
 type MobileFolderEdit = Extract<MobileWorkspaceEdit, { type: 'createFolder' | 'deleteFolder' | 'renameFolder' }>
 type MobilePrimaryNoteListEdit = Extract<MobileWorkspaceEdit, { type: 'updatePrimaryNoteListProperties' }>
 type MobileRestorationEdit = Extract<MobileWorkspaceEdit, { type: 'restoreFolder' | 'restoreNote' | 'restoreTypeDefinition' | 'restoreView' }>
@@ -260,6 +261,7 @@ const mobileWorkspaceResultHandlers: MobileWorkspaceResultHandlerMap = {
   moveView: (snapshot, edit) => moveMobileView(snapshot, edit.viewId, edit.direction),
   moveTypeSection: (snapshot, edit) => applyMobileTypeEdit(snapshot, edit, rebuildSnapshot),
   moveNoteToFolder: (snapshot, edit) => moveNoteToFolder(snapshot, edit),
+  renameTypeDefinition: (snapshot, edit) => applyMobileTypeEdit(snapshot, edit, rebuildSnapshot),
   renameFolder: (snapshot, edit) => applyMobileFolderEdit(snapshot, edit, rebuildSnapshot),
   renameNoteFile: (snapshot, edit) => renameNoteFile(snapshot, edit),
   restoreFolder: (snapshot, edit) => applyMobileRestorationEdit(snapshot, edit, rebuildSnapshot),

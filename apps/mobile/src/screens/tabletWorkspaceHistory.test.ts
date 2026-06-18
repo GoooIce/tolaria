@@ -299,6 +299,22 @@ describe('tablet workspace editing history', () => {
     })
   })
 
+  it('undoes and redoes Type renames with assigned note frontmatter', () => {
+    const edit: MobileWorkspaceEdit = {
+      nextTypeName: 'Playbook',
+      type: 'renameTypeDefinition',
+      typeName: 'Procedure',
+    }
+    const { redoneSnapshot, undoneSnapshot } = historyRoundTrip(typeRenameHistorySnapshot(), edit)
+
+    expect(typeDefinitionNames(undoneSnapshot)).toEqual(['Essay', 'Procedure', 'Release'])
+    expect(typeSectionNames(undoneSnapshot)).toEqual(['Essay', 'Procedure', 'Release'])
+    expect(noteById(undoneSnapshot, 'open-source-project').rawContent).toContain('type: Procedure')
+    expect(typeDefinitionNames(redoneSnapshot)).toEqual(['Essay', 'Playbook', 'Release'])
+    expect(typeSectionNames(redoneSnapshot)).toEqual(['Essay', 'Playbook', 'Release'])
+    expect(noteById(redoneSnapshot, 'open-source-project').rawContent).toContain('type: Playbook')
+  })
+
   it('undoes and redoes note folder moves through path edits', () => {
     expectNotePathRoundTrip({
       edit: {
@@ -607,6 +623,25 @@ function relationshipTargetHistorySnapshot(): MobileWorkspaceSnapshot {
     allNotes: [source, ...base.notes.slice(1)],
     notes: [source, ...base.notes.slice(1)],
     selectedNoteId: source.id,
+  }
+}
+
+function typeRenameHistorySnapshot(): MobileWorkspaceSnapshot {
+  const base = workspaceScenarioForId('default')
+  const essay = {
+    ...noteById(base, 'workflow-orchestration'),
+    rawContent: '---\ntype: Essay\n---\n# Workflow Orchestration Essay\n\nBody.\n',
+  }
+  const procedure = {
+    ...noteById(base, 'open-source-project'),
+    rawContent: '---\ntype: Procedure\n---\n# How I Run an Open Source Project\n\nBody.\n',
+  }
+
+  return {
+    ...base,
+    allNotes: [essay, procedure],
+    notes: [essay, procedure],
+    selectedNoteId: procedure.id,
   }
 }
 
