@@ -10,6 +10,11 @@ export type NativeWysiwygAutocompleteProof = {
   rangeTo: number
 }
 
+export type NativeWysiwygAutocompleteProbeStep = {
+  content: object
+  selection: { from: number; to: number }
+}
+
 export type NativeWysiwygAutocompleteAssertionFailure = {
   id: string
   message: string
@@ -18,19 +23,36 @@ export type NativeWysiwygAutocompleteAssertionFailure = {
 export const nativeWysiwygAutocompleteLogPrefix = 'TOLARIA_MOBILE_WYSIWYG_AUTOCOMPLETE_PROBE'
 
 export function nativeWysiwygAutocompleteProbeContent(): object {
+  return nativeWysiwygAutocompleteProbeSteps()[0].content
+}
+
+export function nativeWysiwygAutocompleteProbeSelection(): { from: number; to: number } {
+  return nativeWysiwygAutocompleteProbeSteps()[0].selection
+}
+
+export function nativeWysiwygAutocompleteProbeSteps(): NativeWysiwygAutocompleteProbeStep[] {
+  return [
+    {
+      content: textProbeContent('See [[AI'),
+      selection: { from: 9, to: 9 },
+    },
+    {
+      content: textProbeContent('Ask @Lu'),
+      selection: { from: 8, to: 8 },
+    },
+  ]
+}
+
+function textProbeContent(text: string): object {
   return {
     content: [
       {
-        content: [{ text: 'See [[AI', type: 'text' }],
+        content: [{ text, type: 'text' }],
         type: 'paragraph',
       },
     ],
     type: 'doc',
   }
-}
-
-export function nativeWysiwygAutocompleteProbeSelection(): { from: number; to: number } {
-  return { from: 9, to: 9 }
 }
 
 export function nativeWysiwygAutocompleteProof(
@@ -68,9 +90,16 @@ export function assertNativeWysiwygAutocompleteProofs(
   }
 
   return [
-    proofFailure(latest.kind === 'wikilink', 'editor.wysiwyg.autocomplete.kind', 'Native WYSIWYG detects wikilink autocomplete'),
-    proofFailure(latest.query === 'AI', 'editor.wysiwyg.autocomplete.query', 'Native WYSIWYG preserves the typed query'),
-    proofFailure(latest.rangeFrom === 5 && latest.rangeTo === 9, 'editor.wysiwyg.autocomplete.range', 'Native WYSIWYG reports the exact replacement range'),
+    proofFailure(
+      hasAutocompleteProof(proofs, { kind: 'wikilink', query: 'AI', rangeFrom: 5, rangeTo: 9 }),
+      'editor.wysiwyg.autocomplete.wikilink',
+      'Native WYSIWYG detects wikilink autocomplete with the exact replacement range',
+    ),
+    proofFailure(
+      hasAutocompleteProof(proofs, { kind: 'personMention', query: 'Lu', rangeFrom: 5, rangeTo: 8 }),
+      'editor.wysiwyg.autocomplete.personMention',
+      'Native WYSIWYG detects person mention autocomplete with the exact replacement range',
+    ),
   ].filter((failure): failure is NativeWysiwygAutocompleteAssertionFailure => failure !== null)
 }
 
@@ -111,6 +140,18 @@ function parsedProof(value: unknown): NativeWysiwygAutocompleteProof | null {
     rangeFrom: candidate.rangeFrom,
     rangeTo: candidate.rangeTo,
   }
+}
+
+function hasAutocompleteProof(
+  proofs: NativeWysiwygAutocompleteProof[],
+  expected: NativeWysiwygAutocompleteProof,
+): boolean {
+  return proofs.some((proof) => (
+    proof.kind === expected.kind
+    && proof.query === expected.query
+    && proof.rangeFrom === expected.rangeFrom
+    && proof.rangeTo === expected.rangeTo
+  ))
 }
 
 function proofFailure(

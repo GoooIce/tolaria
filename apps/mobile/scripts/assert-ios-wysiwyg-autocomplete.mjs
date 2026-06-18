@@ -12,6 +12,7 @@ import {
 
 const defaultExpoGoBundleId = 'host.exp.Exponent'
 const defaultLogWindow = '90s'
+const minimumOpenWaitMs = 12000
 
 function printHelp() {
   console.log(`Assert native iOS Simulator WYSIWYG autocomplete.
@@ -76,7 +77,7 @@ async function openProbeUrl(device, openUrl, waitMs) {
   terminateExpoGo(device)
   await sleep(500)
   run('xcrun', ['simctl', 'openurl', device, autocompleteProbeUrl(openUrl)])
-  await sleep(Math.max(waitMs, 9000))
+  await sleep(Math.max(waitMs, minimumOpenWaitMs))
 }
 
 function autocompleteProbeUrl(openUrl) {

@@ -36,8 +36,7 @@ import {
 } from '../../qa/nativeWysiwygMutationProbe'
 import {
   nativeWysiwygAutocompleteLogLine,
-  nativeWysiwygAutocompleteProbeContent,
-  nativeWysiwygAutocompleteProbeSelection,
+  nativeWysiwygAutocompleteProbeSteps,
   nativeWysiwygAutocompleteProof,
 } from '../../qa/nativeWysiwygAutocompleteProbe'
 import {
@@ -492,23 +491,28 @@ function useNativeWysiwygAutocompleteProbe({
     if (!enabled) return undefined
 
     let detectTimer: TimerHandle | null = null
+    let nextStepTimer: TimerHandle | null = null
     let probeTimer: TimerHandle | null = null
-    const runProbe = () => {
+    const runProbe = (stepIndex = 0) => {
       if (!refs.acceptsEditorChangesRef.current) {
-        probeTimer = setTimeout(runProbe, 250)
+        probeTimer = setTimeout(() => runProbe(stepIndex), 250)
         return
       }
 
       const editor = refs.editorRef.current
       if (!isContentSettableEditorBridge(editor) || !isSelectionSettableEditorBridge(editor)) return
 
-      editor.setContent(nativeWysiwygAutocompleteProbeContent())
-      const selection = nativeWysiwygAutocompleteProbeSelection()
+      const step = nativeWysiwygAutocompleteProbeSteps()[stepIndex]
+      if (!step) return
+
+      editor.setContent(step.content)
+      const selection = step.selection
       editor.setSelection(selection.from, selection.to)
       detectTimer = setTimeout(() => {
         void detectNativeWysiwygInlineAutocomplete(editor)
           .then((match) => {
             console.info(nativeWysiwygAutocompleteLogLine(nativeWysiwygAutocompleteProof(match)))
+            nextStepTimer = setTimeout(() => runProbe(stepIndex + 1), 250)
           })
           .catch((error: unknown) => {
             console.warn('[mobile-editor] Failed to run native WYSIWYG autocomplete probe:', error)
@@ -520,6 +524,7 @@ function useNativeWysiwygAutocompleteProbe({
 
     return () => {
       if (detectTimer) clearTimeout(detectTimer)
+      if (nextStepTimer) clearTimeout(nextStepTimer)
       if (probeTimer) clearTimeout(probeTimer)
     }
   }, [enabled, refs])

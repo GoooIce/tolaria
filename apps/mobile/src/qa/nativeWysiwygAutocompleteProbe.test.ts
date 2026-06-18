@@ -6,12 +6,13 @@ import {
   nativeWysiwygAutocompleteProbeContent,
   nativeWysiwygAutocompleteProbeEnabled,
   nativeWysiwygAutocompleteProbeSelection,
+  nativeWysiwygAutocompleteProbeSteps,
   nativeWysiwygAutocompleteProof,
   parseNativeWysiwygAutocompleteProofs,
 } from './nativeWysiwygAutocompleteProbe'
 
 describe('native WYSIWYG autocomplete probe', () => {
-  it('uses a native document and cursor position with an active wikilink query', () => {
+  it('keeps the legacy single-step helpers pointed at the wikilink probe', () => {
     expect(nativeWysiwygAutocompleteProbeContent()).toMatchObject({
       content: [{ content: [{ text: 'See [[AI' }] }],
       type: 'doc',
@@ -19,15 +20,43 @@ describe('native WYSIWYG autocomplete probe', () => {
     expect(nativeWysiwygAutocompleteProbeSelection()).toEqual({ from: 9, to: 9 })
   })
 
-  it('parses and asserts simulator log proofs', () => {
-    const proof = nativeWysiwygAutocompleteProof({
+  it('runs native documents for wikilink and person mention autocomplete', () => {
+    expect(nativeWysiwygAutocompleteProbeSteps()).toEqual([
+      {
+        content: {
+          content: [{ content: [{ text: 'See [[AI', type: 'text' }], type: 'paragraph' }],
+          type: 'doc',
+        },
+        selection: { from: 9, to: 9 },
+      },
+      {
+        content: {
+          content: [{ content: [{ text: 'Ask @Lu', type: 'text' }], type: 'paragraph' }],
+          type: 'doc',
+        },
+        selection: { from: 8, to: 8 },
+      },
+    ])
+  })
+
+  it('parses and asserts simulator log proofs for both autocomplete families', () => {
+    const wikilinkProof = nativeWysiwygAutocompleteProof({
       kind: 'wikilink',
       query: 'AI',
       range: { from: 5, to: 9 },
     })
+    const personMentionProof = nativeWysiwygAutocompleteProof({
+      kind: 'personMention',
+      query: 'Lu',
+      range: { from: 5, to: 8 },
+    })
+    const log = [
+      nativeWysiwygAutocompleteLogLine(wikilinkProof),
+      nativeWysiwygAutocompleteLogLine(personMentionProof),
+    ].join('\n')
 
-    expect(parseNativeWysiwygAutocompleteProofs(nativeWysiwygAutocompleteLogLine(proof))).toEqual([proof])
-    expect(assertNativeWysiwygAutocompleteProofs([proof])).toEqual([])
+    expect(parseNativeWysiwygAutocompleteProofs(log)).toEqual([wikilinkProof, personMentionProof])
+    expect(assertNativeWysiwygAutocompleteProofs([wikilinkProof, personMentionProof])).toEqual([])
   })
 
   it('reports missing and failed autocomplete proofs', () => {
@@ -36,16 +65,12 @@ describe('native WYSIWYG autocomplete probe', () => {
       nativeWysiwygAutocompleteProof(null),
     ])).toEqual([
       {
-        id: 'editor.wysiwyg.autocomplete.kind',
-        message: 'Native WYSIWYG detects wikilink autocomplete',
+        id: 'editor.wysiwyg.autocomplete.wikilink',
+        message: 'Native WYSIWYG detects wikilink autocomplete with the exact replacement range',
       },
       {
-        id: 'editor.wysiwyg.autocomplete.query',
-        message: 'Native WYSIWYG preserves the typed query',
-      },
-      {
-        id: 'editor.wysiwyg.autocomplete.range',
-        message: 'Native WYSIWYG reports the exact replacement range',
+        id: 'editor.wysiwyg.autocomplete.personMention',
+        message: 'Native WYSIWYG detects person mention autocomplete with the exact replacement range',
       },
     ])
   })
