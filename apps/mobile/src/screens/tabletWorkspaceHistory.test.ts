@@ -189,6 +189,53 @@ describe('tablet workspace editing history', () => {
     })
   })
 
+  it.each([
+    {
+      edit: {
+        definition: {
+          color: 'purple' as const,
+          filters: { all: [{ field: 'status', op: 'equals' as const, value: 'Active' }] },
+          icon: 'folder',
+          listPropertiesDisplay: ['belongs_to', 'status'],
+          name: 'Active Workflows',
+          sort: 'property:Priority:asc',
+        },
+        type: 'updateView' as const,
+        viewId: 'view-active-procedures',
+      },
+      label: 'saved-view edits',
+      redoneViews: ['active-procedures.yml:Active Workflows'],
+      undoneViews: ['active-procedures.yml:Active Procedures'],
+    },
+    {
+      edit: {
+        direction: 'up' as const,
+        type: 'moveView' as const,
+        viewId: 'view-essays',
+      },
+      label: 'saved-view reordering',
+      previousSnapshot: savedViewMoveHistorySnapshot(),
+      redoneViews: ['essays.yml:Essays', 'active-procedures.yml:Active Procedures'],
+      undoneViews: ['active-procedures.yml:Active Procedures', 'essays.yml:Essays'],
+    },
+    {
+      edit: {
+        type: 'deleteView' as const,
+        viewId: 'view-active-procedures',
+      },
+      label: 'saved-view deletion',
+      redoneViews: [],
+      undoneViews: ['active-procedures.yml:Active Procedures'],
+    },
+  ])('undoes and redoes $label exactly', ({ edit, previousSnapshot, redoneViews, undoneViews }) => {
+    expectViewHistoryRoundTrip({
+      edit,
+      previousSnapshot: previousSnapshot ?? workspaceScenarioForId('default'),
+      redoneViews,
+      undoneViews,
+    })
+  })
+
   it('undoes and redoes type section metadata updates exactly', () => {
     const previousSnapshot = workspaceScenarioForId('default')
     const edit: MobileWorkspaceEdit = {
@@ -405,6 +452,40 @@ function expectNotePathRoundTrip({
   expect(noteById(redoneSnapshot, redoneNoteId).path).toBe(redonePath)
 
   return { redoneSnapshot, undoneSnapshot }
+}
+
+function expectViewHistoryRoundTrip({
+  edit,
+  previousSnapshot,
+  redoneViews,
+  undoneViews,
+}: {
+  edit: MobileWorkspaceEdit
+  previousSnapshot: MobileWorkspaceSnapshot
+  redoneViews: string[]
+  undoneViews: string[]
+}) {
+  const { redoneSnapshot, undoneSnapshot } = historyRoundTrip(previousSnapshot, edit)
+
+  expect(viewHistoryLabels(undoneSnapshot)).toEqual(undoneViews)
+  expect(viewHistoryLabels(redoneSnapshot)).toEqual(redoneViews)
+}
+
+function savedViewMoveHistorySnapshot(): MobileWorkspaceSnapshot {
+  return applyMobileWorkspaceEdit(workspaceScenarioForId('default'), {
+    definition: {
+      color: 'green',
+      filters: { all: [{ field: 'type', op: 'equals', value: 'Essay' }] },
+      icon: null,
+      name: 'Essays',
+      sort: 'modified:desc',
+    },
+    type: 'createView',
+  })
+}
+
+function viewHistoryLabels(snapshot: MobileWorkspaceSnapshot): string[] {
+  return (snapshot.views ?? []).map((view) => `${view.filename}:${view.definition.name}`)
 }
 
 function snapshotWithEditableNote(overrides: Partial<MobileNote> & { id: string; rawContent: string }): MobileWorkspaceSnapshot {
