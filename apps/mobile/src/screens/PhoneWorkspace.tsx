@@ -178,6 +178,7 @@ function PhoneNoteListScreen({
             <List color={mobileColors.textMuted} size={18} />
           </MobileIconButton>
         )}
+        neighborhood={controller.noteListNeighborhood}
         notes={controller.notes}
         searchQuery={controller.searchQuery || undefined}
         selectedNoteId={controller.selectedNoteId}
@@ -210,6 +211,7 @@ function PhoneSidebarDrawer({
           compact
           displayPropertyKeys={controller.noteListProperties}
           fullWidth
+          neighborhood={controller.noteListNeighborhood}
           notes={controller.notes}
           selectedNoteId={controller.selectedNoteId}
           subtitle={controller.noteListSubtitle}
@@ -327,8 +329,13 @@ function PhoneEditorBody({
 function PhonePropertiesScreen({
   controller,
   openEditor,
+  openList,
 }: PhoneWorkspaceStateViewProps) {
   const returnToEditor = useCallback(() => openEditor(), [openEditor])
+  const enterNeighborhood = useCallback((noteId: string) => {
+    controller.onEnterNeighborhood(noteId)
+    openList()
+  }, [controller, openList])
   const swipeHandlers = useHorizontalSwipe({ onSwipeRight: returnToEditor })
 
   return (
@@ -343,6 +350,7 @@ function PhonePropertiesScreen({
         onAddRelationship={controller.onAddRelationship}
         onDeleteProperty={controller.onDeleteProperty}
         onEditProperty={controller.onEditProperty}
+        onEnterNeighborhood={enterNeighborhood}
         onOpenChangeNoteType={controller.onOpenChangeNoteType}
         onRemoveRelationship={controller.onRemoveRelationship}
         onSelectNote={openEditor}

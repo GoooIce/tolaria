@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  favoriteNeighborhoodSelectionForSidebarItem,
   filterNotesBySearch,
   noteListPropertiesForSelection,
   notesForSidebarSelection,
@@ -101,6 +102,43 @@ describe('tablet workspace navigation', () => {
       label: 'Journal',
       sectionId: 'favorites',
     }).map((candidate) => candidate.id)).toEqual(['selected'])
+  })
+
+  it('resolves favorite sidebar items to desktop Neighborhood selections', () => {
+    const snapshot = workspaceSnapshot([
+      note({ favorite: true, id: 'alpha', title: 'Alpha' }),
+      note({ favorite: true, id: 'duplicate-title', title: 'Journal' }),
+      note({ archived: true, favorite: true, id: 'archived', title: 'Archived' }),
+    ])
+
+    expect(favoriteNeighborhoodSelectionForSidebarItem(snapshot, {
+      id: 'favorite-alpha',
+      label: 'Different label',
+      sectionId: 'favorites',
+    })).toEqual({
+      id: 'alpha',
+      kind: 'entity',
+      label: 'Alpha',
+    })
+    expect(favoriteNeighborhoodSelectionForSidebarItem(snapshot, {
+      id: 'legacy-journal',
+      label: 'Journal',
+      sectionId: 'favorites',
+    })).toEqual({
+      id: 'duplicate-title',
+      kind: 'entity',
+      label: 'Journal',
+    })
+    expect(favoriteNeighborhoodSelectionForSidebarItem(snapshot, {
+      id: 'favorite-archived',
+      label: 'Archived',
+      sectionId: 'favorites',
+    })).toBeNull()
+    expect(favoriteNeighborhoodSelectionForSidebarItem(snapshot, {
+      id: 'all-notes',
+      label: 'All Notes',
+      sectionId: 'primary',
+    })).toBeNull()
   })
 
   it('keeps inbox limited to active unorganized non-Type notes', () => {

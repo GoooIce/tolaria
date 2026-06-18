@@ -441,6 +441,7 @@ async function navigatePhoneSidebarSection(page: PageLike) {
   await page.getByRole('button', { name: 'All Notes' }).click()
   await expect(page.getByTestId('phone-note-list-screen')).toBeVisible()
   await expect(page.getByTestId('note-list-toolbar-title')).toHaveText('All Notes')
+  await openPhoneFavoriteNeighborhood(page)
 }
 
 async function expectToolbarLeadingActionBeforeTitle(page: PageLike) {
@@ -458,6 +459,27 @@ async function openPhoneEditorAndProperties(page: PageLike) {
   await page.getByTestId('phone-properties-action').click()
   await expect(page.getByTestId('phone-properties-screen')).toBeVisible()
   await expect(page.getByTestId('properties-panel')).toBeVisible()
+}
+
+async function openPhoneFavoriteNeighborhood(page: PageLike) {
+  await page.getByTestId('note-row-open-source-project').click()
+  await expect(page.getByTestId('phone-editor-screen')).toBeVisible()
+  await page.getByTestId('editor-favorite-action').click()
+  await expect(page.getByLabel('Remove from Favorites')).toBeVisible()
+  await page.getByTestId('phone-back-action').click()
+  await expect(page.getByTestId('phone-note-list-screen')).toBeVisible()
+
+  await page.getByTestId('phone-sidebar-action').click()
+  await expect(page.getByTestId('sidebar-item-favorite-open-source-project')).toBeVisible()
+  await page.getByTestId('sidebar-item-favorite-open-source-project').click()
+  await expect(page.getByTestId('phone-note-list-screen')).toBeVisible()
+  await expect(page.getByTestId('note-list-toolbar-title')).toHaveText('How I Run an Open Source Project')
+  await expect(page.getByTestId('note-row-open-source-project')).toBeVisible()
+
+  await page.getByTestId('phone-sidebar-action').click()
+  await page.getByRole('button', { name: 'All Notes' }).click()
+  await expect(page.getByTestId('phone-note-list-screen')).toBeVisible()
+  await expect(page.getByTestId('note-list-toolbar-title')).toHaveText('All Notes')
 }
 
 async function editPhoneProperty(page: PageLike) {

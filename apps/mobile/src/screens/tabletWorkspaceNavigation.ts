@@ -142,6 +142,17 @@ function useTabletSelectionActions({
       selectNeighborhoodNote({ noteId, setSelectedNoteId, setSidebarSelection, snapshot: sourceSnapshot })
     }, [setSelectedNoteId, setSidebarSelection, snapshot]),
     selectSidebarItem: useCallback((selection: MobileSidebarItemSelection, sourceSnapshot = snapshot) => {
+      const favoriteSelection = favoriteNeighborhoodSelectionForSidebarItem(sourceSnapshot, selection)
+      if (favoriteSelection) {
+        selectNeighborhoodNote({
+          noteId: favoriteSelection.id,
+          setSelectedNoteId,
+          setSidebarSelection,
+          snapshot: sourceSnapshot,
+        })
+        return
+      }
+
       selectSidebarSelection({
         count: selection.count,
         id: selection.id,
@@ -151,7 +162,7 @@ function useTabletSelectionActions({
         typeName: selection.typeName,
         viewId: selection.viewId,
       }, sourceSnapshot)
-    }, [selectSidebarSelection, snapshot]),
+    }, [selectSidebarSelection, setSelectedNoteId, setSidebarSelection, snapshot]),
   }
 }
 
@@ -265,10 +276,31 @@ function notesForSavedView(
 }
 
 function notesForFavoriteSelection(notes: MobileNote[], selection: TabletSidebarItemSelection) {
+  const selectedNote = favoriteNoteForSelection(notes, selection)
+  return selectedNote ? [selectedNote] : []
+}
+
+export function favoriteNeighborhoodSelectionForSidebarItem(
+  snapshot: MobileWorkspaceSnapshot,
+  selection: MobileSidebarItemSelection,
+): TabletSidebarSelection | null {
+  if (selection.sectionId !== 'favorites') return null
+
+  const note = favoriteNoteForSelection(workspaceNotes(snapshot), selection)
+  if (!note) return null
+
+  return {
+    id: note.id,
+    kind: 'entity',
+    label: note.title,
+  }
+}
+
+function favoriteNoteForSelection(notes: MobileNote[], selection: Pick<TabletSidebarItemSelection, 'id' | 'label'>) {
   const selectedNoteId = favoriteNoteId(selection.id)
-  return notes.filter((note) => isMobileMarkdownNote(note) && !note.archived && note.favorite && (
+  return notes.find((note) => isMobileMarkdownNote(note) && !note.archived && note.favorite && (
     selectedNoteId ? note.id === selectedNoteId : note.title === selection.label
-  ))
+  )) ?? null
 }
 
 function favoriteNoteId(itemId: string) {
