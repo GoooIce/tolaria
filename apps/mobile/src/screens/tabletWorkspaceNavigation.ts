@@ -48,6 +48,7 @@ const sidebarSectionResolvers: Record<string, SidebarNotesResolver> = {
   views: (snapshot, _notes, selection) => notesForSavedView(snapshot, selection),
 }
 const noteListPropertyResolvers: Record<string, NoteListPropertyResolver> = {
+  primary: (snapshot, selection) => primaryNoteListPropertiesForSelection(snapshot, selection),
   types: (snapshot, selection) => typeDefinitionForSelection(snapshot, selection)?.listPropertiesDisplay ?? [],
   views: (snapshot, selection) => savedViewForSelection(snapshot, selection)?.definition.listPropertiesDisplay ?? [],
 }
@@ -64,13 +65,18 @@ export function useTabletWorkspaceNavigation(snapshot: MobileWorkspaceSnapshot, 
   const notes = useMemo(() => (
     noteListNeighborhood
       ? flattenMobileNeighborhoodNotes(noteListNeighborhood)
-      : filterNotesBySearch(sidebarNotes, searchQuery, noteListProperties)
-  ), [noteListNeighborhood, noteListProperties, searchQuery, sidebarNotes])
+      : filterNotesBySearch(sidebarNotes, searchQuery, noteListProperties, snapshot.typeDefinitions)
+  ), [noteListNeighborhood, noteListProperties, searchQuery, sidebarNotes, snapshot.typeDefinitions])
   const selectedNote = selectedMobileNote(snapshot, notes, selectedNoteId)
 
   const selectSidebarSelection = useCallback((selection: TabletSidebarSelection, sourceSnapshot = snapshot) => {
     const nextNoteListProperties = noteListPropertiesForSelection(sourceSnapshot, selection)
-    const nextNotes = filterNotesBySearch(notesForSidebarSelection(sourceSnapshot, selection), searchQuery, nextNoteListProperties)
+    const nextNotes = filterNotesBySearch(
+      notesForSidebarSelection(sourceSnapshot, selection),
+      searchQuery,
+      nextNoteListProperties,
+      sourceSnapshot.typeDefinitions,
+    )
     setSidebarSelection(selection)
     setSelectedNoteId(nextNotes[0]?.id ?? null)
   }, [searchQuery, snapshot])
@@ -287,6 +293,15 @@ export function noteListPropertiesForSelection(
   return noteListPropertyResolvers[selection.sectionId]?.(snapshot, selection) ?? []
 }
 
+function primaryNoteListPropertiesForSelection(
+  snapshot: MobileWorkspaceSnapshot,
+  selection: TabletSidebarItemSelection,
+) {
+  if (selection.id === 'all-notes') return snapshot.noteListPropertyOverrides?.allNotes ?? []
+  if (selection.id === 'inbox') return snapshot.noteListPropertyOverrides?.inbox ?? []
+  return []
+}
+
 function savedViewForSelection(
   snapshot: MobileWorkspaceSnapshot,
   selection: TabletSidebarItemSelection,
@@ -315,11 +330,16 @@ function typeNameForSelection(
     ?.typeName ?? null
 }
 
-export function filterNotesBySearch(notes: MobileNote[], searchQuery: SearchQuery, displayPropertyKeys: string[] = []) {
+export function filterNotesBySearch(
+  notes: MobileNote[],
+  searchQuery: SearchQuery,
+  displayPropertyKeys: string[] = [],
+  typeDefinitions?: MobileWorkspaceSnapshot['typeDefinitions'],
+) {
   const normalizedSearch = normalizedMobileSearchQuery(searchQuery)
   if (!normalizedSearch) return notes
 
-  return notes.filter((note) => mobileNoteListMatchesQuery(note, normalizedSearch, displayPropertyKeys))
+  return notes.filter((note) => mobileNoteListMatchesQuery(note, normalizedSearch, displayPropertyKeys, typeDefinitions))
 }
 
 function inboxNotes(notes: MobileNote[]) {

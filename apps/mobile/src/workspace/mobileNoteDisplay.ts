@@ -1,4 +1,4 @@
-import type { MobileNote, MobileTone } from './mobileWorkspaceModel'
+import type { MobileNote, MobileTone, MobileTypeDefinitions } from './mobileWorkspaceModel'
 
 export type MobileTagTone = 'blue' | 'green' | 'orange' | 'purple' | 'red'
 type DisplayPropertyKey = string
@@ -11,21 +11,32 @@ export type MobileNoteDisplayChip = {
   tone: MobileTone
 }
 
-export function defaultMobileNoteRowChips(note: MobileNote): MobileNoteDisplayChip[] {
-  return [
-    { label: note.type, tone: chipTone(note.typeTone) },
-    ...(note.status ? [{ label: note.status, tone: statusTone(note.status) }] : []),
-    ...note.tags.slice(0, 1).map((tag) => ({ label: tag, tone: tagTone(tag) })),
-  ]
+export function mobileNoteRowChips(
+  note: MobileNote,
+  keys: DisplayPropertyKey[] = [],
+  typeDefinitions?: MobileTypeDefinitions,
+): MobileNoteDisplayChip[] {
+  return configuredMobileNoteRowChips(note, displayPropertyKeysForNote(note, keys, typeDefinitions))
 }
 
 export function configuredMobileNoteRowChips(note: MobileNote, keys: DisplayPropertyKey[]): MobileNoteDisplayChip[] {
   return keys.flatMap((key) => displayPropertyChips(note, key))
 }
 
-export function mobileNoteDisplayLabels(note: MobileNote, keys: DisplayPropertyKey[]): string[] {
-  const chips = keys.length > 0 ? configuredMobileNoteRowChips(note, keys) : defaultMobileNoteRowChips(note)
-  return chips.map((chip) => chip.label)
+export function mobileNoteDisplayLabels(
+  note: MobileNote,
+  keys: DisplayPropertyKey[] = [],
+  typeDefinitions?: MobileTypeDefinitions,
+): string[] {
+  return mobileNoteRowChips(note, keys, typeDefinitions).map((chip) => chip.label)
+}
+
+function displayPropertyKeysForNote(
+  note: MobileNote,
+  keys: DisplayPropertyKey[],
+  typeDefinitions: MobileTypeDefinitions | undefined,
+) {
+  return keys.length > 0 ? keys : typeDefinitions?.[note.type]?.listPropertiesDisplay ?? []
 }
 
 export function chipTone(tone: MobileTone) {

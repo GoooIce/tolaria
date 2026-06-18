@@ -98,6 +98,14 @@ test.describe('mobile UI lab interactions', () => {
     await customizeCreatedSavedViewColumns(page)
   })
 
+  test('customizes primary note-list columns', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'tablet-landscape', 'Primary note-list column editing is exercised in the full-width tablet layout.')
+
+    await page.goto('/')
+    await addPrioritySortFixtures(page)
+    await customizeAllNotesColumns(page)
+  })
+
   test('customizes type section metadata and note-list columns', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'tablet-landscape', 'Type-section editing is exercised in the full-width tablet layout.')
 
@@ -591,6 +599,19 @@ async function customizeCreatedSavedViewColumns(page: PageLike) {
   await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
 }
 
+async function customizeAllNotesColumns(page: PageLike) {
+  await page.getByTestId('sidebar-item-all-notes').click()
+  await expect(page.getByTestId('note-list-toolbar-title')).toHaveText('All Notes')
+  await longPress(page, 'sidebar-item-all-notes')
+  await expect(page.getByTestId('workspace-action-sheet-editPrimaryListProperties')).toBeVisible()
+  await page.getByTestId('workspace-primary-property-search-input').fill('Pri')
+  await page.getByTestId('workspace-primary-property-option-priority').click()
+  await page.getByTestId('workspace-action-sheet-editPrimaryListProperties').getByRole('button', { name: 'Save' }).click()
+  await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
+  await expect(page.getByTestId('note-row-workflow-orchestration').getByText('2')).toBeVisible()
+  await expect(page.getByTestId('note-row-open-source-project').getByText('1')).toBeVisible()
+}
+
 async function addPrioritySortFixtures(page: PageLike) {
   await addNumericPropertyToNote(page, 'note-row-workflow-orchestration', 'Priority', '2')
   await addNumericPropertyToNote(page, 'note-row-open-source-project', 'Priority', '1')
@@ -867,7 +888,6 @@ async function editRawFrontmatterContract(page: PageLike) {
 
   await expect(page.getByTestId('editor-title')).toHaveText('Raw Frontmatter Contract')
   await expect(page.getByTestId('note-row-workflow-orchestration')).toContainText('Raw Frontmatter Contract')
-  await expect(page.getByTestId('note-row-workflow-orchestration')).toContainText('Mobile')
   await expect(page.getByTestId('property-row-type')).toContainText('Procedure')
   await expect(page.getByTestId('property-row-status')).toContainText('Active')
   await expect(page.getByTestId('property-tags-wrap')).toContainText('Parity')

@@ -125,6 +125,7 @@ function PhoneNoteListScreen({
         selectedNoteId={controller.selectedNoteId}
         subtitle={controller.noteListSubtitle}
         title={controller.noteListTitle}
+        typeDefinitions={controller.snapshot.typeDefinitions}
         onOpenCreateNote={controller.onOpenCreateNote}
         onOpenSearch={controller.onOpenSearch}
         onSelectNote={openEditor}
@@ -155,6 +156,7 @@ function PhoneSidebarDrawer({
           selectedNoteId={controller.selectedNoteId}
           subtitle={controller.noteListSubtitle}
           title={controller.noteListTitle}
+          typeDefinitions={controller.snapshot.typeDefinitions}
           onOpenCreateNote={controller.onOpenCreateNote}
           onOpenSearch={controller.onOpenSearch}
           onSelectNote={openEditor}
@@ -170,6 +172,7 @@ function PhoneSidebarDrawer({
           onCreateType={controller.onOpenCreateType}
           onCreateView={controller.onOpenCreateView}
           onOpenFolderActions={controller.onOpenFolderActions}
+          onOpenPrimaryActions={controller.onOpenPrimaryActions}
           onOpenTypeActions={controller.onOpenTypeActions}
           onOpenViewActions={controller.onOpenViewActions}
           onSelectFolder={selectFolder}

@@ -18,6 +18,7 @@ import type {
 } from '../workspace/mobileWorkspaceModel'
 import {
   applyMobileWorkspaceEditWithWrites,
+  normalizedDisplayProperties,
   type MobileWorkspaceEdit,
 } from '../workspace/mobileWorkspaceEditing'
 import type {
@@ -68,6 +69,10 @@ import {
   folderParentPathForSelection,
   folderWorkspaceActions,
 } from './tabletWorkspaceFolderActions'
+import {
+  openPrimaryListProperties,
+  primaryNoteListWorkspaceActions,
+} from './tabletWorkspacePrimaryNoteListActions'
 import { createViewInitialFilters } from './tabletWorkspaceViewHelpers'
 
 const emptyReadOnlyForm: TabletReadOnlyForm = {
@@ -80,6 +85,9 @@ const emptyReadOnlyForm: TabletReadOnlyForm = {
   folderPath: '',
   noteIcon: '',
   noteType: '',
+  primaryDisplayProperties: [],
+  primaryItemId: '',
+  primaryPropertyQuery: '',
   propertyName: '',
   propertyValue: '',
   propertyValueKind: 'string',
@@ -352,6 +360,12 @@ function actionSheetWorkspaceActions({
       setOpenAction,
       updateReadOnlyForm,
     }),
+    onOpenPrimaryActions: (selection: MobileSidebarItemSelection) => openPrimaryListProperties({
+      selection,
+      setOpenAction,
+      snapshot: workspaceSnapshot,
+      updateReadOnlyForm,
+    }),
     onOpenViewActions: (selection: MobileSidebarItemSelection) => openViewActions({
       selection,
       setOpenAction,
@@ -405,6 +419,7 @@ function createWorkspaceActions({
     }),
     onTypeNameChange: (value: string) => updateReadOnlyForm('typeName', value),
     ...folderWorkspaceActions({ applyEdit, closeAction, readOnlyForm, setOpenAction, updateReadOnlyForm }),
+    ...primaryNoteListWorkspaceActions({ applyEdit, closeAction, readOnlyForm, updateReadOnlyForm, workspaceSnapshot }),
     ...savedViewWorkspaceActions({ applyEdit, closeAction, readOnlyForm, updateReadOnlyForm, workspaceSnapshot }),
     ...typeSectionWorkspaceActions({ applyEdit, closeAction, readOnlyForm, updateReadOnlyForm, workspaceSnapshot }),
   }
@@ -964,7 +979,7 @@ function createView({
       color: tone,
       filters,
       icon: normalizedOptionalIcon(icon),
-      listPropertiesDisplay: normalizedListPropertiesDisplay(displayProperties),
+      listPropertiesDisplay: normalizedDisplayProperties(displayProperties),
       name: trimmedName,
       sort: normalizedOptionalSort(sort),
     },
@@ -1005,7 +1020,7 @@ function updateView({
       ...view.definition,
       filters,
       icon: normalizedOptionalIcon(icon),
-      listPropertiesDisplay: normalizedListPropertiesDisplay(displayProperties),
+      listPropertiesDisplay: normalizedDisplayProperties(displayProperties),
       name: trimmedName,
       sort: normalizedOptionalSort(sort),
       color: tone,
@@ -1032,7 +1047,7 @@ function updateTypeDefinition({
     patch: {
       label: form.typeSectionLabel,
       icon: normalizedIcon(form.typeIcon, 'file'),
-      listPropertiesDisplay: normalizedListPropertiesDisplay(form.typeDisplayProperties),
+      listPropertiesDisplay: normalizedDisplayProperties(form.typeDisplayProperties),
       ...typeDefinitionSchemaPatch(form.typeSchemaProperties, form.typeSchemaRelationships),
       sort: form.typeSort,
       template: form.typeTemplate,
@@ -1078,18 +1093,6 @@ function viewDisplayPropertiesForEdit(
     evaluateMobileSavedView(view, workspaceNotes(snapshot)),
     snapshot.typeDefinitions,
   )
-}
-
-function normalizedListPropertiesDisplay(displayProperties: string[]) {
-  const seen = new Set<string>()
-  return displayProperties
-    .map((key) => key.trim())
-    .filter((key) => {
-      const normalized = key.toLowerCase()
-      if (!normalized || seen.has(normalized)) return false
-      seen.add(normalized)
-      return true
-    })
 }
 
 function normalizedOptionalSort(sort: string) {

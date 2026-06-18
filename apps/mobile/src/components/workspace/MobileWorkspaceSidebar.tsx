@@ -57,6 +57,7 @@ type MobileWorkspaceSidebarProps = {
   onCreateType?: () => void
   onCreateView?: () => void
   onOpenFolderActions?: (selection: MobileSidebarFolderSelection) => void
+  onOpenPrimaryActions?: (selection: MobileSidebarItemSelection) => void
   onOpenTypeActions?: (selection: MobileSidebarItemSelection) => void
   onOpenViewActions?: (selection: MobileSidebarItemSelection) => void
   onSelectFolder?: (selection: MobileSidebarFolderSelection) => void
@@ -89,6 +90,7 @@ export function MobileWorkspaceSidebar(props: MobileWorkspaceSidebarProps) {
     onCreateType,
     onCreateView,
     onOpenFolderActions,
+    onOpenPrimaryActions,
     onOpenTypeActions,
     onOpenViewActions,
     onSelectFolder,
@@ -118,6 +120,7 @@ export function MobileWorkspaceSidebar(props: MobileWorkspaceSidebarProps) {
             onCreateType={onCreateType}
             onCreateView={onCreateView}
             onOpenFolderActions={onOpenFolderActions}
+            onOpenPrimaryActions={onOpenPrimaryActions}
             onOpenTypeActions={onOpenTypeActions}
             onOpenViewActions={onOpenViewActions}
             onSelectFolder={onSelectFolder}
@@ -138,6 +141,7 @@ function SidebarSection({
   onCreateFolder,
   onCreateType,
   onOpenFolderActions,
+  onOpenPrimaryActions,
   onOpenTypeActions,
   onOpenViewActions,
   onSelectFolder,
@@ -151,6 +155,7 @@ function SidebarSection({
   onCreateType?: () => void
   onCreateView?: () => void
   onOpenFolderActions?: (selection: MobileSidebarFolderSelection) => void
+  onOpenPrimaryActions?: (selection: MobileSidebarItemSelection) => void
   onOpenTypeActions?: (selection: MobileSidebarItemSelection) => void
   onOpenViewActions?: (selection: MobileSidebarItemSelection) => void
   onSelectFolder?: (selection: MobileSidebarFolderSelection) => void
@@ -176,6 +181,7 @@ function SidebarSection({
         section={section}
         onOpenTypeActions={onOpenTypeActions}
         onOpenViewActions={onOpenViewActions}
+        onOpenPrimaryActions={onOpenPrimaryActions}
         onSelectItem={onSelectItem}
       />
       {section.folders ? (
@@ -243,6 +249,7 @@ function SidebarSectionItems({
   onSelectItem,
   onOpenTypeActions,
   onOpenViewActions,
+  onOpenPrimaryActions,
   section,
 }: {
   activeItemId?: string | null
@@ -250,6 +257,7 @@ function SidebarSectionItems({
   onSelectItem?: (selection: MobileSidebarItemSelection) => void
   onOpenTypeActions?: (selection: MobileSidebarItemSelection) => void
   onOpenViewActions?: (selection: MobileSidebarItemSelection) => void
+  onOpenPrimaryActions?: (selection: MobileSidebarItemSelection) => void
   section: MobileSidebarSection
 }) {
   return section.items?.map((item) => {
@@ -269,22 +277,40 @@ function SidebarSectionItems({
         layoutProbe={layoutProbe}
         metricId={`sidebar.item.${item.id}`}
         slug={item.id}
-        onLongPress={sidebarItemLongPress(section.id, selection, onOpenTypeActions, onOpenViewActions)}
+        onLongPress={sidebarItemLongPress({
+          onOpenPrimaryActions,
+          onOpenTypeActions,
+          onOpenViewActions,
+          sectionId: section.id,
+          selection,
+        })}
         onPress={() => onSelectItem?.(selection)}
       />
     )
   }) ?? null
 }
 
-function sidebarItemLongPress(
-  sectionId: SidebarSectionId,
-  selection: MobileSidebarItemSelection,
-  onOpenTypeActions?: (selection: MobileSidebarItemSelection) => void,
-  onOpenViewActions?: (selection: MobileSidebarItemSelection) => void,
-) {
+function sidebarItemLongPress({
+  onOpenPrimaryActions,
+  onOpenTypeActions,
+  onOpenViewActions,
+  sectionId,
+  selection,
+}: {
+  onOpenPrimaryActions?: (selection: MobileSidebarItemSelection) => void
+  onOpenTypeActions?: (selection: MobileSidebarItemSelection) => void
+  onOpenViewActions?: (selection: MobileSidebarItemSelection) => void
+  sectionId: SidebarSectionId
+  selection: MobileSidebarItemSelection
+}) {
+  if (sectionId === 'primary' && primaryItemCanCustomizeColumns(selection.id)) return () => onOpenPrimaryActions?.(selection)
   if (sectionId === 'types') return () => onOpenTypeActions?.(selection)
   if (sectionId === 'views') return () => onOpenViewActions?.(selection)
   return undefined
+}
+
+function primaryItemCanCustomizeColumns(itemId: SidebarItemId) {
+  return itemId === 'all-notes' || itemId === 'inbox'
 }
 
 function sidebarItemSelection(

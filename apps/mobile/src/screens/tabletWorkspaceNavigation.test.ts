@@ -52,6 +52,41 @@ describe('tablet workspace navigation', () => {
     expect(filterNotesBySearch(notes, 'llm workflow', ['Priority'])).toEqual([])
   })
 
+  it('uses Type display defaults for primary note-list search until a primary override is set', () => {
+    const notes = [
+      note({
+        id: 'workflow',
+        properties: [{ key: 'Priority', label: 'Priority', value: 'High' }],
+        title: 'Workflow Orchestration',
+        type: 'Essay',
+      }),
+      note({
+        id: 'release',
+        properties: [{ key: 'Priority', label: 'Priority', value: 'Low' }],
+        title: 'Release Notes',
+        type: 'Procedure',
+      }),
+    ]
+    const snapshot = {
+      ...workspaceSnapshot(notes),
+      noteListPropertyOverrides: { allNotes: ['tags'] },
+      typeDefinitions: {
+        Essay: { listPropertiesDisplay: ['Priority'] },
+        Procedure: { listPropertiesDisplay: ['Priority'] },
+      },
+    }
+    const allNotesSelection: TabletSidebarSelection = {
+      id: 'all-notes',
+      kind: 'item',
+      label: 'All Notes',
+      sectionId: 'primary',
+    }
+
+    expect(filterNotesBySearch(notes, 'high', [], snapshot.typeDefinitions).map((candidate) => candidate.id)).toEqual(['workflow'])
+    expect(noteListPropertiesForSelection(snapshot, allNotesSelection)).toEqual(['tags'])
+    expect(filterNotesBySearch(notes, 'high', noteListPropertiesForSelection(snapshot, allNotesSelection), snapshot.typeDefinitions)).toEqual([])
+  })
+
   it('opens the selected active favorite note instead of every favorite or title match', () => {
     const snapshot = workspaceSnapshot([
       note({ favorite: true, id: 'selected', title: 'Journal' }),

@@ -101,6 +101,7 @@ export type MobileWorkspaceEdit =
   | { definition: MobileViewDefinition; viewId: string; type: 'updateView' }
   | { viewId: string; type: 'deleteView' }
   | { direction: MobileViewMoveDirection; viewId: string; type: 'moveView' }
+  | { listPropertiesDisplay: string[]; target: 'allNotes' | 'inbox'; type: 'updatePrimaryNoteListProperties' }
   | { direction: MobileViewMoveDirection; type: 'moveTypeSection'; typeName: NoteTitle }
   | { type: 'createTypeDefinition'; typeName: NoteTitle }
   | { type: 'deleteTypeDefinition'; typeName: NoteTitle }
@@ -108,8 +109,9 @@ export type MobileWorkspaceEdit =
 type MobileViewEdit = Extract<MobileWorkspaceEdit, { type: 'createView' | 'deleteView' | 'moveView' | 'updateView' }>
 type MobileTypeEdit = Extract<MobileWorkspaceEdit, { type: 'createTypeDefinition' | 'deleteTypeDefinition' | 'moveTypeSection' | 'updateTypeDefinition' }>
 type MobileFolderEdit = Extract<MobileWorkspaceEdit, { type: 'createFolder' | 'deleteFolder' | 'renameFolder' }>
+type MobilePrimaryNoteListEdit = Extract<MobileWorkspaceEdit, { type: 'updatePrimaryNoteListProperties' }>
 type MobileSnapshotEdit = Extract<MobileWorkspaceEdit, { type: 'createRelationshipTarget' | 'deleteNote' | 'moveNoteToFolder' | 'renameNoteFile' }>
-type MobileNoteEdit = Exclude<MobileWorkspaceEdit, MobileFolderEdit | MobileSnapshotEdit | MobileTypeEdit | MobileViewEdit | { type: 'createNote' }>
+type MobileNoteEdit = Exclude<MobileWorkspaceEdit, MobileFolderEdit | MobilePrimaryNoteListEdit | MobileSnapshotEdit | MobileTypeEdit | MobileViewEdit | { type: 'createNote' }>
 type MobileWorkspaceResultHandlerMap = {
   [Type in MobileWorkspaceEdit['type']]?: (
     snapshot: MobileWorkspaceSnapshot,
@@ -224,6 +226,7 @@ const mobileWorkspaceResultHandlers: MobileWorkspaceResultHandlerMap = {
   moveNoteToFolder: (snapshot, edit) => moveNoteToFolder(snapshot, edit),
   renameFolder: (snapshot, edit) => applyMobileFolderEdit(snapshot, edit, rebuildSnapshot),
   renameNoteFile: (snapshot, edit) => renameNoteFile(snapshot, edit),
+  updatePrimaryNoteListProperties: (snapshot, edit) => updatePrimaryNoteListProperties(snapshot, edit),
   updateTypeDefinition: (snapshot, edit) => applyMobileTypeEdit(snapshot, edit, rebuildSnapshot),
   updateProperty: (snapshot, edit) => updateMobileNoteProperty(snapshot, edit),
   updateView: (snapshot, edit) => updateMobileView(snapshot, edit.viewId, edit.definition),
@@ -947,6 +950,37 @@ function moveMobileView(
       path: mobileSavedViewPath(view.filename),
     })),
   }
+}
+
+function updatePrimaryNoteListProperties(
+  snapshot: MobileWorkspaceSnapshot,
+  edit: Extract<MobileWorkspaceEdit, { type: 'updatePrimaryNoteListProperties' }>,
+): MobileWorkspaceEditResult {
+  const nextOverrides = { ...snapshot.noteListPropertyOverrides }
+  const displayProperties = normalizedDisplayProperties(edit.listPropertiesDisplay)
+
+  if (displayProperties.length > 0) nextOverrides[edit.target] = displayProperties
+  else Reflect.deleteProperty(nextOverrides, edit.target)
+
+  return {
+    snapshot: {
+      ...snapshot,
+      noteListPropertyOverrides: Object.keys(nextOverrides).length > 0 ? nextOverrides : undefined,
+    },
+    writes: [],
+  }
+}
+
+export function normalizedDisplayProperties(displayProperties: string[]) {
+  const seen = new Set<string>()
+  return displayProperties
+    .map((key) => key.trim())
+    .filter((key) => {
+      const normalized = key.toLowerCase()
+      if (!normalized || seen.has(normalized)) return false
+      seen.add(normalized)
+      return true
+    })
 }
 
 function findMobileView(views: MobileSavedView[] | undefined, viewId: string): MobileSavedView | null {

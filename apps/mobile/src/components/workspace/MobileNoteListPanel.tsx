@@ -11,9 +11,9 @@ import { MobileListRow } from '../../ui/MobileListRow'
 import { MobilePanel, MobileToolbar, MobileToolbarSpacer, MobileToolbarTitle } from '../../ui/MobilePanel'
 import { desktopPanelParity, desktopToolbarActionParity, desktopToolbarParity } from '../../ui/desktopParity'
 import { mobileColors, mobileSpace, mobileType } from '../../ui/tokens'
-import { configuredMobileNoteRowChips, defaultMobileNoteRowChips } from '../../workspace/mobileNoteDisplay'
+import { mobileNoteRowChips } from '../../workspace/mobileNoteDisplay'
 import type { MobileNeighborhood, MobileNeighborhoodGroup } from '../../workspace/mobileNeighborhood'
-import type { MobileNote } from '../../workspace/mobileWorkspaceModel'
+import type { MobileNote, MobileTypeDefinitions } from '../../workspace/mobileWorkspaceModel'
 import { MobileTypeIcon } from './MobileWorkspaceIcons'
 import { noteTypeColor, noteTypeSoftColor } from './mobileWorkspaceTone'
 
@@ -32,6 +32,7 @@ type MobileNoteListPanelProps = {
   selectedNoteId: string | null
   subtitle: string
   title?: string
+  typeDefinitions?: MobileTypeDefinitions
 }
 
 export function MobileNoteListPanel(props: MobileNoteListPanelProps) {
@@ -50,6 +51,7 @@ export function MobileNoteListPanel(props: MobileNoteListPanelProps) {
     selectedNoteId,
     subtitle,
     title = mobileCopy.inbox,
+    typeDefinitions,
   } = props
   const activeNoteId = selectedNoteId ?? notes[0]?.id ?? null
   const layoutProbe = useMobileLayoutProbe(layoutProbeEnabled)
@@ -77,6 +79,7 @@ export function MobileNoteListPanel(props: MobileNoteListPanelProps) {
           displayPropertyKeys={displayPropertyKeys}
           layoutProbe={layoutProbe.probe}
           neighborhood={neighborhood}
+          typeDefinitions={typeDefinitions}
           onSelectNote={onSelectNote}
         />
       ) : notes.length === 0 ? (
@@ -94,6 +97,7 @@ export function MobileNoteListPanel(props: MobileNoteListPanelProps) {
             displayPropertyKeys,
             layoutProbe: layoutProbe.probe,
             note,
+            typeDefinitions,
             onSelectNote,
           })}
           removeClippedSubviews
@@ -117,12 +121,14 @@ function NeighborhoodNoteList({
   layoutProbe,
   neighborhood,
   onSelectNote,
+  typeDefinitions,
 }: {
   activeNoteId: string | null
   displayPropertyKeys: string[]
   layoutProbe: MobileLayoutProbe
   neighborhood: MobileNeighborhood
   onSelectNote: (noteId: string) => void
+  typeDefinitions?: MobileTypeDefinitions
 }) {
   const rows = useMemo(() => neighborhoodRows(neighborhood), [neighborhood])
 
@@ -138,6 +144,7 @@ function NeighborhoodNoteList({
         displayPropertyKeys,
         item,
         layoutProbe,
+        typeDefinitions,
         onSelectNote,
       })}
       removeClippedSubviews
@@ -163,12 +170,14 @@ function neighborhoodRow({
   item,
   layoutProbe,
   onSelectNote,
+  typeDefinitions,
 }: {
   activeNoteId: string | null
   displayPropertyKeys: string[]
   item: NeighborhoodRow
   layoutProbe: MobileLayoutProbe
   onSelectNote: (noteId: string) => void
+  typeDefinitions?: MobileTypeDefinitions
 }) {
   if (item.kind === 'header') return <RelationshipGroupHeader group={item.group} />
 
@@ -178,6 +187,7 @@ function neighborhoodRow({
     forceSelected: item.kind === 'source',
     layoutProbe,
     note: item.note,
+    typeDefinitions,
     onSelectNote,
   })
 }
@@ -189,6 +199,7 @@ function noteRow({
   layoutProbe,
   note,
   onSelectNote,
+  typeDefinitions,
 }: {
   activeNoteId: string | null
   displayPropertyKeys: string[]
@@ -196,10 +207,11 @@ function noteRow({
   layoutProbe: MobileLayoutProbe
   note: MobileNote
   onSelectNote: (noteId: string) => void
+  typeDefinitions?: MobileTypeDefinitions
 }) {
   return (
     <MobileListRow
-      chips={<NoteRowChips displayPropertyKeys={displayPropertyKeys} note={note} />}
+      chips={<NoteRowChips displayPropertyKeys={displayPropertyKeys} note={note} typeDefinitions={typeDefinitions} />}
       layoutProbe={layoutProbe}
       metricId={`noteList.item.${note.id}`}
       selected={forceSelected || note.id === activeNoteId}
@@ -244,13 +256,13 @@ function NoteListEmptyState({ searchQuery }: { searchQuery?: string }) {
 function NoteRowChips({
   displayPropertyKeys,
   note,
+  typeDefinitions,
 }: {
   displayPropertyKeys: string[]
   note: MobileNote
+  typeDefinitions?: MobileTypeDefinitions
 }) {
-  const chips = displayPropertyKeys.length > 0
-    ? configuredMobileNoteRowChips(note, displayPropertyKeys)
-    : defaultMobileNoteRowChips(note)
+  const chips = mobileNoteRowChips(note, displayPropertyKeys, typeDefinitions)
   if (chips.length === 0) return null
 
   return (

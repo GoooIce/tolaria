@@ -61,6 +61,7 @@ export type MobileWorkspaceAction =
   | 'createView'
   | 'editFolder'
   | 'editProperty'
+  | 'editPrimaryListProperties'
   | 'editTypeSection'
   | 'editView'
   | 'moreActions'
@@ -84,6 +85,9 @@ type MobileWorkspaceActionSheetProps = {
   notes: MobileNote[]
   noteIcon: string
   noteType: string
+  primaryDisplayProperties: string[]
+  primaryPropertyOptions: string[]
+  primaryPropertyQuery: string
   onChangeNoteType: () => void
   onChangeNoteTypeInputChange: (value: string) => void
   onClose: () => void
@@ -113,6 +117,8 @@ type MobileWorkspaceActionSheetProps = {
   onOpenMoveNoteToFolder: () => void
   onOpenRenameNoteFile: () => void
   onOpenSetNoteIcon: () => void
+  onPrimaryDisplayPropertiesChange: (value: string[]) => void
+  onPrimaryPropertyQueryChange: (value: string) => void
   onPropertyNameChange: (value: string) => void
   onPropertyValueChange: (value: string) => void
   onPropertyValueKindChange: (value: MobilePropertyValueKind) => void
@@ -120,6 +126,7 @@ type MobileWorkspaceActionSheetProps = {
   onRelationshipNoteSelect: (title: string, ref: string) => void
   onRelationshipNoteTitleChange: (value: string) => void
   onSaveProperty: () => void
+  onSavePrimaryNoteListProperties: () => void
   onSaveRelationship: () => void
   onSaveTypeDefinition: () => void
   onRenameFolder: () => void
@@ -255,6 +262,7 @@ const actionContentByAction: Record<MobileWorkspaceAction, (props: MobileWorkspa
   createView: (props) => <SingleTextFieldContent config={singleTextFieldConfig(props)} />,
   editFolder: (props) => <FolderActionsContent {...props} />,
   editProperty: (props) => <AddPropertyContent {...props} />,
+  editPrimaryListProperties: (props) => <PrimaryListPropertiesContent {...props} />,
   editTypeSection: (props) => <TypeSectionContent {...props} />,
   editView: (props) => <SingleTextFieldContent config={singleTextFieldConfig(props)} />,
   moreActions: (props) => <MoreActionsContent {...props} />,
@@ -616,6 +624,25 @@ function ViewDisplayPropertiesPicker({
       onQueryChange={onViewPropertyQueryChange}
       onSelectedPropertiesChange={onViewDisplayPropertiesChange}
     />
+  )
+}
+
+function PrimaryListPropertiesContent(props: MobileWorkspaceActionSheetProps) {
+  return (
+    <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" style={styles.scrollArea}>
+      <MobileViewDisplayPropertiesPicker
+        options={props.primaryPropertyOptions}
+        query={props.primaryPropertyQuery}
+        selectedProperties={props.primaryDisplayProperties}
+        testIDPrefix="workspace-primary-property"
+        onQueryChange={props.onPrimaryPropertyQueryChange}
+        onSelectedPropertiesChange={props.onPrimaryDisplayPropertiesChange}
+      />
+      <SheetFooter>
+        <MobileButton label={mobileText('common.cancel')} variant="ghost" onPress={props.onClose} />
+        <MobileButton label={mobileText('common.save')} variant="primary" onPress={props.onSavePrimaryNoteListProperties} />
+      </SheetFooter>
+    </ScrollView>
   )
 }
 
@@ -1134,6 +1161,7 @@ const actionTitleByAction: Record<MobileWorkspaceAction, () => string> = {
   createView: () => mobileText('viewDialog.title.create'),
   editFolder: () => mobileText('sidebar.action.renameFolder'),
   editProperty: () => mobileText('inspector.title.properties'),
+  editPrimaryListProperties: () => mobileText('noteList.properties.customizeColumns'),
   editTypeSection: () => mobileText('sidebar.section.name'),
   editView: () => mobileText('viewDialog.title.edit'),
   moreActions: () => mobileText('editor.toolbar.moreActions'),

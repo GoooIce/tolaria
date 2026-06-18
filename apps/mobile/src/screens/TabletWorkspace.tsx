@@ -113,6 +113,7 @@ function TabletSidebarHost({
   onOpenCreateType,
   onOpenCreateView,
   onOpenFolderActions,
+  onOpenPrimaryActions,
   onOpenTypeActions,
   onOpenViewActions,
   onSelectFolder,
@@ -133,6 +134,7 @@ function TabletSidebarHost({
         onCreateType={onOpenCreateType}
         onCreateView={onOpenCreateView}
         onOpenFolderActions={onOpenFolderActions}
+        onOpenPrimaryActions={onOpenPrimaryActions}
         onOpenTypeActions={onOpenTypeActions}
         onOpenViewActions={onOpenViewActions}
         onSelectFolder={onSelectFolder}
@@ -156,6 +158,7 @@ function TabletNoteListHost({
   onSelectNote,
   searchQuery,
   selectedNoteId,
+  snapshot,
 }: TabletPanelHostProps) {
   if (!gestures.noteListVisible) return <SwipeRail edge="left" swipeHandlers={gestures.noteListRevealSwipe} />
 
@@ -171,6 +174,7 @@ function TabletNoteListHost({
         selectedNoteId={selectedNoteId}
         subtitle={noteListSubtitle}
         title={noteListTitle}
+        typeDefinitions={snapshot.typeDefinitions}
         onOpenCreateNote={onOpenCreateNote}
         onOpenSearch={onOpenSearch}
         onSelectNote={onSelectNote}
@@ -301,6 +305,7 @@ function actionSheetValues(props: ActionSheetHostProps) {
     searchQuery,
     selectedNote,
     suggestionNotes,
+    primaryPropertyOptions,
     typePropertyOptions,
     typeRelationshipTargetOptions,
     typeSortPropertyOptions,
@@ -320,6 +325,7 @@ function actionSheetValues(props: ActionSheetHostProps) {
     selectedNote,
     ...actionSheetFormValues(readOnlyForm),
     typeDefinitions: props.snapshot.typeDefinitions,
+    primaryPropertyOptions,
     typePropertyOptions,
     typeRelationshipTargetOptions,
     typeSortPropertyOptions,
@@ -336,6 +342,8 @@ function actionSheetFormValues(readOnlyForm: ActionSheetHostProps['readOnlyForm'
     folderPath: readOnlyForm.folderPath,
     noteIcon: readOnlyForm.noteIcon,
     noteType: readOnlyForm.noteType,
+    primaryDisplayProperties: readOnlyForm.primaryDisplayProperties,
+    primaryPropertyQuery: readOnlyForm.primaryPropertyQuery,
     propertyName: readOnlyForm.propertyName,
     propertyValue: readOnlyForm.propertyValue,
     propertyValueKind: readOnlyForm.propertyValueKind,
@@ -397,6 +405,8 @@ function actionSheetHandlers(props: ActionSheetHostProps) {
     onOpenMoveNoteToFolder: props.onOpenMoveNoteToFolder,
     onOpenRenameNoteFile: props.onOpenRenameNoteFile,
     onOpenSetNoteIcon: props.onOpenSetNoteIcon,
+    onPrimaryDisplayPropertiesChange: props.onPrimaryDisplayPropertiesChange,
+    onPrimaryPropertyQueryChange: props.onPrimaryPropertyQueryChange,
     onPropertyNameChange: props.onPropertyNameChange,
     onPropertyValueChange: props.onPropertyValueChange,
     onPropertyValueKindChange: props.onPropertyValueKindChange,
@@ -407,6 +417,7 @@ function actionSheetHandlers(props: ActionSheetHostProps) {
     onRenameNoteFile: props.onRenameNoteFile,
     onRenameNoteFileToTitle: props.onRenameNoteFileToTitle,
     onRemoveNoteIcon: props.onRemoveNoteIcon,
+    onSavePrimaryNoteListProperties: props.onSavePrimaryNoteListProperties,
     onSaveProperty: props.onSaveProperty,
     onSaveRelationship: props.onSaveRelationship,
     onSaveTypeDefinition: props.onSaveTypeDefinition,

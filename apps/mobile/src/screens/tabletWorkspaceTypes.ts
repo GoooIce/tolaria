@@ -39,6 +39,9 @@ export type TabletReadOnlyForm = {
   folderPath: ReadOnlyFormValue
   noteIcon: ReadOnlyFormValue
   noteType: ReadOnlyFormValue
+  primaryDisplayProperties: string[]
+  primaryItemId: ReadOnlyFormValue
+  primaryPropertyQuery: ReadOnlyFormValue
   propertyName: ReadOnlyFormValue
   propertyValue: ReadOnlyFormValue
   propertyValueKind: MobilePropertyValueKind
@@ -127,6 +130,7 @@ export type TabletWorkspaceChromeProps = {
   onOpenCreateView: () => void
   onOpenFolderActions: (selection: MobileSidebarFolderSelection) => void
   onOpenMoveNoteToFolder: () => void
+  onOpenPrimaryActions: (selection: MobileSidebarItemSelection) => void
   onOpenTypeActions: (selection: MobileSidebarItemSelection) => void
   onOpenViewActions: (selection: MobileSidebarItemSelection) => void
   onOpenMoreActions: () => void
@@ -136,6 +140,7 @@ export type TabletWorkspaceChromeProps = {
   onRemoveRelationship: (noteId: NoteId, key: string, ref: string) => void
   onRenameFolder: () => void
   onSaveTypeDefinition: () => void
+  onSavePrimaryNoteListProperties: () => void
   onSaveProperty: () => void
   onSaveRelationship: () => void
   onRenameNoteFile: () => void
@@ -169,6 +174,8 @@ export type TabletWorkspaceChromeProps = {
   onViewSortChange: (value: ReadOnlyFormValue) => void
   onViewToneChange: (value: MobileTone) => void
   onSaveView: () => void
+  onPrimaryDisplayPropertiesChange: (value: string[]) => void
+  onPrimaryPropertyQueryChange: (value: ReadOnlyFormValue) => void
   onPropertyNameChange: (value: ReadOnlyFormValue) => void
   onPropertyValueChange: (value: ReadOnlyFormValue) => void
   onPropertyValueKindChange: (value: MobilePropertyValueKind) => void
@@ -196,6 +203,7 @@ export type TabletWorkspaceChromeProps = {
   typePropertyOptions: string[]
   typeRelationshipTargetOptions: MobileWorkspaceSuggestionItem[]
   typeSortPropertyOptions: string[]
+  primaryPropertyOptions: string[]
   viewPropertyOptions: string[]
   viewSortPropertyOptions: string[]
   wysiwygMutationProbe?: boolean

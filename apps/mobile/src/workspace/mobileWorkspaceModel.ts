@@ -195,11 +195,17 @@ export type MobileSavedView = {
   id: string
 }
 
+export type MobilePrimaryNoteListPropertyOverrides = {
+  allNotes?: string[]
+  inbox?: string[]
+}
+
 export type MobileWorkspaceSnapshot = {
   allNotes?: MobileNote[]
   editorBlocks: MobileEditorBlock[]
   editorBullets: string[]
   folderPaths?: string[]
+  noteListPropertyOverrides?: MobilePrimaryNoteListPropertyOverrides
   noteListSubtitle: string
   notes: MobileNote[]
   searchQuery?: string

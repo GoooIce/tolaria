@@ -1,5 +1,5 @@
 import { mobileNoteDisplayLabels } from './mobileNoteDisplay'
-import type { MobileNote } from './mobileWorkspaceModel'
+import type { MobileNote, MobileTypeDefinitions } from './mobileWorkspaceModel'
 
 type DisplayPropertyKey = string
 type SearchQuery = string
@@ -40,18 +40,23 @@ export function mobileNoteListMatchesQuery(
   note: MobileNote,
   query: SearchQuery,
   displayPropertyKeys: DisplayPropertyKey[] = [],
+  typeDefinitions?: MobileTypeDefinitions,
 ) {
   const normalizedQuery = normalizeSearchText(query)
   if (!normalizedQuery) return true
 
-  return mobileNoteListSearchText(note, displayPropertyKeys).includes(normalizedQuery)
+  return mobileNoteListSearchText(note, displayPropertyKeys, typeDefinitions).includes(normalizedQuery)
 }
 
-export function mobileNoteListSearchText(note: MobileNote, displayPropertyKeys: DisplayPropertyKey[] = []) {
+export function mobileNoteListSearchText(
+  note: MobileNote,
+  displayPropertyKeys: DisplayPropertyKey[] = [],
+  typeDefinitions?: MobileTypeDefinitions,
+) {
   return normalizeSearchText([
     note.title,
     note.snippet,
-    ...mobileNoteDisplayLabels(note, displayPropertyKeys),
+    ...mobileNoteDisplayLabels(note, displayPropertyKeys, typeDefinitions),
   ].join(' '))
 }
 

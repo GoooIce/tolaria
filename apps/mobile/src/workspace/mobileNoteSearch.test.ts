@@ -51,7 +51,7 @@ describe('mobile note search', () => {
     expect(mobileNoteListMatchesQuery(candidate, 'llm workflow', ['Priority'])).toBe(false)
   })
 
-  it('keeps title, snippet, and default row chips searchable without a display override', () => {
+  it('uses desktop Type display properties when there is no display override', () => {
     const candidate = note({
       snippet: 'Release cleanup checklist',
       status: 'Active',
@@ -60,11 +60,15 @@ describe('mobile note search', () => {
       type: 'Procedure',
       typeTone: 'purple',
     })
+    const typeDefinitions = {
+      Procedure: { listPropertiesDisplay: ['status', 'tags'] },
+    }
 
     expect(mobileNoteListMatchesQuery(candidate, 'release cleanup')).toBe(true)
-    expect(mobileNoteListMatchesQuery(candidate, 'procedure')).toBe(true)
-    expect(mobileNoteListMatchesQuery(candidate, 'active')).toBe(true)
-    expect(mobileNoteListMatchesQuery(candidate, 'design')).toBe(true)
+    expect(mobileNoteListMatchesQuery(candidate, 'active', [], typeDefinitions)).toBe(true)
+    expect(mobileNoteListMatchesQuery(candidate, 'design', [], typeDefinitions)).toBe(true)
+    expect(mobileNoteListMatchesQuery(candidate, 'procedure', [], typeDefinitions)).toBe(false)
+    expect(mobileNoteListMatchesQuery(candidate, 'active')).toBe(false)
   })
 })
 
