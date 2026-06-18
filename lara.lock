@@ -640,6 +640,10 @@ files:
     editor.exportPdf.unavailable: 2fce9834984172b64b66767485d815e9
     editor.exportPdf.failed: bf3fa78ff5725f5cbde8979b67ec2e2a
     filePreview.copyDeepLink: b75833669968adbef634495636e3fe50
+    filePreview.file: 0b27918290ff5323bea1e3b78a9cf04e
+    filePreview.previewUnavailable: e49849dafe86101d18db2e35e40ce18a
+    filePreview.previewUnavailableDescription: a2c2dc6e43116031e882ab247e4390c3
+    filePreview.textFile: de62d185f177767c1b06714ed2d5a0da
     deepLinks.copied: 6ada57681192daf3b4afa07ce7a30575
     deepLinks.error.ambiguousVault: 4365c6d5cf8c2c1165259b32d24a6274
     deepLinks.error.copyFailed: 57b74ecce2d00b4c327d15830f79410d

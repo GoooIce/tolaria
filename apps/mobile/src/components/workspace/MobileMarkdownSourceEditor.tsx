@@ -50,22 +50,63 @@ export type MobileMarkdownSourceEditorProps = {
   notes: MobileNote[]
   onImportAttachment?: () => Promise<MobileAttachmentImport | null>
   onUpdateContent: (noteId: string, content: string) => void
+  plainText?: boolean
   sourceSelectionProbe?: boolean
 }
 
 type InlineAutocompleteKind = 'personMention' | 'wikilink'
 type TimerHandle = ReturnType<typeof setTimeout>
 
-export function MobileMarkdownSourceEditor({
-  blocks,
-  bullets,
-  compact,
-  note,
-  notes,
-  onImportAttachment,
-  onUpdateContent,
-  sourceSelectionProbe = false,
-}: MobileMarkdownSourceEditorProps) {
+export function MobileMarkdownSourceEditor(props: MobileMarkdownSourceEditorProps) {
+  const {
+    blocks,
+    bullets,
+    compact,
+    note,
+    notes,
+    onImportAttachment,
+    onUpdateContent,
+    plainText = false,
+    sourceSelectionProbe = false,
+  } = props
+
+  if (plainText) {
+    return (
+      <MobilePlainTextSourceEditor
+        compact={compact}
+        note={note}
+        onUpdateContent={onUpdateContent}
+        sourceSelectionProbe={sourceSelectionProbe}
+      />
+    )
+  }
+
+  return (
+    <MarkdownSourceEditor
+      blocks={blocks}
+      bullets={bullets}
+      compact={compact}
+      note={note}
+      notes={notes}
+      onImportAttachment={onImportAttachment}
+      onUpdateContent={onUpdateContent}
+      sourceSelectionProbe={sourceSelectionProbe}
+    />
+  )
+}
+
+function MarkdownSourceEditor(props: Omit<MobileMarkdownSourceEditorProps, 'plainText'>) {
+  const {
+    blocks,
+    bullets,
+    compact,
+    note,
+    notes,
+    onImportAttachment,
+    onUpdateContent,
+    sourceSelectionProbe,
+  } = props
+
   const sourceContent = mobileNoteEditableContent({
     ...note,
     editorBlocks: note.editorBlocks ?? blocks,
@@ -83,7 +124,7 @@ export function MobileMarkdownSourceEditor({
     onImportAttachment,
     onUpdateContent: editorDraft.updateContent,
   })
-  useNativeSourceSelectionProbe(sourceSelectionProbe)
+  useNativeSourceSelectionProbe(sourceSelectionProbe === true)
 
   return (
     <View style={editorStyles.container} testID="editor-markdown-form">
@@ -117,6 +158,35 @@ export function MobileMarkdownSourceEditor({
           ))}
         </View>
       ) : null}
+    </View>
+  )
+}
+
+function MobilePlainTextSourceEditor({
+  compact,
+  note,
+  onUpdateContent,
+  sourceSelectionProbe,
+}: Pick<MobileMarkdownSourceEditorProps, 'compact' | 'note' | 'onUpdateContent' | 'sourceSelectionProbe'>) {
+  const editorDraft = useMobileSourceEditorDraft({
+    noteId: note.id,
+    onCommit: onUpdateContent,
+    sourceContent: note.rawContent ?? '',
+  })
+  useNativeSourceSelectionProbe(sourceSelectionProbe === true)
+
+  return (
+    <View style={editorStyles.container} testID="editor-text-file-form">
+      <Input
+        multiline
+        scrollEnabled
+        placeholderTextColor={mobileColors.textFaint}
+        style={[editorStyles.input, compact ? editorStyles.inputCompact : null]}
+        testID="editor-text-file-input"
+        textAlignVertical="top"
+        value={editorDraft.content}
+        onChangeText={(nextContent) => editorDraft.updateContent(note.id, nextContent)}
+      />
     </View>
   )
 }

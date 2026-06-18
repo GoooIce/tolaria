@@ -67,10 +67,17 @@ import { mobileNoteForWikilinkTarget } from './mobileWikilinks'
 import type { MobileTypeDefinitionPatch } from './mobileTypeDefinitions'
 import { applyMobileTypeEdit } from './mobileWorkspaceTypeEditing'
 import { normalizeRelationshipKey } from './mobileWorkspaceSuggestions'
+import {
+  applyMobileTextFileContentEdit,
+  canApplyMobileMarkdownEdit,
+  isMobileTextFileContentEdit,
+  mobileTextFileNoteWithContent,
+} from './mobileTextFileEditing'
 
 type EditableNoteInput = MobileNote & { rawContent: string }
 type FrontmatterKey = string
 type MarkdownContent = string
+type TextFileContent = string
 type NoteId = string
 type NoteTitle = string
 type FolderPath = string
@@ -80,9 +87,11 @@ type WikilinkTarget = string
 
 export type MobileWorkspaceEdit =
   | { content: MarkdownContent; noteId: NoteId; type: 'updateNoteContent' }
+  | { content: TextFileContent; noteId: NoteId; type: 'updateTextFileContent' }
   | { defaults?: MobileCreateNoteDefaults; title: NoteTitle; type: 'createNote' }
   | { noteId: NoteId; type: 'deleteNote' }
   | { noteId: NoteId; rawContent: MarkdownContent; type: 'hydrateNoteContent' }
+  | { noteId: NoteId; rawContent: TextFileContent; type: 'hydrateTextFileContent' }
   | { key: FrontmatterKey; noteId: NoteId; value: MobilePropertyValue; type: 'updateProperty' }
   | { key: FrontmatterKey; noteId: NoteId; type: 'deleteProperty' }
   | { key: FrontmatterKey; noteId: NoteId; targetRef?: WikilinkRef; targetTitle: NoteTitle; type: 'addRelationship' }
@@ -185,6 +194,10 @@ const mobileNoteEditHandlers: Record<MobileNoteEdit['type'], MobileNoteEditHandl
     if (edit.type !== 'hydrateNoteContent') return editableNote
     return deriveEditedNote(editableNote, edit.rawContent, typeDefinitions)
   },
+  hydrateTextFileContent: ({ note }, edit) => {
+    if (edit.type !== 'hydrateTextFileContent') return note
+    return mobileTextFileNoteWithContent(note, edit.rawContent)
+  },
   removeRelationship: ({ editableNote }, edit) => {
     if (edit.type !== 'removeRelationship') return editableNote
     return removeRelationship(editableNote, edit.key, edit.ref)
@@ -208,6 +221,10 @@ const mobileNoteEditHandlers: Record<MobileNoteEdit['type'], MobileNoteEditHandl
   updateProperty: ({ editableNote, typeDefinitions }, edit) => {
     if (edit.type !== 'updateProperty') return editableNote
     return deriveEditedNote(editableNote, writeFrontmatterValue(editableNote.rawContent, edit.key, edit.value), typeDefinitions)
+  },
+  updateTextFileContent: ({ note }, edit) => {
+    if (edit.type !== 'updateTextFileContent') return note
+    return mobileTextFileNoteWithContent(note, edit.content)
   },
 }
 
@@ -237,12 +254,14 @@ const mobileNoteEditTypes = new Set<MobileWorkspaceEdit['type']>([
   'changeNoteType',
   'deleteProperty',
   'hydrateNoteContent',
+  'hydrateTextFileContent',
   'removeRelationship',
   'setArchived',
   'setOrganized',
   'toggleFavorite',
   'updateNoteContent',
   'updateProperty',
+  'updateTextFileContent',
 ])
 
 export function applyMobileWorkspaceEdit(
@@ -472,6 +491,8 @@ function applyMobileNoteEdit(
   typeDefinitions?: MobileTypeDefinitions,
 ): MobileNote {
   if (note.id !== edit.noteId) return note
+  if (isMobileTextFileContentEdit(edit)) return applyMobileTextFileContentEdit(note, edit)
+  if (!canApplyMobileMarkdownEdit(note)) return note
 
   const editableNote = withEditableContent(note)
   return mobileNoteEditHandlers[edit.type]({ editableNote, note, notes, typeDefinitions }, edit)
@@ -722,6 +743,13 @@ function rebuildSnapshot(
 
 function deriveMobileNote(note: MobileNote, typeDefinitions?: MobileTypeDefinitions): DerivedNote | null {
   if (note.rawContent === undefined) return null
+  if (note.fileKind === 'text') {
+    return {
+      note: mobileTextFileNoteWithContent(note, note.rawContent),
+      rawRelationships: {},
+    }
+  }
+  if (!canApplyMobileMarkdownEdit(note)) return null
 
   const editable = withEditableContent(note)
   return deriveEditableNote({ fallback: editable, rawContent: editable.rawContent, typeDefinitions })
@@ -1009,7 +1037,7 @@ function saveNoteWrites(
   nextSnapshot: MobileWorkspaceSnapshot,
   edit: MobileNoteEdit,
 ): MobileWorkspaceWrite[] {
-  if (edit.type === 'hydrateNoteContent') return []
+  if (edit.type === 'hydrateNoteContent' || edit.type === 'hydrateTextFileContent') return []
 
   const previousNote = workspaceNoteById(previousSnapshot, edit.noteId)
   const nextNote = workspaceNoteById(nextSnapshot, edit.noteId)

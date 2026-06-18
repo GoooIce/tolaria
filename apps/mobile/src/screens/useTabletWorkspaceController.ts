@@ -298,18 +298,25 @@ function useHydrateSelectedNote({
   selectedNote: MobileNote | null
 }) {
   useEffect(() => {
-    if (!selectedNote || !isMobileMarkdownNote(selectedNote) || selectedNote.rawContent !== undefined) return
+    if (!selectedNote || selectedNote.rawContent !== undefined) return
+    const hydrationType = mobileHydrationType(selectedNote)
+    if (!hydrationType) return
 
     let cancelled = false
     void repository.readNoteContent(selectedNote, repositoryRequest).then((rawContent) => {
       if (cancelled || rawContent === null) return
-      applyEdit({ noteId: selectedNote.id, rawContent, type: 'hydrateNoteContent' })
+      applyEdit({ noteId: selectedNote.id, rawContent, type: hydrationType })
     })
 
     return () => {
       cancelled = true
     }
   }, [applyEdit, repository, repositoryRequest, selectedNote])
+}
+
+function mobileHydrationType(note: MobileNote): 'hydrateNoteContent' | 'hydrateTextFileContent' | null {
+  if (isMobileMarkdownNote(note)) return 'hydrateNoteContent'
+  return note.fileKind === 'text' ? 'hydrateTextFileContent' : null
 }
 
 function actionSheetWorkspaceActions({
@@ -751,8 +758,21 @@ function editorWorkspaceActions({
     onToggleFavorite: () => {
       if (selectedNote) applyEdit({ noteId: selectedNote.id, type: 'toggleFavorite' })
     },
-    onUpdateNoteContent: (noteId: string, content: string) => applyEdit({ content, noteId, type: 'updateNoteContent' }),
+    onUpdateNoteContent: (noteId: string, content: string) => {
+      applyEdit(editorContentUpdate(workspaceSnapshot, noteId, content))
+    },
   }
+}
+
+function editorContentUpdate(
+  snapshot: MobileWorkspaceSnapshot,
+  noteId: string,
+  content: string,
+): MobileWorkspaceEdit {
+  const note = workspaceNotes(snapshot).find((candidate) => candidate.id === noteId)
+  return note?.fileKind === 'text'
+    ? { content, noteId, type: 'updateTextFileContent' }
+    : { content, noteId, type: 'updateNoteContent' }
 }
 
 function filenameStemForNote(note: MobileNote | null): string {

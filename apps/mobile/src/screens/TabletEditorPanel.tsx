@@ -10,7 +10,7 @@ import { ScrollView, StyleSheet, View } from 'react-native'
 import { useCallback, useState } from 'react'
 import { MobileEditorBlocks } from '../components/workspace/MobileEditorBlocks'
 import { MobileMarkdownSourceEditor } from '../components/workspace/MobileMarkdownSourceEditor'
-import { MobileNoteIcon } from '../components/workspace/MobileWorkspaceIcons'
+import { MobileNoteIcon, MobileTypeIcon } from '../components/workspace/MobileWorkspaceIcons'
 import { MobileWysiwygMarkdownEditor } from '../components/workspace/MobileWysiwygMarkdownEditor'
 import { Text } from '../components/ui/text'
 import { mobileText } from '../i18n/mobileText'
@@ -55,11 +55,19 @@ type TabletEditorPanelProps = {
 type EditorToolbarProps = {
   editing: boolean
   editingMode: EditorEditingMode
+  fileMode: EditorFileMode
   note: MobileNote
   onOpenMoreActions: () => void
   onToggleEditing: () => void
   onToggleSourceMode: () => void
   onToggleFavorite: () => void
+}
+
+type EditorPanelBodyProps = {
+  compact: boolean
+  contentProps: EditorContentProps
+  fileMode: EditorFileMode
+  note: MobileNote
 }
 
 type EditorContentProps = {
@@ -71,6 +79,7 @@ type EditorContentProps = {
   note: MobileNote
   notes: MobileNote[]
   layoutProbe: MobileLayoutProbe
+  plainText: boolean
   onNavigateWikilink: (target: string) => void
   onImportAttachment?: MobileAttachmentImporter
   onOpenLink: MobileAttachmentLinkOpener
@@ -83,6 +92,7 @@ type EditorContentProps = {
 }
 
 export type EditorEditingMode = 'source' | 'wysiwyg'
+type EditorFileMode = 'binary' | 'markdown' | 'text'
 
 export function TabletEditorPanel(props: TabletEditorPanelProps) {
   const {
@@ -128,88 +138,150 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
     return <EmptyEditorPanel />
   }
 
+  const fileMode = editorFileMode(note)
+  const plainText = fileMode === 'text'
+  const effectiveEditing = editing || plainText
+  const effectiveEditingMode = plainText ? 'source' : editingMode
+  const contentProps: EditorContentProps = {
+    blocks,
+    bullets,
+    compact,
+    editing: effectiveEditing,
+    editingMode: effectiveEditingMode,
+    layoutProbe: layoutProbe.probe,
+    note,
+    notes,
+    onImportAttachment: importAttachment,
+    onNavigateWikilink,
+    onOpenLink: openLink,
+    onUpdateContent,
+    plainText,
+    sourceSelectionProbe,
+    vaultRootUri,
+    wysiwygAutocompleteProbe,
+    wysiwygMutationProbe,
+    wysiwygWikilinkInsertProbe,
+  }
+
   return (
     <MobilePanel {...layoutProbe.probe('editor.panel')} style={panelStyles.panel} testID="editor-panel">
       <EditorToolbar
-        editingMode={editingMode}
-        editing={editing}
+        editingMode={effectiveEditingMode}
+        editing={effectiveEditing}
+        fileMode={fileMode}
         note={note}
         onOpenMoreActions={onOpenMoreActions}
         onToggleEditing={toggleEditing}
         onToggleSourceMode={toggleSourceMode}
         onToggleFavorite={onToggleFavorite}
       />
-      {editing ? (
-        <View style={panelStyles.editorHost} testID="editor-scroll">
-          <EditorContent
-            blocks={blocks}
-            bullets={bullets}
-            compact={compact}
-            editingMode={editingMode}
-            editing={editing}
-            layoutProbe={layoutProbe.probe}
-            note={note}
-            notes={notes}
-            onImportAttachment={importAttachment}
-            onNavigateWikilink={onNavigateWikilink}
-            onOpenLink={openLink}
-            onUpdateContent={onUpdateContent}
-            sourceSelectionProbe={sourceSelectionProbe}
-            vaultRootUri={vaultRootUri}
-            wysiwygAutocompleteProbe={wysiwygAutocompleteProbe}
-            wysiwygWikilinkInsertProbe={wysiwygWikilinkInsertProbe}
-            wysiwygMutationProbe={wysiwygMutationProbe}
-          />
-        </View>
-      ) : (
-        <ScrollView contentContainerStyle={[
-          panelStyles.content,
-          note.noteWidth === 'wide' ? panelStyles.contentWide : null,
-          compact ? panelStyles.contentCompact : null,
-        ]} testID="editor-scroll">
-          <EditorContent
-            blocks={blocks}
-            bullets={bullets}
-            compact={compact}
-            editingMode={editingMode}
-            editing={editing}
-            layoutProbe={layoutProbe.probe}
-            note={note}
-            notes={notes}
-            onImportAttachment={importAttachment}
-            onNavigateWikilink={onNavigateWikilink}
-            onOpenLink={openLink}
-            onUpdateContent={onUpdateContent}
-            sourceSelectionProbe={sourceSelectionProbe}
-            vaultRootUri={vaultRootUri}
-            wysiwygAutocompleteProbe={wysiwygAutocompleteProbe}
-            wysiwygWikilinkInsertProbe={wysiwygWikilinkInsertProbe}
-            wysiwygMutationProbe={wysiwygMutationProbe}
-          />
-        </ScrollView>
-      )}
+      <EditorPanelBody
+        compact={compact}
+        contentProps={contentProps}
+        fileMode={fileMode}
+        note={note}
+      />
       {layoutProbeEnabled ? <MobileLayoutProbeReadout metrics={layoutProbe.metrics} testID="editor-layout-metrics" /> : null}
     </MobilePanel>
+  )
+}
+
+function EditorPanelBody({
+  compact,
+  contentProps,
+  fileMode,
+  note,
+}: EditorPanelBodyProps) {
+  if (fileMode === 'binary') {
+    return (
+      <ScrollView contentContainerStyle={panelStyles.filePreviewContent} testID="editor-scroll">
+        <MobileFilePreviewFallback note={note} />
+      </ScrollView>
+    )
+  }
+
+  if (contentProps.editing) {
+    return (
+      <View style={panelStyles.editorHost} testID="editor-scroll">
+        <EditorContent {...contentProps} />
+      </View>
+    )
+  }
+
+  return (
+    <ScrollView contentContainerStyle={readModeContentStyle(note, compact)} testID="editor-scroll">
+      <EditorContent {...contentProps} />
+    </ScrollView>
   )
 }
 
 function EditorToolbar({
   editingMode,
   editing,
+  fileMode,
   note,
   onOpenMoreActions,
   onToggleEditing,
   onToggleSourceMode,
   onToggleFavorite,
 }: EditorToolbarProps) {
-  const sourceModeActive = editing && editingMode === 'source'
-
   return (
     <MobileToolbar testID="editor-toolbar">
       <FileText color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />
-      <MobileNoteIcon color={mobileColors.textMuted} icon={note.icon} size={desktopToolbarActionParity.iconSize} testID="editor-toolbar-note-icon" />
+      <EditorToolbarIcon fileMode={fileMode} note={note} />
       <MobileToolbarTitle testID="editor-toolbar-title" title={note.title} />
-      <MobileChip label={note.workspace} tone="gray" />
+      <MobileChip label={editorToolbarChipLabel(fileMode, note)} tone="gray" />
+      <EditorToolbarActions
+        editing={editing}
+        editingMode={editingMode}
+        fileMode={fileMode}
+        note={note}
+        onOpenMoreActions={onOpenMoreActions}
+        onToggleEditing={onToggleEditing}
+        onToggleFavorite={onToggleFavorite}
+        onToggleSourceMode={onToggleSourceMode}
+      />
+    </MobileToolbar>
+  )
+}
+
+function EditorToolbarIcon({
+  fileMode,
+  note,
+}: Pick<EditorToolbarProps, 'fileMode' | 'note'>) {
+  if (fileMode === 'markdown') {
+    return (
+      <MobileNoteIcon
+        color={mobileColors.textMuted}
+        icon={note.icon}
+        size={desktopToolbarActionParity.iconSize}
+        testID="editor-toolbar-note-icon"
+      />
+    )
+  }
+
+  return <MobileTypeIcon fileKind={note.fileKind} size={desktopToolbarActionParity.iconSize} tone={note.typeTone} type={note.type} />
+}
+
+function EditorToolbarActions(props: EditorToolbarProps) {
+  if (props.fileMode !== 'markdown') return null
+
+  return <MarkdownToolbarActions {...props} />
+}
+
+function MarkdownToolbarActions({
+  editing,
+  editingMode,
+  note,
+  onOpenMoreActions,
+  onToggleEditing,
+  onToggleFavorite,
+  onToggleSourceMode,
+}: EditorToolbarProps) {
+  const sourceModeActive = editing && editingMode === 'source'
+
+  return (
+    <>
       <MobileIconButton
         accessibilityLabel={mobileText(note.favorite ? 'command.note.removeFavorite' : 'command.note.addFavorite')}
         testID="editor-favorite-action"
@@ -222,9 +294,7 @@ function EditorToolbar({
         testID="editor-edit-action"
         onPress={onToggleEditing}
       >
-        {editing
-          ? <Check color={mobileColors.primary} size={desktopToolbarActionParity.iconSize} weight="bold" />
-          : <PencilSimple color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />}
+        <EditorToggleIcon editing={editing} />
       </MobileIconButton>
       <MobileIconButton
         accessibilityLabel={mobileText(sourceModeActive ? 'editor.toolbar.rawReturn' : 'editor.toolbar.rawOpen')}
@@ -237,8 +307,14 @@ function EditorToolbar({
       <MobileIconButton accessibilityLabel={mobileText('editor.toolbar.moreActions')} testID="editor-more-action" onPress={onOpenMoreActions}>
         <DotsThree color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} weight="bold" />
       </MobileIconButton>
-    </MobileToolbar>
+    </>
   )
+}
+
+function EditorToggleIcon({ editing }: { editing: boolean }) {
+  return editing
+    ? <Check color={mobileColors.primary} size={desktopToolbarActionParity.iconSize} weight="bold" />
+    : <PencilSimple color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />
 }
 
 function EditorContent({
@@ -250,6 +326,7 @@ function EditorContent({
   layoutProbe,
   note,
   notes,
+  plainText,
   onImportAttachment,
   onNavigateWikilink,
   onOpenLink,
@@ -261,10 +338,10 @@ function EditorContent({
   wysiwygMutationProbe = false,
 }: EditorContentProps) {
   if (editing) {
-    if (editingMode === 'source') {
+    if (plainText || editingMode === 'source') {
       return (
         <MobileMarkdownSourceEditor
-          key={`${note.id}:source`}
+          key={`${note.id}:${plainText ? 'text' : 'source'}`}
           blocks={blocks}
           bullets={bullets}
           compact={compact}
@@ -272,6 +349,7 @@ function EditorContent({
           notes={notes}
           onImportAttachment={onImportAttachment}
           onUpdateContent={onUpdateContent}
+          plainText={plainText}
           sourceSelectionProbe={sourceSelectionProbe}
         />
       )
@@ -310,6 +388,35 @@ function EditorContent({
         onNavigateWikilink={onNavigateWikilink}
       />
     </>
+  )
+}
+
+function editorFileMode(note: MobileNote): EditorFileMode {
+  if (note.fileKind === 'binary') return 'binary'
+  return note.fileKind === 'text' ? 'text' : 'markdown'
+}
+
+function editorToolbarChipLabel(fileMode: EditorFileMode, note: MobileNote): string {
+  if (fileMode === 'text') return mobileText('filePreview.textFile')
+  if (fileMode === 'binary') return mobileText('filePreview.file')
+  return note.workspace
+}
+
+function readModeContentStyle(note: MobileNote, compact: boolean) {
+  return [
+    panelStyles.content,
+    note.noteWidth === 'wide' ? panelStyles.contentWide : null,
+    compact ? panelStyles.contentCompact : null,
+  ]
+}
+
+function MobileFilePreviewFallback({ note }: { note: MobileNote }) {
+  return (
+    <View style={panelStyles.filePreviewFallback} testID="file-preview-fallback">
+      <MobileTypeIcon fileKind={note.fileKind} size={32} tone={note.typeTone} type={note.type} />
+      <Text style={panelStyles.filePreviewTitle}>{mobileText('filePreview.previewUnavailable')}</Text>
+      <Text style={panelStyles.filePreviewDescription}>{mobileText('filePreview.previewUnavailableDescription')}</Text>
+    </View>
   )
 }
 
@@ -357,6 +464,28 @@ const panelStyles = StyleSheet.create({
   },
   editorHost: {
     flex: 1,
+  },
+  filePreviewContent: {
+    alignItems: 'center',
+    flexGrow: 1,
+    justifyContent: 'center',
+    padding: mobileSpace.xxl,
+  },
+  filePreviewDescription: {
+    maxWidth: 360,
+    color: mobileColors.textMuted,
+    fontSize: mobileType.body,
+    lineHeight: 22,
+    textAlign: 'center',
+  },
+  filePreviewFallback: {
+    alignItems: 'center',
+    gap: mobileSpace.md,
+  },
+  filePreviewTitle: {
+    color: mobileColors.text,
+    fontSize: mobileType.title,
+    fontWeight: '600',
   },
   panel: {
     flex: 1,
