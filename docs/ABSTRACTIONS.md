@@ -101,6 +101,8 @@ The tablet workspace controller owns temporary interaction state: selected sideb
 
 Mobile deep-link copying follows the same boundary. `mobileDeepLinks.ts` owns URL construction from `MobileWorkspaceSnapshot.source` and the selected note path, and `mobileClipboard.ts` owns the Expo Clipboard call plus deterministic QA logging. Components such as `MobileWorkspaceActionSheet` receive `onCopyDeepLink` and do not import clipboard or URL-building modules directly.
 
+Mobile PDF export uses the same callback boundary. `mobilePdfExport.ts` converts the selected `MobileNote` into frontmatter-free HTML with the mobile Markdown body renderer, records deterministic web/Playwright export attempts, and calls `expo-print` plus `expo-sharing` only from the controller-owned action path. Generated PDFs are temporary platform share artifacts and do not mutate the vault.
+
 `apps/mobile/docs/ui-parity-inventory.md` is the working checklist for mobile surface parity. `pnpm mobile:qa:screenshots` is the fast visual QA command for this branch: it exports the Expo web bundle, serves it locally, and captures tablet/phone screenshots for the UI lab without running the full desktop/native Tolaria suite. The harness uses `$HOME/Laputa` as the default representative large-vault path when available; set `MOBILE_QA_VAULT_PATH` to override it. The local-vault pass scans that vault read-only, adds local-vault screenshots, and checks snapshot load/render/navigation budgets without committing vault content.
 
 ### Vault Git Capability

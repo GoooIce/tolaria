@@ -373,6 +373,7 @@ function actionSheetHandlers(props: ActionSheetHostProps) {
     onCreateView: props.onCreateView,
     onDeleteFolder: props.onDeleteFolder,
     onDeleteNote: props.onDeleteNote,
+    onExportNoteAsPdf: props.onExportNoteAsPdf,
     onDeleteType: props.onDeleteType,
     onDeleteView: props.onDeleteView,
     onFilenameStemChange: props.onFilenameStemChange,

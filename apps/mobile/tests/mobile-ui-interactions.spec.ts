@@ -13,6 +13,7 @@ import {
   HOST_WORKSPACE_SNAPSHOT_STORAGE_KEY,
   HOST_WORKSPACE_WRITE_FAILURE_GLOBAL_KEY,
 } from '../src/workspace/readOnlyWorkspaceRepository'
+import { MOBILE_PDF_EXPORT_ATTEMPTS_GLOBAL_KEY } from '../src/workspace/mobilePdfExport'
 
 const mobileClipboardAttemptsGlobalKey = '__TOLARIA_MOBILE_CLIPBOARD_ATTEMPTS__'
 
@@ -210,6 +211,7 @@ async function retargetSelectedRelease(page: PageLike) {
   await moveAndRenameSelectedRelease(page)
   await setAndRemoveSelectedNoteIcon(page)
   await assertSelectedReleaseDeepLink(page)
+  await assertSelectedReleasePdfExport(page)
 }
 
 async function changeSelectedReleaseType(page: PageLike) {
@@ -349,6 +351,19 @@ async function assertSelectedReleaseDeepLink(page: PageLike) {
     const attempts = (window as unknown as Record<string, unknown>)[key]
     return Array.isArray(attempts) ? attempts.at(-1) : null
   }, mobileClipboardAttemptsGlobalKey)).resolves.toBe('tolaria://tv/Tolaria/Mobile%20UI/release-cleanup.md')
+}
+
+async function assertSelectedReleasePdfExport(page: PageLike) {
+  await page.getByTestId('editor-more-action').click()
+  await page.getByTestId('workspace-action-export-pdf').click()
+  await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
+  await expect(page.evaluate((key) => {
+    const attempts = (window as unknown as Record<string, unknown>)[key]
+    const latest = Array.isArray(attempts) ? attempts.at(-1) : null
+    return latest && typeof latest === 'object'
+      ? (latest as { fileName?: unknown }).fileName
+      : null
+  }, MOBILE_PDF_EXPORT_ATTEMPTS_GLOBAL_KEY)).resolves.toBe('release-cleanup.pdf')
 }
 
 async function createMobileQaDraft(page: PageLike) {

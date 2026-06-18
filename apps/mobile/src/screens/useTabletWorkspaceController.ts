@@ -26,6 +26,7 @@ import type {
 } from '../workspace/readOnlyWorkspaceRepository'
 import { writeMobileClipboardText } from '../workspace/mobileClipboard'
 import { buildMobileDeepLinkForNote } from '../workspace/mobileDeepLinks'
+import { exportMobileNoteAsPdf } from '../workspace/mobilePdfExport'
 import { canMoveMobileSavedView, evaluateMobileSavedView } from '../workspace/mobileSavedViews'
 import {
   addTypeSchemaProperty,
@@ -705,6 +706,11 @@ function editorWorkspaceActions({
 
       void writeMobileClipboardText(result.url).catch((error) => {
         console.warn('[mobile-deep-link] Failed to copy deep link:', error)
+      })
+    },
+    onExportNoteAsPdf: () => {
+      void exportMobileNoteAsPdf(selectedNote).catch((error) => {
+        console.warn('[mobile-pdf-export] Failed to export PDF:', error)
       })
     },
     onSetArchived: (archived: boolean) => {

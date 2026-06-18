@@ -96,6 +96,7 @@ type MobileWorkspaceActionSheetProps = {
   onCreateView: () => void
   onDeleteFolder: () => void
   onDeleteNote: () => void
+  onExportNoteAsPdf: () => void
   onDeleteType: () => void
   onDeleteView: () => void
   onFilenameStemChange: (value: string) => void
@@ -256,23 +257,7 @@ const actionContentByAction: Record<MobileWorkspaceAction, (props: MobileWorkspa
   editProperty: (props) => <AddPropertyContent {...props} />,
   editTypeSection: (props) => <TypeSectionContent {...props} />,
   editView: (props) => <SingleTextFieldContent config={singleTextFieldConfig(props)} />,
-  moreActions: (props) => (
-    <MoreActionsContent
-      note={props.selectedNote}
-      onClose={props.onClose}
-      onCopyDeepLink={props.onCopyDeepLink}
-      onOpenChangeNoteType={props.onOpenChangeNoteType}
-      onOpenMoveNoteToFolder={props.onOpenMoveNoteToFolder}
-      onOpenRenameNoteFile={props.onOpenRenameNoteFile}
-      onOpenSetNoteIcon={props.onOpenSetNoteIcon}
-      onRenameNoteFileToTitle={props.onRenameNoteFileToTitle}
-      onRemoveNoteIcon={props.onRemoveNoteIcon}
-      onSetArchived={props.onSetArchived}
-      onSetOrganized={props.onSetOrganized}
-      onToggleNoteWidth={props.onToggleNoteWidth}
-      onDeleteNote={props.onDeleteNote}
-    />
-  ),
+  moreActions: (props) => <MoreActionsContent {...props} />,
   moveNoteToFolder: (props) => <RetargetNoteContent {...props} retargetAction="moveFolder" />,
   renameNoteFile: (props) => <SingleTextFieldContent config={singleTextFieldConfig(props)} />,
   search: (props) => <SearchContent {...props} />,
@@ -871,54 +856,25 @@ function notePathValidationBlocksSubmit(status: MobileNotePathValidationStatus) 
   return status !== 'ok'
 }
 
-function MoreActionsContent(props: {
-  note: MobileNote | null
-  onClose: () => void
-  onCopyDeepLink: () => void
-  onOpenChangeNoteType: () => void
-  onOpenMoveNoteToFolder: () => void
-  onOpenRenameNoteFile: () => void
-  onOpenSetNoteIcon: () => void
-  onRenameNoteFileToTitle: () => void
-  onRemoveNoteIcon: () => void
-  onSetArchived: (archived: boolean) => void
-  onSetOrganized: (organized: boolean) => void
-  onToggleNoteWidth: () => void
-  onDeleteNote: () => void
-}) {
-  const {
-    note,
-    onClose,
-    onCopyDeepLink,
-    onDeleteNote,
-    onOpenChangeNoteType,
-    onOpenMoveNoteToFolder,
-    onOpenRenameNoteFile,
-    onOpenSetNoteIcon,
-    onRenameNoteFileToTitle,
-    onRemoveNoteIcon,
-    onSetArchived,
-    onSetOrganized,
-    onToggleNoteWidth,
-  } = props
-
+function MoreActionsContent(props: MobileWorkspaceActionSheetProps) {
+  const { selectedNote } = props
   return (
     <View style={styles.content}>
-      {note ? <SelectedNoteSummary note={note} /> : null}
-      {note ? (
+      {selectedNote ? <SelectedNoteSummary note={selectedNote} /> : null}
+      {selectedNote ? (
         <NoteMoreActionRows
-          note={note}
-          onClose={onClose}
-          onDeleteNote={onDeleteNote}
-          onOpenChangeNoteType={onOpenChangeNoteType}
-          onOpenMoveNoteToFolder={onOpenMoveNoteToFolder}
-          onOpenRenameNoteFile={onOpenRenameNoteFile}
-          onOpenSetNoteIcon={onOpenSetNoteIcon}
-          onRenameNoteFileToTitle={onRenameNoteFileToTitle}
-          onRemoveNoteIcon={onRemoveNoteIcon}
-          onSetArchived={onSetArchived}
-          onSetOrganized={onSetOrganized}
-          onToggleNoteWidth={onToggleNoteWidth}
+          note={selectedNote}
+          onClose={props.onClose}
+          onDeleteNote={props.onDeleteNote}
+          onOpenChangeNoteType={props.onOpenChangeNoteType}
+          onOpenMoveNoteToFolder={props.onOpenMoveNoteToFolder}
+          onOpenRenameNoteFile={props.onOpenRenameNoteFile}
+          onOpenSetNoteIcon={props.onOpenSetNoteIcon}
+          onRenameNoteFileToTitle={props.onRenameNoteFileToTitle}
+          onRemoveNoteIcon={props.onRemoveNoteIcon}
+          onSetArchived={props.onSetArchived}
+          onSetOrganized={props.onSetOrganized}
+          onToggleNoteWidth={props.onToggleNoteWidth}
         />
       ) : null}
       <ActionRow
@@ -926,11 +882,19 @@ function MoreActionsContent(props: {
         label={mobileText('command.note.copyDeepLink')}
         testID="workspace-action-copy-deep-link"
         onPress={() => {
-          onCopyDeepLink()
-          onClose()
+          props.onCopyDeepLink()
+          props.onClose()
         }}
       />
-      <ActionRow icon={<FilePlus color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />} label={mobileText('command.note.exportPdf')} onPress={onClose} />
+      <ActionRow
+        icon={<FilePlus color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />}
+        label={mobileText('command.note.exportPdf')}
+        testID="workspace-action-export-pdf"
+        onPress={() => {
+          props.onExportNoteAsPdf()
+          props.onClose()
+        }}
+      />
     </View>
   )
 }

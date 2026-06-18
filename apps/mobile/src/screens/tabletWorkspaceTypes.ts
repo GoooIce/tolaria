@@ -104,6 +104,7 @@ export type TabletWorkspaceChromeProps = {
   onDeleteType: () => void
   onDeleteView: () => void
   onDeleteNote: () => void
+  onExportNoteAsPdf: () => void
   onDeleteProperty: (noteId: NoteId, key: string) => void
   onEditProperty: (noteId: NoteId, key: string, value: MobilePropertyValue) => void
   onFilenameStemChange: (value: ReadOnlyFormValue) => void

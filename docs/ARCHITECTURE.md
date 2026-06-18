@@ -164,6 +164,8 @@ Tablet editing is reducer-owned and repository-persisted. `apps/mobile/src/works
 
 Mobile note deep-link copy mirrors the desktop URL contract without importing desktop React DOM modules. `apps/mobile/src/workspace/mobileDeepLinks.ts` builds `tolaria://<vault-slug>/<relative-path-with-extension>` URLs from the mobile snapshot source and selected note path, while `apps/mobile/src/workspace/mobileClipboard.ts` writes through Expo Clipboard. The action is exposed through the tablet controller/action-sheet callback boundary so visual rows remain platform-agnostic.
 
+Mobile note PDF export follows that same boundary. `apps/mobile/src/workspace/mobilePdfExport.ts` strips YAML frontmatter through the mobile document-content helper, renders the note body to Tolaria-styled HTML, and uses `expo-print` plus `expo-sharing` only when running in the native Expo app. Browser-based UI lab checks record deterministic export attempts instead of opening a print dialog, and the generated PDF is treated as a temporary share artifact rather than a new vault file.
+
 ## System Overview
 
 ```mermaid
