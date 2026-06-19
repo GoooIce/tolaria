@@ -97,12 +97,19 @@ function valuedProperties(properties: Record<string, MobilePropertyValue>) {
 }
 
 function valuedRelationships(relationships: Record<string, string[]>) {
-  return Object.fromEntries(
-    Object.entries(relationships).flatMap(([key, refs]) => {
-      const values = refs.map((ref) => ref.trim()).filter(Boolean)
-      return values.length > 0 ? [[normalizeRelationshipKey(key), values]] : []
-    }),
-  )
+  const seenKeys = new Set<string>()
+
+  return Object.fromEntries(Object.entries(relationships).flatMap(([key, refs]) => {
+    const trimmedKey = key.trim()
+    const canonicalKey = normalizedFieldKey(trimmedKey)
+    if (!trimmedKey || seenKeys.has(canonicalKey)) return []
+
+    const values = refs.map((ref) => ref.trim()).filter(Boolean)
+    if (values.length === 0) return []
+
+    seenKeys.add(canonicalKey)
+    return [[trimmedKey, values]]
+  }))
 }
 
 function mergeCreateDefaults(

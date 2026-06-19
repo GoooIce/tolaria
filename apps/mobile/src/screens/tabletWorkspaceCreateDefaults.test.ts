@@ -39,6 +39,7 @@ describe('tablet workspace create-note defaults', () => {
           Whitespace: '   ',
         },
         relationships: {
+          'Belongs to': ['[[Client Work]]'],
           belongs_to: ['[[Client Work]]'],
           related_to: [],
         },
@@ -50,7 +51,9 @@ describe('tablet workspace create-note defaults', () => {
         Optional: false,
         Priority: 'High',
       },
-      relationships: { belongs_to: ['[[Client Work]]'] },
+      relationships: {
+        'Belongs to': ['[[Client Work]]'],
+      },
       template: '## Objective\n\n',
       type: 'Project',
     })

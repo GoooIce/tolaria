@@ -138,6 +138,29 @@ describe('mobile note creation parity', () => {
     }])
   })
 
+  it('preserves desktop relationship key spelling from create-note defaults', () => {
+    const result = applyMobileWorkspaceEditWithWrites(workspaceScenarioForId('default'), {
+      defaults: {
+        relationships: { 'Belongs to': ['[[Tolaria MVP]]'] },
+        type: 'Project',
+      },
+      title: 'Relationship Key Contract',
+      type: 'createNote',
+    })
+    const note = result.snapshot.notes[0]
+
+    expect(note.relationships.find((relationship) => relationship.key === 'Belongs to')?.values).toContainEqual(
+      expect.objectContaining({ title: 'Tolaria MVP' }),
+    )
+    expect(note.rawContent).toContain('Belongs to:\n  - "[[Tolaria MVP]]"')
+    expect(note.rawContent).not.toContain('belongs_to:')
+    expect(result.writes).toEqual([{
+      content: note.rawContent,
+      kind: 'createNote',
+      path: 'relationship-key-contract.md',
+    }])
+  })
+
   it('creates relationship targets beside the source note and links the exact created path', () => {
     const base = workspaceScenarioForId('default')
     const sourceNote = {
