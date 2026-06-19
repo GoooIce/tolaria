@@ -30,6 +30,7 @@ export function TabletWorkspace({
   snapshot,
   wysiwygAutocompleteProbe = false,
   wysiwygFormatCommandProbe = false,
+  wysiwygInputTransformProbe = false,
   wysiwygMarkdownBlockProbe = false,
   wysiwygWikilinkInsertProbe = false,
   wysiwygMutationProbe = false,
@@ -44,6 +45,7 @@ export function TabletWorkspace({
   snapshot: MobileWorkspaceSnapshot
   wysiwygAutocompleteProbe?: boolean
   wysiwygFormatCommandProbe?: boolean
+  wysiwygInputTransformProbe?: boolean
   wysiwygMarkdownBlockProbe?: boolean
   wysiwygWikilinkInsertProbe?: boolean
   wysiwygMutationProbe?: boolean
@@ -62,6 +64,7 @@ export function TabletWorkspace({
         sourceSelectionProbe={sourceSelectionProbe}
         wysiwygAutocompleteProbe={wysiwygAutocompleteProbe}
         wysiwygFormatCommandProbe={wysiwygFormatCommandProbe}
+        wysiwygInputTransformProbe={wysiwygInputTransformProbe}
         wysiwygMarkdownBlockProbe={wysiwygMarkdownBlockProbe}
         wysiwygWikilinkInsertProbe={wysiwygWikilinkInsertProbe}
         wysiwygMutationProbe={wysiwygMutationProbe}
@@ -226,6 +229,7 @@ type TabletEditorPanelHostProps = Pick<
   | 'vaultRootUri'
   | 'wysiwygAutocompleteProbe'
   | 'wysiwygFormatCommandProbe'
+  | 'wysiwygInputTransformProbe'
   | 'wysiwygMarkdownBlockProbe'
   | 'wysiwygWikilinkInsertProbe'
   | 'wysiwygMutationProbe'
@@ -251,6 +255,7 @@ function TabletEditorPanelHost({
   vaultRootUri,
   wysiwygAutocompleteProbe,
   wysiwygFormatCommandProbe,
+  wysiwygInputTransformProbe,
   wysiwygMarkdownBlockProbe,
   wysiwygWikilinkInsertProbe,
   wysiwygMutationProbe,
@@ -273,6 +278,7 @@ function TabletEditorPanelHost({
       vaultRootUri={vaultRootUri}
       wysiwygAutocompleteProbe={wysiwygAutocompleteProbe}
       wysiwygFormatCommandProbe={wysiwygFormatCommandProbe}
+      wysiwygInputTransformProbe={wysiwygInputTransformProbe}
       wysiwygMarkdownBlockProbe={wysiwygMarkdownBlockProbe}
       wysiwygWikilinkInsertProbe={wysiwygWikilinkInsertProbe}
       wysiwygMutationProbe={wysiwygMutationProbe}

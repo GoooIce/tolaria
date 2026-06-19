@@ -236,6 +236,7 @@ export type TabletWorkspaceChromeProps = {
   vaultRootUri: string | null
   wysiwygAutocompleteProbe?: boolean
   wysiwygFormatCommandProbe?: boolean
+  wysiwygInputTransformProbe?: boolean
   wysiwygMarkdownBlockProbe?: boolean
   wysiwygWikilinkInsertProbe?: boolean
   typePropertyOptions: string[]

@@ -34,7 +34,7 @@ export function nativeWysiwygDocumentWithInputTransforms({
   const normalized = normalizedSelection(selection)
   if (normalized.from !== normalized.to) return null
 
-  const transformed = transformNodeAtSelection(json, normalized)
+  const transformed = transformNodeAtSelection(withMergedAdjacentTextNodes(json), normalized)
   return transformed?.transformed ? transformed.node : null
 }
 
@@ -238,4 +238,68 @@ function cloneNode(node: TiptapJsonNode): TiptapJsonNode {
     content: node.content?.map(cloneNode),
     marks: node.marks?.map(cloneMark),
   }
+}
+
+function withMergedAdjacentTextNodes(node: TiptapJsonNode): TiptapJsonNode {
+  if (!node.content) return cloneNode(node)
+
+  const content: TiptapJsonNode[] = []
+  for (const child of node.content) {
+    appendMergedChild(content, withMergedAdjacentTextNodes(child))
+  }
+
+  return {
+    ...cloneNode(node),
+    content,
+  }
+}
+
+function appendMergedChild(content: TiptapJsonNode[], child: TiptapJsonNode): void {
+  const previous = content.at(-1)
+  if (!previous || !canMergeTextNodes(previous, child)) {
+    content.push(child)
+    return
+  }
+
+  content[content.length - 1] = {
+    ...previous,
+    text: `${previous.text ?? ''}${child.text ?? ''}`,
+  }
+}
+
+function canMergeTextNodes(left: TiptapJsonNode, right: TiptapJsonNode): boolean {
+  return left.type === 'text'
+    && right.type === 'text'
+    && typeof left.text === 'string'
+    && typeof right.text === 'string'
+    && marksEqual(left.marks, right.marks)
+}
+
+function marksEqual(
+  left: TiptapJsonMark[] | undefined,
+  right: TiptapJsonMark[] | undefined,
+): boolean {
+  const leftMarks = left ?? []
+  const rightMarks = right ?? []
+  if (leftMarks.length !== rightMarks.length) return false
+
+  return leftMarks.every((mark, index) => markEqual(mark, rightMarks[index]))
+}
+
+function markEqual(left: TiptapJsonMark, right: TiptapJsonMark | undefined): boolean {
+  if (!right) return false
+
+  return left.type === right.type
+    && attributesEqual(left.attrs, right.attrs)
+}
+
+function attributesEqual(
+  left: Record<string, unknown> | undefined,
+  right: Record<string, unknown> | undefined,
+): boolean {
+  const leftAttributes = Object.entries(left ?? {})
+  const rightAttributes = Object.entries(right ?? {})
+  if (leftAttributes.length !== rightAttributes.length) return false
+
+  return leftAttributes.every(([key, value]) => Object.is(value, right?.[key]))
 }

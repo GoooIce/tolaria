@@ -25,6 +25,9 @@ import {
   nativeWysiwygFormatCommandProbeEnabled,
 } from '../qa/nativeWysiwygFormatCommandProbe'
 import {
+  nativeWysiwygInputTransformProbeEnabled,
+} from '../qa/nativeWysiwygInputTransformProbe'
+import {
   nativeWysiwygWikilinkInsertProbeEnabled,
 } from '../qa/nativeWysiwygWikilinkInsertProbe'
 import {
@@ -71,6 +74,7 @@ export function MobileUiLab() {
   const sourceSelectionProbe = nativeSourceSelectionProbeEnabled(searchParams)
   const wysiwygAutocompleteProbe = nativeWysiwygAutocompleteProbeEnabled(searchParams)
   const wysiwygFormatCommandProbe = nativeWysiwygFormatCommandProbeEnabled(searchParams)
+  const wysiwygInputTransformProbe = nativeWysiwygInputTransformProbeEnabled(searchParams)
   const wysiwygMarkdownBlockProbe = nativeWysiwygMarkdownBlockProbeEnabled(searchParams)
   const wysiwygWikilinkInsertProbe = nativeWysiwygWikilinkInsertProbeEnabled(searchParams)
   const wysiwygMutationProbe = nativeWysiwygMutationProbeEnabled(searchParams) || wysiwygPersistenceProbe
@@ -90,6 +94,7 @@ export function MobileUiLab() {
     workspacePersistenceProbe,
     wysiwygAutocompleteProbe,
     wysiwygFormatCommandProbe,
+    wysiwygInputTransformProbe,
     wysiwygMarkdownBlockProbe,
     wysiwygWikilinkInsertProbe,
     wysiwygMutationProbe,
@@ -119,6 +124,7 @@ export function MobileUiLab() {
         snapshot={snapshot}
         wysiwygAutocompleteProbe={wysiwygAutocompleteProbe}
         wysiwygFormatCommandProbe={wysiwygFormatCommandProbe}
+        wysiwygInputTransformProbe={wysiwygInputTransformProbe}
         wysiwygMarkdownBlockProbe={wysiwygMarkdownBlockProbe}
         wysiwygWikilinkInsertProbe={wysiwygWikilinkInsertProbe}
         wysiwygMutationProbe={wysiwygMutationProbe}
@@ -140,6 +146,7 @@ export function MobileUiLab() {
       snapshot={snapshot}
       wysiwygAutocompleteProbe={wysiwygAutocompleteProbe}
       wysiwygFormatCommandProbe={wysiwygFormatCommandProbe}
+      wysiwygInputTransformProbe={wysiwygInputTransformProbe}
       wysiwygMarkdownBlockProbe={wysiwygMarkdownBlockProbe}
       wysiwygWikilinkInsertProbe={wysiwygWikilinkInsertProbe}
       wysiwygMutationProbe={wysiwygMutationProbe}
@@ -259,6 +266,7 @@ function mobileWorkspaceKey({
   workspacePersistenceProbe,
   wysiwygAutocompleteProbe,
   wysiwygFormatCommandProbe,
+  wysiwygInputTransformProbe,
   wysiwygMarkdownBlockProbe,
   wysiwygWikilinkInsertProbe,
   wysiwygMutationProbe,
@@ -275,6 +283,7 @@ function mobileWorkspaceKey({
   workspacePersistenceProbe: boolean
   wysiwygAutocompleteProbe: boolean
   wysiwygFormatCommandProbe: boolean
+  wysiwygInputTransformProbe: boolean
   wysiwygMarkdownBlockProbe: boolean
   wysiwygWikilinkInsertProbe: boolean
   wysiwygMutationProbe: boolean
@@ -292,6 +301,7 @@ function mobileWorkspaceKey({
     flagKey(workspacePersistenceProbe, 'workspace-persistence-probe', 'no-workspace-persistence-probe'),
     flagKey(wysiwygAutocompleteProbe, 'wysiwyg-autocomplete-probe', 'no-wysiwyg-autocomplete-probe'),
     flagKey(wysiwygFormatCommandProbe, 'wysiwyg-format-command-probe', 'no-wysiwyg-format-command-probe'),
+    flagKey(wysiwygInputTransformProbe, 'wysiwyg-input-transform-probe', 'no-wysiwyg-input-transform-probe'),
     flagKey(wysiwygMarkdownBlockProbe, 'wysiwyg-markdown-block-probe', 'no-wysiwyg-markdown-block-probe'),
     flagKey(wysiwygWikilinkInsertProbe, 'wysiwyg-wikilink-insert-probe', 'no-wysiwyg-wikilink-insert-probe'),
     flagKey(wysiwygMutationProbe, 'wysiwyg-mutation-probe', 'no-wysiwyg-mutation-probe'),

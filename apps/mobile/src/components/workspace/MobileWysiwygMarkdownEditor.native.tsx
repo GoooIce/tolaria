@@ -52,6 +52,12 @@ import {
   nativeWysiwygAutocompleteProof,
 } from '../../qa/nativeWysiwygAutocompleteProbe'
 import {
+  nativeWysiwygInputTransformLogLine,
+  nativeWysiwygInputTransformProbeSteps,
+  nativeWysiwygInputTransformProof,
+  type NativeWysiwygInputTransformProbeStep,
+} from '../../qa/nativeWysiwygInputTransformProbe'
+import {
   nativeWysiwygWikilinkInsertLogLine,
   nativeWysiwygWikilinkInsertProbePayload,
   nativeWysiwygWikilinkInsertProof,
@@ -74,6 +80,7 @@ type MobileWysiwygMarkdownEditorProps = {
   vaultRootUri?: string | null
   wysiwygAutocompleteProbe?: boolean
   wysiwygFormatCommandProbe?: boolean
+  wysiwygInputTransformProbe?: boolean
   wysiwygMarkdownBlockProbe?: boolean
   wysiwygWikilinkInsertProbe?: boolean
   wysiwygMutationProbe?: boolean
@@ -97,6 +104,15 @@ type CssInjectableEditorBridge = EditorBridge & {
 }
 
 type TimerHandle = ReturnType<typeof setTimeout>
+type NativeWysiwygInputTransformProbeTimers = {
+  nextStep: TimerHandle | null
+  probe: TimerHandle | null
+  transform: TimerHandle | null
+}
+type NativeWysiwygInputTransformProbeRun = {
+  editor: ContentSettableEditorBridge & SelectionSettableEditorBridge
+  step: NativeWysiwygInputTransformProbeStep
+}
 type NativeTentapEditorBridgeOptions = Omit<MobileWysiwygMarkdownEditorProps, 'notes'> & {
   initialDocumentContent: string
   onInlineAutocomplete: NativeWysiwygInlineAutocompleteHandler
@@ -163,6 +179,7 @@ export function MobileWysiwygMarkdownEditor({
   vaultRootUri = null,
   wysiwygAutocompleteProbe = false,
   wysiwygFormatCommandProbe = false,
+  wysiwygInputTransformProbe = false,
   wysiwygMarkdownBlockProbe = false,
   wysiwygWikilinkInsertProbe = false,
   wysiwygMutationProbe = false,
@@ -192,6 +209,7 @@ export function MobileWysiwygMarkdownEditor({
     vaultRootUri,
     wysiwygAutocompleteProbe,
     wysiwygFormatCommandProbe,
+    wysiwygInputTransformProbe,
     wysiwygMarkdownBlockProbe,
     wysiwygWikilinkInsertProbe,
     wysiwygMutationProbe,
@@ -333,6 +351,7 @@ function useNativeTentapEditorBridge({
   vaultRootUri = null,
   wysiwygAutocompleteProbe = false,
   wysiwygFormatCommandProbe = false,
+  wysiwygInputTransformProbe = false,
   wysiwygMarkdownBlockProbe = false,
   wysiwygWikilinkInsertProbe = false,
   wysiwygMutationProbe = false,
@@ -393,6 +412,7 @@ function useNativeTentapEditorBridge({
   useEditableContentRef({ blocks, bullets, note, refs })
   useResetEditorChangeGate({ initialContent, noteId: note.id, refs })
   useNativeWysiwygAutocompleteProbe({ enabled: wysiwygAutocompleteProbe, refs })
+  useNativeWysiwygInputTransformProbe({ enabled: wysiwygInputTransformProbe, refs })
   useNativeWysiwygFormatCommandProbe({ enabled: wysiwygFormatCommandProbe, refs })
   useNativeWysiwygDeferredInsertionProbe({
     enabled: wysiwygMarkdownBlockProbe,
@@ -641,6 +661,114 @@ function useNativeWysiwygAutocompleteProbe({
       if (probeTimer) clearTimeout(probeTimer)
     }
   }, [enabled, refs])
+}
+
+function useNativeWysiwygInputTransformProbe({
+  enabled,
+  refs,
+}: {
+  enabled: boolean
+  refs: NativeTentapEditorRefs
+}) {
+  useEffect(() => {
+    if (!enabled) return undefined
+
+    const timers: NativeWysiwygInputTransformProbeTimers = {
+      nextStep: null,
+      probe: null,
+      transform: null,
+    }
+    const runProbe = (stepIndex = 0) => {
+      const run = nativeWysiwygInputTransformProbeRun({
+        onRetry: () => {
+          timers.probe = setTimeout(() => runProbe(stepIndex), 250)
+        },
+        refs,
+        stepIndex,
+      })
+      if (!run) return
+
+      run.editor.setContent(run.step.content)
+      run.editor.setSelection(run.step.selection.from, run.step.selection.to)
+      timers.transform = setTimeout(() => {
+        void runNativeWysiwygInputTransformProbeStep(run.editor, run.step)
+          .then(() => {
+            timers.nextStep = setTimeout(() => runProbe(stepIndex + 1), 250)
+          })
+          .catch((error: unknown) => {
+            console.warn('[mobile-editor] Failed to run native WYSIWYG input transform probe:', error)
+          })
+      }, 500)
+    }
+
+    timers.probe = setTimeout(runProbe, 500)
+
+    return () => clearNativeWysiwygInputTransformProbeTimers(timers)
+  }, [enabled, refs])
+}
+
+function nativeWysiwygInputTransformProbeRun({
+  onRetry,
+  refs,
+  stepIndex,
+}: {
+  onRetry: () => void
+  refs: NativeTentapEditorRefs
+  stepIndex: number
+}): NativeWysiwygInputTransformProbeRun | null {
+  if (!refs.acceptsEditorChangesRef.current) {
+    onRetry()
+    return null
+  }
+
+  const editor = refs.editorRef.current
+  if (!isContentSettableEditorBridge(editor) || !isSelectionSettableEditorBridge(editor)) return null
+
+  const step = nativeWysiwygInputTransformProbeSteps()[stepIndex]
+  return step ? { editor, step } : null
+}
+
+function clearNativeWysiwygInputTransformProbeTimers(
+  timers: NativeWysiwygInputTransformProbeTimers,
+) {
+  clearTimer(timers.nextStep)
+  clearTimer(timers.probe)
+  clearTimer(timers.transform)
+}
+
+function clearTimer(timer: TimerHandle | null) {
+  if (timer) clearTimeout(timer)
+}
+
+async function runNativeWysiwygInputTransformProbeStep(
+  editor: EditorBridge,
+  step: NativeWysiwygInputTransformProbeStep,
+): Promise<void> {
+  if (!isJsonReadableEditorBridge(editor) || !isContentSettableEditorBridge(editor)) return
+
+  const json = await editor.getJSON()
+  const insertedJson = nativeWysiwygDocumentWithInsertedPlainText({
+    json,
+    payload: { text: step.input },
+    selection: step.selection,
+  })
+  if (!insertedJson) return
+
+  const selection = {
+    from: step.selection.from + step.input.length,
+    to: step.selection.to + step.input.length,
+  }
+  const nextJson = nativeWysiwygDocumentWithInputTransforms({
+    json: insertedJson,
+    selection,
+  })
+  if (nextJson) editor.setContent(nextJson)
+
+  console.info(nativeWysiwygInputTransformLogLine(nativeWysiwygInputTransformProof({
+    json: nextJson ?? insertedJson,
+    step: step.step,
+    transformed: nextJson !== null,
+  })))
 }
 
 function useNativeWysiwygFormatCommandProbe({

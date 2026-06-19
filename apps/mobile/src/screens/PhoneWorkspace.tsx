@@ -49,6 +49,7 @@ export function PhoneWorkspace({
   snapshot,
   wysiwygAutocompleteProbe = false,
   wysiwygFormatCommandProbe = false,
+  wysiwygInputTransformProbe = false,
   wysiwygMarkdownBlockProbe = false,
   wysiwygWikilinkInsertProbe = false,
   wysiwygMutationProbe = false,
@@ -64,6 +65,7 @@ export function PhoneWorkspace({
   snapshot: MobileWorkspaceSnapshot
   wysiwygAutocompleteProbe?: boolean
   wysiwygFormatCommandProbe?: boolean
+  wysiwygInputTransformProbe?: boolean
   wysiwygMarkdownBlockProbe?: boolean
   wysiwygWikilinkInsertProbe?: boolean
   wysiwygMutationProbe?: boolean
@@ -133,6 +135,7 @@ export function PhoneWorkspace({
           suggestionNotes={suggestionNotes}
           wysiwygAutocompleteProbe={wysiwygAutocompleteProbe}
           wysiwygFormatCommandProbe={wysiwygFormatCommandProbe}
+          wysiwygInputTransformProbe={wysiwygInputTransformProbe}
           wysiwygMarkdownBlockProbe={wysiwygMarkdownBlockProbe}
           wysiwygWikilinkInsertProbe={wysiwygWikilinkInsertProbe}
           wysiwygMutationProbe={wysiwygMutationProbe}
@@ -297,6 +300,7 @@ function phoneWorkspaceDragPreview({
       suggestionNotes={suggestionNotes}
       wysiwygAutocompleteProbe={false}
       wysiwygFormatCommandProbe={false}
+      wysiwygInputTransformProbe={false}
       wysiwygMarkdownBlockProbe={false}
       wysiwygWikilinkInsertProbe={false}
       wysiwygMutationProbe={false}
@@ -320,6 +324,7 @@ type PhoneWorkspaceStateViewProps = {
   suggestionNotes: MobileNote[]
   wysiwygAutocompleteProbe: boolean
   wysiwygFormatCommandProbe: boolean
+  wysiwygInputTransformProbe: boolean
   wysiwygMarkdownBlockProbe: boolean
   wysiwygWikilinkInsertProbe: boolean
   wysiwygMutationProbe: boolean
@@ -474,6 +479,7 @@ function PhoneEditorScreen({
   suggestionNotes,
   wysiwygAutocompleteProbe,
   wysiwygFormatCommandProbe,
+  wysiwygInputTransformProbe,
   wysiwygMarkdownBlockProbe,
   wysiwygWikilinkInsertProbe,
   wysiwygMutationProbe,
@@ -502,6 +508,7 @@ function PhoneEditorScreen({
         sourceSelectionProbe={sourceSelectionProbe}
         wysiwygAutocompleteProbe={wysiwygAutocompleteProbe}
         wysiwygFormatCommandProbe={wysiwygFormatCommandProbe}
+        wysiwygInputTransformProbe={wysiwygInputTransformProbe}
         wysiwygMarkdownBlockProbe={wysiwygMarkdownBlockProbe}
         wysiwygWikilinkInsertProbe={wysiwygWikilinkInsertProbe}
         wysiwygMutationProbe={wysiwygMutationProbe}
@@ -542,6 +549,7 @@ function PhoneEditorBody({
   sourceSelectionProbe,
   wysiwygAutocompleteProbe,
   wysiwygFormatCommandProbe,
+  wysiwygInputTransformProbe,
   wysiwygMarkdownBlockProbe,
   wysiwygWikilinkInsertProbe,
   wysiwygMutationProbe,
@@ -555,6 +563,7 @@ function PhoneEditorBody({
   sourceSelectionProbe: boolean
   wysiwygAutocompleteProbe: boolean
   wysiwygFormatCommandProbe: boolean
+  wysiwygInputTransformProbe: boolean
   wysiwygMarkdownBlockProbe: boolean
   wysiwygWikilinkInsertProbe: boolean
   wysiwygMutationProbe: boolean
@@ -577,6 +586,7 @@ function PhoneEditorBody({
       vaultRootUri={controller.vaultRootUri}
       wysiwygAutocompleteProbe={wysiwygAutocompleteProbe}
       wysiwygFormatCommandProbe={wysiwygFormatCommandProbe}
+      wysiwygInputTransformProbe={wysiwygInputTransformProbe}
       wysiwygMarkdownBlockProbe={wysiwygMarkdownBlockProbe}
       wysiwygWikilinkInsertProbe={wysiwygWikilinkInsertProbe}
       wysiwygMutationProbe={wysiwygMutationProbe}
