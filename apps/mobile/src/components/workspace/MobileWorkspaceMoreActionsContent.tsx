@@ -8,6 +8,7 @@ import { desktopToolbarActionParity } from '../../ui/desktopParity'
 import { mobileColors, mobileSpace, mobileType } from '../../ui/tokens'
 import type { MobileNote } from '../../workspace/mobileWorkspaceModel'
 import type { MobileWorkspaceActionSheetProps } from './MobileWorkspaceActionSheet'
+import { MobileSourceBlockMoreActions } from './MobileSourceBlockMoreActions'
 import { MobileTableMoreActions } from './MobileTableMoreActions'
 import { MobileWhiteboardMoreActions } from './MobileWhiteboardMoreActions'
 import { MobileTypeIcon } from './MobileWorkspaceIcons'
@@ -88,6 +89,13 @@ function MarkdownNoteMoreActionRows({
         onPress={props.onOpenTableOfContents}
       />
       <MobileTableMoreActions
+        editorBlocks={props.editorBlocks}
+        editorBullets={props.editorBullets}
+        note={note}
+        onClose={props.onClose}
+        onUpdateNoteContent={props.onUpdateNoteContent}
+      />
+      <MobileSourceBlockMoreActions
         editorBlocks={props.editorBlocks}
         editorBullets={props.editorBullets}
         note={note}

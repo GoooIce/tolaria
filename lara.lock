@@ -648,6 +648,9 @@ files:
     editor.formatting.mermaid: ee9b155b26d2df2a2c103fae24e71222
     editor.formatting.table: 51c45b795d5d18a3e4e0c37e8b20a141
     editor.formatting.whiteboard: a709f53fbab6855ced85d9d508fce3aa
+    editor.sourceBlock.content: f15c1cae7882448b3fb0404682e17e61
+    editor.sourceBlock.edit: cf9f2d3316dede262fd075b0c2d397a6
+    editor.sourceBlock.language: 4994a8ffeba4ac3140beb89e8d41f174
     editor.table.addColumn: b61b8f498d489f2e2b916b887b7062bc
     editor.table.addRow: 19f6e26702652b72fdc06294ed1594ef
     editor.table.cell: 44669a7cb93d75e9667b59dadb43f89c

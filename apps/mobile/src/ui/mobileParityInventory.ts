@@ -141,6 +141,13 @@ export const mobileParityInventory = [
     surface: 'Table more actions',
   },
   {
+    assertions: ['source-backed code, math, and Mermaid block edit checks'],
+    contracts: ['desktopEditorParity', 'desktopToolbarActionParity'],
+    desktopSource: 'BlockNote code blocks, math markdown, Mermaid fences, and editor command actions',
+    mobileFile: 'src/components/workspace/MobileSourceBlockMoreActions.tsx',
+    surface: 'Source block more actions',
+  },
+  {
     assertions: ['source-backed tldraw whiteboard metadata and snapshot edit checks'],
     contracts: ['desktopEditorParity', 'desktopToolbarActionParity'],
     desktopSource: 'Desktop tldraw fenced markdown persistence and editor command actions',
