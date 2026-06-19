@@ -57,6 +57,8 @@ describe('mobile property values', () => {
 
   it('serializes typed values from form text', () => {
     expect(parseMobilePropertyValue({ key: 'tags', kind: 'string', valueText: 'AI, Design' })).toEqual(['AI', 'Design'])
+    expect(parseMobilePropertyValue({ key: 'tags', kind: 'string', valueText: 'Design, "AI, UX", Mobile' })).toEqual(['Design', 'AI, UX', 'Mobile'])
+    expect(parseMobilePropertyValue({ key: 'tags', kind: 'string', valueText: "'Owner''s Plan', Research" })).toEqual(["Owner's Plan", 'Research'])
     expect(parseMobilePropertyValue({ key: 'Estimate', kind: 'number', valueText: '13.5' })).toBe(13.5)
     expect(parseMobilePropertyValue({ key: 'Estimate', kind: 'number', valueText: 'later' })).toBe('later')
     expect(parseMobilePropertyValue({ key: 'Published', kind: 'boolean', valueText: 'yes' })).toBe(true)
@@ -70,6 +72,7 @@ describe('mobile property values', () => {
 
   it('formats existing values for editing', () => {
     expect(mobilePropertyValueFormText(['AI', 'Design'])).toBe('AI, Design')
+    expect(mobilePropertyValueFormText(['AI, UX', 'Design'])).toBe('"AI, UX", Design')
     expect(mobilePropertyValueFormText(false)).toBe('false')
     expect(mobilePropertyValueFormText(8)).toBe('8')
   })
@@ -93,6 +96,12 @@ describe('mobile property values', () => {
       suggestion: 'Design',
       valueText: 'Design, des',
     })).toBe('Design')
+    expect(mobilePropertySuggestionValue({
+      key: 'Areas',
+      kind: 'list',
+      suggestion: 'Research',
+      valueText: '"AI, UX", res',
+    })).toBe('"AI, UX", Research')
     expect(mobilePropertySuggestionValue({
       key: 'Priority',
       kind: 'string',

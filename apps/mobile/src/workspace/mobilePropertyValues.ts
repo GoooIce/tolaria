@@ -30,7 +30,7 @@ export type MobilePropertySuggestionValueInput = MobilePropertyValueInput & {
 }
 
 export function mobilePropertyValueFormText(value: MobilePropertyValue): string {
-  if (Array.isArray(value)) return value.join(', ')
+  if (Array.isArray(value)) return formatListPropertyValue(value)
   return String(value)
 }
 
@@ -98,14 +98,78 @@ function mobileStringPropertyValueKind(key: MobilePropertyKey, value: string): M
 }
 
 function listPropertyValue(value: MobilePropertyValueText): string[] {
-  return value.split(',').map((item) => item.trim()).filter(Boolean)
+  return splitListPropertyValue(value).map(listPropertyItemValue).filter(Boolean)
 }
 
 function listPropertySuggestionValue(valueText: MobilePropertyValueText, suggestion: string): string {
-  const parts = valueText.split(',').map((part) => part.trim())
+  const parts = splitListPropertyValue(valueText).map(listPropertyItemValue)
   const existing = parts.slice(0, -1).filter(Boolean)
   const withoutSuggestion = existing.filter((part) => part.toLowerCase() !== suggestion.toLowerCase())
-  return [...withoutSuggestion, suggestion].join(', ')
+  return formatListPropertyValue([...withoutSuggestion, suggestion])
+}
+
+function formatListPropertyValue(values: string[]): string {
+  return values.map(listPropertyItemFormText).join(', ')
+}
+
+function listPropertyItemFormText(value: string): string {
+  return shouldQuoteListPropertyItem(value) ? JSON.stringify(value) : value
+}
+
+function shouldQuoteListPropertyItem(value: string): boolean {
+  return value.trim() !== value || value.includes(',')
+}
+
+function listPropertyItemValue(value: string): string {
+  const trimmed = value.trim()
+  const quote = listPropertyItemQuote(trimmed)
+  if (quote === null) return trimmed
+  return unquoteListPropertyItem(trimmed.slice(1, -1), quote)
+}
+
+function splitListPropertyValue(value: MobilePropertyValueText): string[] {
+  const parts: string[] = []
+  let quote: '"' | '\'' | null = null
+  let startIndex = 0
+
+  for (let index = 0; index < value.length; index += 1) {
+    const char = value[index]
+    if (char === '\\' && quote === '"') {
+      index += 1
+      continue
+    }
+    if (isListPropertyQuote(char)) {
+      quote = quote === char ? null : quote ?? char
+      continue
+    }
+    if (char === ',' && quote === null) {
+      parts.push(value.slice(startIndex, index))
+      startIndex = index + 1
+    }
+  }
+
+  parts.push(value.slice(startIndex))
+  return parts
+}
+
+function listPropertyItemQuote(value: string): '"' | '\'' | null {
+  const quote = value.at(0)
+  if (isListPropertyQuote(quote) && value.at(-1) === quote) return quote
+  return null
+}
+
+function unquoteListPropertyItem(value: string, quote: '"' | '\''): string {
+  if (quote === '\'') return value.replaceAll("''", "'")
+
+  try {
+    return JSON.parse(`"${value}"`) as string
+  } catch {
+    return value.replace(/\\"/gu, '"')
+  }
+}
+
+function isListPropertyQuote(value: string | undefined): value is '"' | '\'' {
+  return value === '"' || value === '\''
 }
 
 function booleanPropertyValue(value: MobilePropertyValueText): boolean {
