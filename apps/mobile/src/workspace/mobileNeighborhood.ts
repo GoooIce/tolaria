@@ -1,6 +1,6 @@
 import { mobileNoteListMatchesQuery, normalizedMobileSearchQuery } from './mobileNoteSearch'
 import { normalizeMobileWikilinkTarget, parseMobileWikilink } from './mobileWikilinks'
-import type { MobileNote, MobileRelationship } from './mobileWorkspaceModel'
+import type { MobileNote, MobilePropertyDisplayMode, MobileRelationship } from './mobileWorkspaceModel'
 
 export type MobileNeighborhoodGroup = {
   id: string
@@ -47,6 +47,7 @@ export function filterMobileNeighborhood(
   neighborhood: MobileNeighborhood,
   query: string,
   displayPropertyKeys: string[] = [],
+  displayModes?: Record<string, MobilePropertyDisplayMode> | null,
 ): MobileNeighborhood {
   const normalizedQuery = normalizedMobileSearchQuery(query)
   if (!normalizedQuery) return neighborhood
@@ -56,7 +57,10 @@ export function filterMobileNeighborhood(
     groups: neighborhood.groups
       .map((group) => ({
         ...group,
-        notes: group.notes.filter((note) => mobileNoteListMatchesQuery(note, normalizedQuery, displayPropertyKeys)),
+        notes: group.notes.filter((note) => mobileNoteListMatchesQuery(note, normalizedQuery, {
+          displayModes,
+          displayPropertyKeys,
+        })),
       }))
       .filter((group) => group.notes.length > 0),
   }

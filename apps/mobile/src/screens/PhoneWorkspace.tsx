@@ -458,6 +458,7 @@ function PhoneNoteListScreen({
         noteListFilterVisible={controller.noteListFilterVisible}
         notes={controller.notes}
         onNoteListFilterChange={controller.onNoteListFilterChange}
+        propertyDisplayModes={controller.snapshot.vaultConfig?.propertyDisplayModes}
         searchQuery={controller.searchQuery || undefined}
         selectedNoteId={controller.selectedNoteId}
         subtitle={controller.noteListSubtitle}
@@ -507,6 +508,7 @@ function PhoneSidebarDrawer({
           noteListFilterVisible={controller.noteListFilterVisible}
           notes={controller.notes}
           onNoteListFilterChange={controller.onNoteListFilterChange}
+          propertyDisplayModes={controller.snapshot.vaultConfig?.propertyDisplayModes}
           selectedNoteId={controller.selectedNoteId}
           subtitle={controller.noteListSubtitle}
           title={controller.noteListTitle}

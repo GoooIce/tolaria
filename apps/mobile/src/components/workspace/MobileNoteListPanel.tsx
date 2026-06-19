@@ -14,7 +14,7 @@ import { mobileColors, mobileSpace, mobileType } from '../../ui/tokens'
 import { mobileNoteRowChips } from '../../workspace/mobileNoteDisplay'
 import type { MobileNeighborhood, MobileNeighborhoodGroup } from '../../workspace/mobileNeighborhood'
 import type { MobileNoteListFilter } from '../../workspace/mobileNoteFilters'
-import type { MobileNote, MobileTypeDefinitions } from '../../workspace/mobileWorkspaceModel'
+import type { MobileNote, MobilePropertyDisplayMode, MobileTypeDefinitions } from '../../workspace/mobileWorkspaceModel'
 import { MobileNoteListBulkActionBar } from './MobileNoteListBulkActionBar'
 import { MobileTypeIcon } from './MobileWorkspaceIcons'
 import {
@@ -52,6 +52,7 @@ type MobileNoteListPanelProps = {
   onOpenCreateNote: () => void
   onOpenSearch: () => void
   onSelectNote: (noteId: string) => void
+  propertyDisplayModes?: Record<string, MobilePropertyDisplayMode> | null
   searchQuery?: string
   selectedNoteId: string | null
   subtitle: string
@@ -76,6 +77,7 @@ export function MobileNoteListPanel(props: MobileNoteListPanelProps) {
     onOpenCreateNote,
     onOpenSearch,
     onSelectNote,
+    propertyDisplayModes,
     searchQuery,
     selectedNoteId,
     subtitle,
@@ -92,7 +94,7 @@ export function MobileNoteListPanel(props: MobileNoteListPanelProps) {
   })
 
   return (
-    <MobilePanel {...layoutProbe.probe('noteList.panel')} style={[styles.panel, compact ? styles.panelCompact : null, fullWidth ? styles.panelFullWidth : null]} testID="note-list-panel">
+    <MobilePanel {...layoutProbe.probe('noteList.panel')} style={[panelStyles.panel, compact ? panelStyles.panelCompact : null, fullWidth ? panelStyles.panelFullWidth : null]} testID="note-list-panel">
       <MobileToolbar testID="note-list-toolbar">
         {leading}
         <View style={styles.toolbarTitleBlock}>
@@ -123,6 +125,7 @@ export function MobileNoteListPanel(props: MobileNoteListPanelProps) {
         neighborhood={neighborhood}
         notes={notes}
         onSelectNote={onSelectNote}
+        propertyDisplayModes={propertyDisplayModes}
         searchQuery={searchQuery}
         selectedNoteId={selectedNoteId}
         typeDefinitions={typeDefinitions}
@@ -189,6 +192,7 @@ function NoteListContent({
   neighborhood,
   notes,
   onSelectNote,
+  propertyDisplayModes,
   searchQuery,
   selectedNoteId,
   typeDefinitions,
@@ -200,6 +204,7 @@ function NoteListContent({
   neighborhood: MobileNeighborhood | null
   notes: MobileNote[]
   onSelectNote: (noteId: string) => void
+  propertyDisplayModes?: Record<string, MobilePropertyDisplayMode> | null
   searchQuery?: string
   selectedNoteId: string | null
   typeDefinitions?: MobileTypeDefinitions
@@ -211,6 +216,7 @@ function NoteListContent({
         displayPropertyKeys={displayPropertyKeys}
         layoutProbe={layoutProbe}
         neighborhood={neighborhood}
+        propertyDisplayModes={propertyDisplayModes}
         typeDefinitions={typeDefinitions}
         onSelectNote={onSelectNote}
       />
@@ -234,6 +240,7 @@ function NoteListContent({
         multiSelected: bulkSelection.selectedNoteIds.has(note.id),
         note,
         onBeginSelection: bulkSelection.beginSelection,
+        propertyDisplayModes,
         typeDefinitions,
         onSelectNote: bulkSelection.pressNote,
       })}
@@ -402,6 +409,7 @@ function NeighborhoodNoteList({
   layoutProbe,
   neighborhood,
   onSelectNote,
+  propertyDisplayModes,
   typeDefinitions,
 }: {
   activeNoteId: string | null
@@ -409,6 +417,7 @@ function NeighborhoodNoteList({
   layoutProbe: MobileLayoutProbe
   neighborhood: MobileNeighborhood
   onSelectNote: (noteId: string) => void
+  propertyDisplayModes?: Record<string, MobilePropertyDisplayMode> | null
   typeDefinitions?: MobileTypeDefinitions
 }) {
   const rows = useMemo(() => neighborhoodRows(neighborhood), [neighborhood])
@@ -425,6 +434,7 @@ function NeighborhoodNoteList({
         displayPropertyKeys,
         item,
         layoutProbe,
+        propertyDisplayModes,
         typeDefinitions,
         onSelectNote,
       })}
@@ -451,6 +461,7 @@ function neighborhoodRow({
   item,
   layoutProbe,
   onSelectNote,
+  propertyDisplayModes,
   typeDefinitions,
 }: {
   activeNoteId: string | null
@@ -458,6 +469,7 @@ function neighborhoodRow({
   item: NeighborhoodRow
   layoutProbe: MobileLayoutProbe
   onSelectNote: (noteId: string) => void
+  propertyDisplayModes?: Record<string, MobilePropertyDisplayMode> | null
   typeDefinitions?: MobileTypeDefinitions
 }) {
   if (item.kind === 'header') return <RelationshipGroupHeader group={item.group} />
@@ -468,6 +480,7 @@ function neighborhoodRow({
     forceSelected: item.kind === 'source',
     layoutProbe,
     note: item.note,
+    propertyDisplayModes,
     typeDefinitions,
     onSelectNote,
   })
@@ -482,6 +495,7 @@ function noteRow({
   note,
   onBeginSelection,
   onSelectNote,
+  propertyDisplayModes,
   typeDefinitions,
 }: {
   activeNoteId: string | null
@@ -492,11 +506,12 @@ function noteRow({
   note: MobileNote
   onBeginSelection?: (noteId: string) => void
   onSelectNote: (noteId: string) => void
+  propertyDisplayModes?: Record<string, MobilePropertyDisplayMode> | null
   typeDefinitions?: MobileTypeDefinitions
 }) {
   return (
     <MobileListRow
-      chips={<NoteRowChips displayPropertyKeys={displayPropertyKeys} note={note} typeDefinitions={typeDefinitions} />}
+      chips={<NoteRowChips displayPropertyKeys={displayPropertyKeys} note={note} propertyDisplayModes={propertyDisplayModes} typeDefinitions={typeDefinitions} />}
       layoutProbe={layoutProbe}
       metricId={`noteList.item.${note.id}`}
       multiSelected={multiSelected}
@@ -543,13 +558,15 @@ function NoteListEmptyState({ searchQuery }: { searchQuery?: string }) {
 function NoteRowChips({
   displayPropertyKeys,
   note,
+  propertyDisplayModes,
   typeDefinitions,
 }: {
   displayPropertyKeys: string[]
   note: MobileNote
+  propertyDisplayModes?: Record<string, MobilePropertyDisplayMode> | null
   typeDefinitions?: MobileTypeDefinitions
 }) {
-  const chips = mobileNoteRowChips(note, displayPropertyKeys, typeDefinitions)
+  const chips = mobileNoteRowChips(note, displayPropertyKeys, typeDefinitions, propertyDisplayModes)
   if (chips.length === 0) return null
 
   return (
@@ -560,6 +577,21 @@ function NoteRowChips({
     </View>
   )
 }
+
+const panelStyles = StyleSheet.create({
+  panel: {
+    alignSelf: 'stretch',
+    borderRightWidth: StyleSheet.hairlineWidth,
+    height: '100%',
+    width: desktopPanelParity.noteListWidth,
+  },
+  panelCompact: {
+    width: 336,
+  },
+  panelFullWidth: {
+    width: '100%',
+  },
+})
 
 const styles = StyleSheet.create({
   chipRow: {
@@ -647,18 +679,6 @@ const styles = StyleSheet.create({
     fontSize: mobileType.micro,
     fontWeight: '500',
     textTransform: 'uppercase',
-  },
-  panel: {
-    alignSelf: 'stretch',
-    borderRightWidth: StyleSheet.hairlineWidth,
-    height: '100%',
-    width: desktopPanelParity.noteListWidth,
-  },
-  panelCompact: {
-    width: 336,
-  },
-  panelFullWidth: {
-    width: '100%',
   },
   listContent: {
     paddingHorizontal: 0,

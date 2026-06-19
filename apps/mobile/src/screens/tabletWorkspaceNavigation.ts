@@ -22,7 +22,7 @@ import type {
   MobileSidebarFolderSelection,
   MobileSidebarItemSelection,
 } from '../components/workspace/MobileWorkspaceSidebar'
-import { mobileNoteListMatchesQuery, normalizedMobileSearchQuery } from '../workspace/mobileNoteSearch'
+import { mobileNoteListMatchesQuery, normalizedMobileSearchQuery, type MobileNoteListSearchContext } from '../workspace/mobileNoteSearch'
 import { mobileAllNotesFileVisibilityFromVaultConfig } from '../workspace/mobileVaultConfig'
 
 export type NoteCount = number
@@ -249,8 +249,11 @@ function useTabletNavigationSelectionActions({
     const nextNotes = filterNotesBySearch(
       notesForSidebarSelection(sourceSnapshot, selection, { noteListFilter: 'open' }),
       searchQuery,
-      nextNoteListProperties,
-      sourceSnapshot.typeDefinitions,
+      {
+        displayModes: sourceSnapshot.vaultConfig?.propertyDisplayModes,
+        displayPropertyKeys: nextNoteListProperties,
+        typeDefinitions: sourceSnapshot.typeDefinitions,
+      },
     )
     selectNavigationEntry({
       noteListFilter: 'open',
@@ -262,8 +265,11 @@ function useTabletNavigationSelectionActions({
     const nextNotes = filterNotesBySearch(
       notesForSidebarSelection(snapshot, sidebarSelection, { noteListFilter: filter }),
       searchQuery,
-      noteListProperties,
-      snapshot.typeDefinitions,
+      {
+        displayModes: snapshot.vaultConfig?.propertyDisplayModes,
+        displayPropertyKeys: noteListProperties,
+        typeDefinitions: snapshot.typeDefinitions,
+      },
     )
     selectNavigationEntry({
       noteListFilter: filter,
@@ -353,8 +359,12 @@ function useNavigationVisibleNotes({
   const notes = useMemo(() => (
     noteListNeighborhood
       ? flattenMobileNeighborhoodNotes(noteListNeighborhood)
-      : filterNotesBySearch(sidebarNotes, searchQuery, noteListProperties, snapshot.typeDefinitions)
-  ), [noteListNeighborhood, noteListProperties, searchQuery, sidebarNotes, snapshot.typeDefinitions])
+      : filterNotesBySearch(sidebarNotes, searchQuery, {
+        displayModes: snapshot.vaultConfig?.propertyDisplayModes,
+        displayPropertyKeys: noteListProperties,
+        typeDefinitions: snapshot.typeDefinitions,
+      })
+  ), [noteListNeighborhood, noteListProperties, searchQuery, sidebarNotes, snapshot.typeDefinitions, snapshot.vaultConfig?.propertyDisplayModes])
 
   return { noteListNeighborhood, notes }
 }
@@ -544,7 +554,12 @@ function neighborhoodForSelection(
   const source = notes.find((note) => note.id === selection.id)
   if (!source) return null
 
-  return filterMobileNeighborhood(buildMobileNeighborhood(source, notes), searchQuery, displayPropertyKeys)
+  return filterMobileNeighborhood(
+    buildMobileNeighborhood(source, notes),
+    searchQuery,
+    displayPropertyKeys,
+    snapshot.vaultConfig?.propertyDisplayModes,
+  )
 }
 
 function workspaceNotes(snapshot: MobileWorkspaceSnapshot) {
@@ -655,13 +670,12 @@ function typeNameForSelection(
 export function filterNotesBySearch(
   notes: MobileNote[],
   searchQuery: SearchQuery,
-  displayPropertyKeys: string[] = [],
-  typeDefinitions?: MobileWorkspaceSnapshot['typeDefinitions'],
+  context: MobileNoteListSearchContext = {},
 ) {
   const normalizedSearch = normalizedMobileSearchQuery(searchQuery)
   if (!normalizedSearch) return notes
 
-  return notes.filter((note) => mobileNoteListMatchesQuery(note, normalizedSearch, displayPropertyKeys, typeDefinitions))
+  return notes.filter((note) => mobileNoteListMatchesQuery(note, normalizedSearch, context))
 }
 
 function inboxNotes(notes: MobileNote[]) {

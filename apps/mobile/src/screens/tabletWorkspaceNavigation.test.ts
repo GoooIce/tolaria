@@ -84,9 +84,9 @@ describe('tablet workspace navigation', () => {
       }),
     ]
 
-    expect(filterNotesBySearch(notes, 'llm workflow', ['belongs_to']).map((candidate) => candidate.id)).toEqual(['workflow'])
-    expect(filterNotesBySearch(notes, 'high', ['Priority']).map((candidate) => candidate.id)).toEqual(['workflow'])
-    expect(filterNotesBySearch(notes, 'llm workflow', ['Priority'])).toEqual([])
+    expect(filterNotesBySearch(notes, 'llm workflow', { displayPropertyKeys: ['belongs_to'] }).map((candidate) => candidate.id)).toEqual(['workflow'])
+    expect(filterNotesBySearch(notes, 'high', { displayPropertyKeys: ['Priority'] }).map((candidate) => candidate.id)).toEqual(['workflow'])
+    expect(filterNotesBySearch(notes, 'llm workflow', { displayPropertyKeys: ['Priority'] })).toEqual([])
   })
 
   it('uses Type display defaults for primary note-list search until a primary override is set', () => {
@@ -119,9 +119,12 @@ describe('tablet workspace navigation', () => {
       sectionId: 'primary',
     }
 
-    expect(filterNotesBySearch(notes, 'high', [], snapshot.typeDefinitions).map((candidate) => candidate.id)).toEqual(['workflow'])
+    expect(filterNotesBySearch(notes, 'high', { typeDefinitions: snapshot.typeDefinitions }).map((candidate) => candidate.id)).toEqual(['workflow'])
     expect(noteListPropertiesForSelection(snapshot, allNotesSelection)).toEqual(['tags'])
-    expect(filterNotesBySearch(notes, 'high', noteListPropertiesForSelection(snapshot, allNotesSelection), snapshot.typeDefinitions)).toEqual([])
+    expect(filterNotesBySearch(notes, 'high', {
+      displayPropertyKeys: noteListPropertiesForSelection(snapshot, allNotesSelection),
+      typeDefinitions: snapshot.typeDefinitions,
+    })).toEqual([])
   })
 
   it('opens the selected active favorite note instead of every favorite or title match', () => {

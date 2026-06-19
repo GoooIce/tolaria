@@ -223,6 +223,7 @@ function TabletNoteListHost({
         noteListFilterVisible={noteListFilterVisible}
         notes={notes}
         onNoteListFilterChange={onNoteListFilterChange}
+        propertyDisplayModes={snapshot.vaultConfig?.propertyDisplayModes}
         searchQuery={searchQuery || undefined}
         selectedNoteId={selectedNoteId}
         subtitle={noteListSubtitle}

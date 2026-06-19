@@ -25,6 +25,23 @@ describe('mobile note display', () => {
       tone: 'blue',
     })
   })
+
+  it('honors persisted desktop display modes for note-list chips', () => {
+    const candidate = note({
+      properties: [
+        { key: 'Website', label: 'Website', value: 'tolaria.app/docs' },
+        { key: 'Priority', label: 'Priority', value: 'High' },
+      ],
+    })
+
+    expect(mobileNoteRowChips(candidate, ['Website', 'Priority'], undefined, {
+      Priority: 'status',
+      Website: 'url',
+    })).toEqual([
+      { label: 'tolaria.app', tone: 'blue' },
+      { label: 'High', tone: 'orange' },
+    ])
+  })
 })
 
 function note(overrides: Partial<MobileNote>): MobileNote {

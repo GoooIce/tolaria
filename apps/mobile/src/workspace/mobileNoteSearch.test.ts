@@ -45,10 +45,28 @@ describe('mobile note search', () => {
       'LLM Workflow',
       'Luca',
     ])
-    expect(mobileNoteListMatchesQuery(candidate, 'llm workflow', ['belongs_to'])).toBe(true)
-    expect(mobileNoteListMatchesQuery(candidate, 'high', ['Priority'])).toBe(true)
-    expect(mobileNoteListMatchesQuery(candidate, 'luca', ['Owner'])).toBe(true)
-    expect(mobileNoteListMatchesQuery(candidate, 'llm workflow', ['Priority'])).toBe(false)
+    expect(mobileNoteListMatchesQuery(candidate, 'llm workflow', { displayPropertyKeys: ['belongs_to'] })).toBe(true)
+    expect(mobileNoteListMatchesQuery(candidate, 'high', { displayPropertyKeys: ['Priority'] })).toBe(true)
+    expect(mobileNoteListMatchesQuery(candidate, 'luca', { displayPropertyKeys: ['Owner'] })).toBe(true)
+    expect(mobileNoteListMatchesQuery(candidate, 'llm workflow', { displayPropertyKeys: ['Priority'] })).toBe(false)
+  })
+
+  it('uses display-mode overrides when matching configured property chips', () => {
+    const candidate = note({
+      properties: [
+        { key: 'Website', label: 'Website', value: 'tolaria.app/docs' },
+      ],
+    })
+
+    expect(mobileNoteDisplayLabels(candidate, ['Website'], undefined, { Website: 'url' })).toEqual(['tolaria.app'])
+    expect(mobileNoteListMatchesQuery(candidate, 'tolaria.app', {
+      displayModes: { Website: 'url' },
+      displayPropertyKeys: ['Website'],
+    })).toBe(true)
+    expect(mobileNoteListMatchesQuery(candidate, 'docs', {
+      displayModes: { Website: 'url' },
+      displayPropertyKeys: ['Website'],
+    })).toBe(false)
   })
 
   it('uses desktop Type display properties when there is no display override', () => {
@@ -65,9 +83,9 @@ describe('mobile note search', () => {
     }
 
     expect(mobileNoteListMatchesQuery(candidate, 'release cleanup')).toBe(true)
-    expect(mobileNoteListMatchesQuery(candidate, 'active', [], typeDefinitions)).toBe(true)
-    expect(mobileNoteListMatchesQuery(candidate, 'design', [], typeDefinitions)).toBe(true)
-    expect(mobileNoteListMatchesQuery(candidate, 'procedure', [], typeDefinitions)).toBe(false)
+    expect(mobileNoteListMatchesQuery(candidate, 'active', { typeDefinitions })).toBe(true)
+    expect(mobileNoteListMatchesQuery(candidate, 'design', { typeDefinitions })).toBe(true)
+    expect(mobileNoteListMatchesQuery(candidate, 'procedure', { typeDefinitions })).toBe(false)
     expect(mobileNoteListMatchesQuery(candidate, 'active')).toBe(false)
   })
 })

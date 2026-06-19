@@ -1,9 +1,16 @@
 import { mobileNoteDisplayLabels } from './mobileNoteDisplay'
-import type { MobileNote, MobileTypeDefinitions } from './mobileWorkspaceModel'
+import type { MobileNote, MobilePropertyDisplayMode, MobileTypeDefinitions } from './mobileWorkspaceModel'
 
 type DisplayPropertyKey = string
+type DisplayModeOverrides = Record<string, MobilePropertyDisplayMode>
 type SearchQuery = string
 type SearchText = string
+
+export type MobileNoteListSearchContext = {
+  displayModes?: DisplayModeOverrides | null
+  displayPropertyKeys?: DisplayPropertyKey[]
+  typeDefinitions?: MobileTypeDefinitions
+}
 
 export function normalizedMobileSearchQuery(value: SearchQuery) {
   return normalizeSearchText(value)
@@ -39,24 +46,24 @@ export function mobileQuickOpenSearchText(note: MobileNote) {
 export function mobileNoteListMatchesQuery(
   note: MobileNote,
   query: SearchQuery,
-  displayPropertyKeys: DisplayPropertyKey[] = [],
-  typeDefinitions?: MobileTypeDefinitions,
+  context: MobileNoteListSearchContext = {},
 ) {
   const normalizedQuery = normalizeSearchText(query)
   if (!normalizedQuery) return true
 
-  return mobileNoteListSearchText(note, displayPropertyKeys, typeDefinitions).includes(normalizedQuery)
+  return mobileNoteListSearchText(note, context).includes(normalizedQuery)
 }
 
 export function mobileNoteListSearchText(
   note: MobileNote,
-  displayPropertyKeys: DisplayPropertyKey[] = [],
-  typeDefinitions?: MobileTypeDefinitions,
+  context: MobileNoteListSearchContext = {},
 ) {
+  const { displayModes, displayPropertyKeys = [], typeDefinitions } = context
+
   return normalizeSearchText([
     note.title,
     note.snippet,
-    ...mobileNoteDisplayLabels(note, displayPropertyKeys, typeDefinitions),
+    ...mobileNoteDisplayLabels(note, displayPropertyKeys, typeDefinitions, displayModes),
   ].join(' '))
 }
 
