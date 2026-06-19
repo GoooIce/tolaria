@@ -410,6 +410,58 @@ filters:
     expect(evaluateMobileSavedView(recentView!, notes).map((candidate) => candidate.id)).toEqual(['recent', 'today'])
   })
 
+  it('clamps relative month and year filters to desktop date-fns calendar semantics', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date(2026, 2, 31, 12))
+
+    const oneMonthAgoView = parseMobileSavedViewFile({
+      relativePath: 'views/month-ago.yml',
+      content: `name: Month Ago
+filters:
+  all:
+    - field: Date
+      op: equals
+      value: one month ago
+`,
+    }, 0)
+    const nextMonthView = parseMobileSavedViewFile({
+      relativePath: 'views/next-month.yml',
+      content: `name: Next Month
+filters:
+  all:
+    - field: Date
+      op: equals
+      value: in one month
+`,
+    }, 1)
+    const notes = [
+      note({ id: 'desktop-month-past', properties: [{ key: 'Date', label: 'Date', value: '2026-02-28' }] }),
+      note({ id: 'native-rollover-past', properties: [{ key: 'Date', label: 'Date', value: '2026-03-03' }] }),
+      note({ id: 'desktop-month-future', properties: [{ key: 'Date', label: 'Date', value: '2026-04-30' }] }),
+      note({ id: 'native-rollover-future', properties: [{ key: 'Date', label: 'Date', value: '2026-05-01' }] }),
+    ]
+
+    expect(evaluateMobileSavedView(oneMonthAgoView!, notes).map((candidate) => candidate.id)).toEqual(['desktop-month-past'])
+    expect(evaluateMobileSavedView(nextMonthView!, notes).map((candidate) => candidate.id)).toEqual(['desktop-month-future'])
+
+    vi.setSystemTime(new Date(2024, 1, 29, 12))
+    const lastYearView = parseMobileSavedViewFile({
+      relativePath: 'views/last-year.yml',
+      content: `name: Last Year
+filters:
+  all:
+    - field: Date
+      op: equals
+      value: one year ago
+`,
+    }, 2)
+
+    expect(evaluateMobileSavedView(lastYearView!, [
+      note({ id: 'desktop-year-past', properties: [{ key: 'Date', label: 'Date', value: '2023-02-28' }] }),
+      note({ id: 'native-rollover-year', properties: [{ key: 'Date', label: 'Date', value: '2023-03-01' }] }),
+    ]).map((candidate) => candidate.id)).toEqual(['desktop-year-past'])
+  })
+
   it('rejects invalid ISO date-only values like desktop saved-view filters', () => {
     const invalidTargetView = parseMobileSavedViewFile({
       relativePath: 'views/invalid-target-date.yml',

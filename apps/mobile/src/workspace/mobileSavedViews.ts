@@ -1094,12 +1094,34 @@ function startOfLocalDay(value: Date): Date {
 }
 
 function shiftDate(value: Date, unit: 'day' | 'month' | 'week' | 'year', amount: number): Date {
+  if (unit === 'month') return shiftCalendarMonth(value, amount)
+  if (unit === 'year') return shiftCalendarYear(value, amount)
+
   const next = new Date(value)
-  if (unit === 'day') next.setDate(next.getDate() + amount)
-  if (unit === 'week') next.setDate(next.getDate() + amount * 7)
-  if (unit === 'month') next.setMonth(next.getMonth() + amount)
-  if (unit === 'year') next.setFullYear(next.getFullYear() + amount)
+  next.setDate(next.getDate() + (unit === 'week' ? amount * 7 : amount))
   return next
+}
+
+function shiftCalendarMonth(value: Date, amount: number): Date {
+  const next = new Date(value)
+  const day = next.getDate()
+  next.setDate(1)
+  next.setMonth(next.getMonth() + amount)
+  next.setDate(Math.min(day, daysInMonth(next.getFullYear(), next.getMonth())))
+  return next
+}
+
+function shiftCalendarYear(value: Date, amount: number): Date {
+  const next = new Date(value)
+  const day = next.getDate()
+  next.setDate(1)
+  next.setFullYear(next.getFullYear() + amount)
+  next.setDate(Math.min(day, daysInMonth(next.getFullYear(), next.getMonth())))
+  return next
+}
+
+function daysInMonth(year: number, month: number): number {
+  return new Date(year, month + 1, 0).getDate()
 }
 
 function relationshipContains(values: string[], targetValue: string): boolean {
