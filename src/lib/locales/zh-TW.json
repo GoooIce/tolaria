@@ -642,6 +642,8 @@
   "editor.formatting.quote": "引述",
   "editor.formatting.divider": "分隔線",
   "editor.formatting.codeBlock": "程式碼區塊",
+  "editor.formatting.mathBlock": "數學",
+  "editor.formatting.mermaid": "Mermaid",
   "editor.formatting.table": "表格",
   "editor.whiteboard.enterFullscreen": "展開白板",
   "editor.whiteboard.exitFullscreen": "退出全螢幕白板",

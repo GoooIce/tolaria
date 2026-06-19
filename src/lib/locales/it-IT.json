@@ -642,6 +642,8 @@
   "editor.formatting.quote": "Citazione",
   "editor.formatting.divider": "Divisore",
   "editor.formatting.codeBlock": "Blocco di codice",
+  "editor.formatting.mathBlock": "Matematica",
+  "editor.formatting.mermaid": "Mermaid",
   "editor.formatting.table": "Tabella",
   "editor.whiteboard.enterFullscreen": "Espandi la lavagna",
   "editor.whiteboard.exitFullscreen": "Esci dalla lavagna a schermo intero",

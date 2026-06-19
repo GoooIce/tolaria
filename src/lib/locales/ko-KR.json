@@ -642,6 +642,8 @@
   "editor.formatting.quote": "인용",
   "editor.formatting.divider": "구분선",
   "editor.formatting.codeBlock": "코드 블록",
+  "editor.formatting.mathBlock": "수학",
+  "editor.formatting.mermaid": "Mermaid",
   "editor.formatting.table": "표",
   "editor.whiteboard.enterFullscreen": "화이트보드 펼치기",
   "editor.whiteboard.exitFullscreen": "전체 화면 화이트보드에서 나가기",

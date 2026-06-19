@@ -85,6 +85,17 @@ describe('mobile markdown formatting', () => {
     })
   })
 
+  it('inserts desktop-compatible math and Mermaid source blocks', () => {
+    expect(applyMobileMarkdownFormat('Intro', { start: 5, end: 5 }, 'mathBlock')).toEqual({
+      selection: { start: 10, end: 26 },
+      text: 'Intro\n\n$$\n\\sqrt{a^2 + b^2}\n$$',
+    })
+    expect(applyMobileMarkdownFormat('Intro', { start: 5, end: 5 }, 'mermaid')).toEqual({
+      selection: { start: 18, end: 75 },
+      text: 'Intro\n\n```mermaid\nflowchart TD\n    edit["Switch to the raw editor to edit"]\n```',
+    })
+  })
+
   it('inserts clipboard text exactly at the current source selection', () => {
     expect(insertMobileMarkdownPlainText({
       selection: { start: 7, end: 11 },

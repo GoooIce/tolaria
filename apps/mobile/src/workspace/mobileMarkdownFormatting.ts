@@ -13,6 +13,8 @@ export type MobileMarkdownFormatAction =
   | 'heading6'
   | 'highlight'
   | 'italic'
+  | 'mathBlock'
+  | 'mermaid'
   | 'orderedList'
   | 'pastePlainText'
   | 'quote'
@@ -65,6 +67,12 @@ type NumberedLine = MarkdownLine & {
   index: number
 }
 
+type SourceBlockFormat = {
+  closing: string
+  fallback: string
+  opening: string
+}
+
 const inlineFormats: Partial<Record<MobileMarkdownFormatAction, InlineFormat>> = {
   bold: { placeholder: 'bold text', prefix: '**', suffix: '**' },
   code: { placeholder: 'code', prefix: '`', suffix: '`' },
@@ -83,6 +91,19 @@ const lineMarkers: Partial<Record<MobileMarkdownFormatAction, LineMarker>> = {
   heading6: { value: '###### ' },
   quote: { value: '> ' },
   taskList: { value: '- [ ] ' },
+}
+
+const defaultMathBlockLatex = '\\sqrt{a^2 + b^2}'
+
+const defaultMermaidDiagram = [
+  'flowchart TD',
+  '    edit["Switch to the raw editor to edit"]',
+].join('\n')
+
+const sourceBlockFormats: Partial<Record<MobileMarkdownFormatAction, SourceBlockFormat>> = {
+  codeBlock: { closing: '\n```', fallback: 'code', opening: '```text\n' },
+  mathBlock: { closing: '\n$$', fallback: defaultMathBlockLatex, opening: '$$\n' },
+  mermaid: { closing: '\n```', fallback: defaultMermaidDiagram, opening: '```mermaid\n' },
 }
 
 const markdownTableSnippet = [
@@ -133,8 +154,10 @@ class MarkdownEditSession {
     const lineMarker = lineMarkers[this.action]
     if (lineMarker) return this.applyMarkedLineTransform(lineMarker)
 
+    const sourceBlockFormat = sourceBlockFormats[this.action]
+    if (sourceBlockFormat) return this.insertSourceBlock(sourceBlockFormat)
+
     if (this.action === 'orderedList') return this.applyLineTransform((line) => this.numberedLine(line))
-    if (this.action === 'codeBlock') return this.insertCodeBlock()
     if (this.action === 'divider') return this.insertDivider()
     if (this.action === 'table') return this.insertTable()
     if (this.action === 'wikilink') return this.applyWikilinkFormat()
@@ -223,16 +246,16 @@ class MarkdownEditSession {
     return `${marker}${line.value.replace(/^\d+[.)]\s+/u, '')}`
   }
 
-  private insertCodeBlock(): MobileMarkdownFormatResult {
+  private insertSourceBlock(format: SourceBlockFormat): MobileMarkdownFormatResult {
     const selected = this.selectedText()
-    const code = selected || 'code'
+    const content = selected || format.fallback
     const before = this.blockPrefix()
     const after = this.blockSuffix()
-    const replacement = `${before}\`\`\`text\n${code}\n\`\`\`${after}`
-    const codeStart = this.range.start + before.length + '```text\n'.length
+    const replacement = `${before}${format.opening}${content}${format.closing}${after}`
+    const contentStart = this.range.start + before.length + format.opening.length
 
     return {
-      selection: selected ? collapsedSelection(this.range.start + replacement.length) : { start: codeStart, end: codeStart + code.length },
+      selection: selected ? collapsedSelection(this.range.start + replacement.length) : { start: contentStart, end: contentStart + content.length },
       text: this.replaceRange({ value: replacement }),
     }
   }

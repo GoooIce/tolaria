@@ -642,6 +642,8 @@
   "editor.formatting.quote": "引用",
   "editor.formatting.divider": "仕切り",
   "editor.formatting.codeBlock": "コードブロック",
+  "editor.formatting.mathBlock": "数学",
+  "editor.formatting.mermaid": "Mermaid",
   "editor.formatting.table": "表",
   "editor.whiteboard.enterFullscreen": "ホワイトボードを展開",
   "editor.whiteboard.exitFullscreen": "フルスクリーンホワイトボードを終了",

@@ -642,6 +642,8 @@
   "editor.formatting.quote": "Цытата",
   "editor.formatting.divider": "Раздзяляльнік",
   "editor.formatting.codeBlock": "Блок кода",
+  "editor.formatting.mathBlock": "Матэматыка",
+  "editor.formatting.mermaid": "Mermaid",
   "editor.formatting.table": "Табліца",
   "editor.whiteboard.enterFullscreen": "Разгарнуць дошку",
   "editor.whiteboard.exitFullscreen": "Выйсці з поўнаэкраннай дошкі",

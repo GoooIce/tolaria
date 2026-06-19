@@ -642,6 +642,8 @@
   "editor.formatting.quote": "Trích dẫn",
   "editor.formatting.divider": "Dải phân cách",
   "editor.formatting.codeBlock": "Khối mã",
+  "editor.formatting.mathBlock": "Toán học",
+  "editor.formatting.mermaid": "Mermaid",
   "editor.formatting.table": "Bảng",
   "editor.whiteboard.enterFullscreen": "Mở rộng bảng trắng",
   "editor.whiteboard.exitFullscreen": "Thoát chế độ bảng trắng toàn màn hình",

@@ -99,6 +99,16 @@ async function applyPhoneFormattingCommands(page: Page) {
   await page.getByTestId('editor-format-table').scrollIntoViewIfNeeded()
   await page.getByTestId('editor-format-table').click()
   await expect(input).toHaveValue(/\| Column \| Value \|/u)
+
+  await input.fill('# Phone Editor Commands\n\n')
+  await page.getByTestId('editor-format-math-block').scrollIntoViewIfNeeded()
+  await page.getByTestId('editor-format-math-block').click()
+  await expect(input).toHaveValue('# Phone Editor Commands\n\n$$\n\\sqrt{a^2 + b^2}\n$$')
+
+  await input.fill('# Phone Editor Commands\n\n')
+  await page.getByTestId('editor-format-mermaid').scrollIntoViewIfNeeded()
+  await page.getByTestId('editor-format-mermaid').click()
+  await expect(input).toHaveValue('# Phone Editor Commands\n\n```mermaid\nflowchart TD\n    edit["Switch to the raw editor to edit"]\n```')
 }
 
 async function assertRenderedPhoneMarkdown(page: Page) {

@@ -644,6 +644,8 @@
   "editor.formatting.quote": "Cytata",
   "editor.formatting.divider": "Padzialiaĺnik",
   "editor.formatting.codeBlock": "Blok kodu",
+  "editor.formatting.mathBlock": "Matematyka",
+  "editor.formatting.mermaid": "Mermaid",
   "editor.formatting.table": "Tablica",
   "editor.whiteboard.enterFullscreen": "Pašyryć došku",
   "editor.whiteboard.exitFullscreen": "Vyjsci z poŭnaekrannaj doški",

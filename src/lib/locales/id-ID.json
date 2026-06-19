@@ -642,6 +642,8 @@
   "editor.formatting.quote": "Kutipan",
   "editor.formatting.divider": "Pembagi",
   "editor.formatting.codeBlock": "Blok kode",
+  "editor.formatting.mathBlock": "Matematika",
+  "editor.formatting.mermaid": "Mermaid",
   "editor.formatting.table": "Tabel",
   "editor.whiteboard.enterFullscreen": "Perluas papan tulis",
   "editor.whiteboard.exitFullscreen": "Keluar dari papan tulis layar penuh",

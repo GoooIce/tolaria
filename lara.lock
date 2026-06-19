@@ -644,6 +644,8 @@ files:
     editor.formatting.quote: c48e929b2b1eabba2ba036884433345e
     editor.formatting.divider: 2908050e771fb91a3afbb7809972e90c
     editor.formatting.codeBlock: 10a7314bd561c0d130bd189a6f836e5e
+    editor.formatting.mathBlock: a49950aa047c2292e989e368a97a3aae
+    editor.formatting.mermaid: ee9b155b26d2df2a2c103fae24e71222
     editor.formatting.table: 51c45b795d5d18a3e4e0c37e8b20a141
     editor.whiteboard.enterFullscreen: 606bf766125ecff4b33ca98122222c72
     editor.whiteboard.exitFullscreen: afd0a0414d79d047f00319921e4d4944

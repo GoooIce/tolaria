@@ -642,6 +642,8 @@
   "editor.formatting.quote": "Zitat",
   "editor.formatting.divider": "Trennlinie",
   "editor.formatting.codeBlock": "Codeblock",
+  "editor.formatting.mathBlock": "Mathematik",
+  "editor.formatting.mermaid": "Mermaid",
   "editor.formatting.table": "Tabelle",
   "editor.whiteboard.enterFullscreen": "Whiteboard erweitern",
   "editor.whiteboard.exitFullscreen": "Vollbild-Whiteboard verlassen",
