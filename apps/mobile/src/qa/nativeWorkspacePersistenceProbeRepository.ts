@@ -1,6 +1,7 @@
 import type { Directory, Paths } from 'expo-file-system'
 import { applyMobileWorkspaceEditWithWrites } from '../workspace/mobileWorkspaceEditing'
-import type { MobilePropertyDisplayMode, MobileViewDefinition, MobileWorkspaceSnapshot } from '../workspace/mobileWorkspaceModel'
+import type { MobilePropertyDisplayMode, MobileTypeDefinition, MobileViewDefinition, MobileWorkspaceSnapshot } from '../workspace/mobileWorkspaceModel'
+import type { MobileTypeDefinitionPatch } from '../workspace/mobileTypeDefinitions'
 import type { ReadOnlyWorkspaceRepository, ReadOnlyWorkspaceRequest } from '../workspace/readOnlyWorkspaceRepository'
 import {
   nativeWorkspacePersistenceLogLine,
@@ -31,6 +32,8 @@ const renamedTypeSourceName = 'Rename Source'
 const renamedTypeSourcePath = 'rename-source.md'
 const renamedFolderPath = 'Folders/Proof Queue'
 const typeName = 'Proof Decision'
+const updatedTypeName = 'Section Proof'
+const updatedTypeTemplate = '## Next\n\n- Keep desktop sections durable.'
 const updatedViewName = 'Updated Native Proof'
 const updatedViewSourceName = 'Update Native Proof'
 const workspacePersistencePropertyDisplayModes = {
@@ -140,6 +143,7 @@ function workspacePersistenceProbeWrites(seedSnapshot: MobileWorkspaceSnapshot) 
     workspacePersistenceConfigWrite(),
     ...workspacePersistenceFolderWrites(),
     ...workspacePersistenceTypeWrites(),
+    ...workspacePersistenceTypeUpdateWrites(seedSnapshot),
     ...workspacePersistenceTypeRenameWrites(seedSnapshot),
   ]
 }
@@ -287,6 +291,36 @@ function workspacePersistenceTypeWrites() {
   ]
 }
 
+function workspacePersistenceTypeUpdateWrites(seedSnapshot: MobileWorkspaceSnapshot) {
+  return applyMobileWorkspaceEditWithWrites(seedSnapshot, {
+    patch: updatedTypeDefinitionPatch(),
+    type: 'updateTypeDefinition',
+    typeName: updatedTypeName,
+  }).writes
+}
+
+function updatedTypeDefinitionPatch(): MobileTypeDefinitionPatch {
+  return {
+    icon: 'sparkles',
+    label: 'Section Proofs',
+    listPropertiesDisplay: ['status', 'Priority', 'belongs_to'],
+    order: 3,
+    properties: {
+      Priority: 'High',
+      ReviewScore: 5,
+    },
+    relationships: {
+      depends_on: ['[[Relationships/Source]]'],
+      related_to: ['[[Research/Seed]]'],
+    },
+    sort: 'property:Priority:desc',
+    template: updatedTypeTemplate,
+    tone: 'yellow',
+    view: 'Mobile Persistence',
+    visible: false,
+  }
+}
+
 function workspacePersistenceTypeRenameWrites(seedSnapshot: MobileWorkspaceSnapshot) {
   return applyMobileWorkspaceEditWithWrites(seedSnapshot, {
     nextTypeName: renamedTypeName,
@@ -337,6 +371,11 @@ function seedWorkspacePersistenceProbeWrites() {
       path: renamedTypeSourcePath,
     },
     {
+      content: typeDefinitionContent(updatedTypeName, 'gray'),
+      kind: 'createNote' as const,
+      path: 'section-proof.md',
+    },
+    {
       content: relationshipSourceContent(),
       kind: 'createNote' as const,
       path: relationshipSourcePath,
@@ -383,6 +422,7 @@ function workspacePersistenceProof(
     savedViewHydrated: viewExists(snapshot, 'Mobile Persistence'),
     typeDefinitionHydrated: snapshot.typeDefinitions?.[typeName]?.tone === 'green',
     updatedViewHydrated: updatedViewHydrated(snapshot),
+    updatedTypeDefinitionHydrated: updatedTypeDefinitionHydrated(snapshot),
     vaultConfigHydrated: vaultConfigHydrated(snapshot),
   }
 }
@@ -423,6 +463,48 @@ function updatedViewFilterHydrated(filters: MobileViewDefinition['filters']) {
     && condition.field === 'status'
     && condition.op === 'equals'
     && condition.value === 'Active'
+}
+
+function updatedTypeDefinitionHydrated(snapshot: MobileWorkspaceSnapshot) {
+  const definition = snapshot.typeDefinitions?.[updatedTypeName]
+  return definition !== undefined
+    && updatedTypeMetadataHydrated(definition)
+    && updatedTypeSchemaHydrated(definition)
+    && updatedTypeRawContentHydrated(definition.rawContent ?? null)
+}
+
+function updatedTypeMetadataHydrated(definition: MobileTypeDefinition) {
+  return [
+    definition.path === 'section-proof.md',
+    definition.tone === 'yellow',
+    definition.icon === 'sparkles',
+    definition.label === 'Section Proofs',
+    definition.order === 3,
+    definition.sort === 'property:Priority:desc',
+    definition.template === updatedTypeTemplate,
+    definition.view === 'Mobile Persistence',
+    definition.visible === false,
+    joinedProperties(definition.listPropertiesDisplay) === 'status|Priority|belongs_to',
+  ].every(Boolean)
+}
+
+function updatedTypeSchemaHydrated(definition: MobileTypeDefinition) {
+  return [
+    definition.properties?.Priority === 'High',
+    definition.properties?.ReviewScore === 5,
+    joinedProperties(definition.relationships?.depends_on) === '[[Relationships/Source]]',
+    joinedProperties(definition.relationships?.related_to) === '[[Research/Seed]]',
+  ].every(Boolean)
+}
+
+function updatedTypeRawContentHydrated(rawContent: string | null) {
+  return textContainsAll(rawContent, [
+    '_sidebar_label: Section Proofs',
+    '_list_properties_display:',
+    'ReviewScore: 5',
+    'template: |',
+    'visible: false',
+  ])
 }
 
 function vaultConfigHydrated(snapshot: MobileWorkspaceSnapshot) {

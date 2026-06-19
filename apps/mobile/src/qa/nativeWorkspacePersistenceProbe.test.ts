@@ -38,6 +38,10 @@ describe('native workspace persistence probe', () => {
     ])
   })
 
+  it('reports incomplete Type section update persistence proofs', () => {
+    expectProofFailures({ updatedTypeDefinitionHydrated: false }, ['workspace.persistence.updateType'])
+  })
+
   it('reports incomplete relationship target persistence proofs', () => {
     expectProofFailures({
       relationshipMovedRefHydrated: false,
@@ -116,6 +120,7 @@ function passingWorkspaceProof(): NativeWorkspacePersistenceProof {
     savedViewHydrated: true,
     typeDefinitionHydrated: true,
     updatedViewHydrated: true,
+    updatedTypeDefinitionHydrated: true,
     vaultConfigHydrated: true,
   }
 }
