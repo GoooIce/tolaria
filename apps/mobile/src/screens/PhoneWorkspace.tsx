@@ -85,19 +85,20 @@ export function PhoneWorkspace({
     if (noteId) controller.onSelectNote(noteId)
     setPhoneState('editor')
   }, [controller, setPhoneState])
+  const openNeighborhoodList = useCallback((noteId: string) => {
+    controller.onEnterNeighborhood(noteId)
+    setPhoneState('list')
+  }, [controller, setPhoneState])
   const commandPalette = usePhoneCommandPalette({
     controller,
     onOpenNativeVault,
     openEditor,
     openList,
+    openNeighborhoodList,
     openProperties,
     openSidebar,
     phoneState,
   })
-  const openNeighborhoodList = useCallback((noteId: string) => {
-    controller.onEnterNeighborhood(noteId)
-    setPhoneState('list')
-  }, [controller, setPhoneState])
   const createRelationshipTargetAndOpenEditor = useCallback(() => {
     controller.onCreateRelationshipTarget()
     setPhoneState('editor')
@@ -175,6 +176,7 @@ function usePhoneCommandPalette({
   onOpenNativeVault,
   openEditor,
   openList,
+  openNeighborhoodList,
   openProperties,
   openSidebar,
   phoneState,
@@ -183,6 +185,7 @@ function usePhoneCommandPalette({
   onOpenNativeVault?: () => void
   openEditor: (noteId?: string) => void
   openList: () => void
+  openNeighborhoodList: (noteId: string) => void
   openProperties: () => void
   openSidebar: () => void
   phoneState: PhoneWorkspaceState
@@ -198,11 +201,12 @@ function usePhoneCommandPalette({
     ...controller,
     onOpenBacklinks: openProperties,
     onOpenNativeVault,
+    onEnterNeighborhood: openNeighborhoodList,
     onToggleProperties: toggleProperties,
     onViewAll: openSidebar,
     onViewEditorList: openList,
     onViewEditorOnly: openEditor,
-  }), [controller, onOpenNativeVault, openEditor, openList, openProperties, openSidebar, toggleProperties])
+  }), [controller, onOpenNativeVault, openEditor, openList, openNeighborhoodList, openProperties, openSidebar, toggleProperties])
 
   return {
     element: visible ? <MobileCommandPalette commands={commands} onClose={close} /> : null,

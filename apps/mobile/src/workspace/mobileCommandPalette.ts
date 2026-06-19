@@ -30,22 +30,29 @@ export type MobileCommandPaletteHandlers = {
   onOpenChangeNoteType?: () => void
   onOpenCreateNote: () => void
   onOpenCreateType: () => void
+  onCopyFilePath?: () => void
   onOpenFindInNote: () => void
+  onOpenFileInDefaultApp?: () => void
   onOpenMoveNoteToFolder?: () => void
   onOpenNativeVault?: () => void
   onOpenReplaceInNote: () => void
+  onOpenRenameNoteFile?: () => void
   onOpenSearch: () => void
   onOpenSetNoteIcon?: () => void
   onOpenTableOfContents: () => void
   onCopyDeepLink?: () => void
   onDeleteNote: () => void
+  onEnterNeighborhood?: (noteId: string) => void
   onExportNoteAsPdf?: () => void
   onRemoveNoteIcon?: () => void
+  onRenameNoteFileToTitle?: () => void
   onRedoWorkspaceEdit: () => void
+  onRevealFile?: () => void
   onSelectSidebarItem: (selection: MobileSidebarItemSelection) => void
   onSetArchived: (archived: boolean) => void
   onSetOrganized: (organized: boolean) => void
   onToggleFavorite: () => void
+  onToggleNoteWidth?: () => void
   onToggleProperties?: () => void
   onToggleRawEditor?: () => void
   onUndoWorkspaceEdit: () => void
@@ -80,6 +87,7 @@ type SelectedNoteCommandLabel = MobileTextKey | ((note: MobileNote | null) => Mo
 type SelectedNoteCommandSpec = {
   enabled: SelectedNoteCommandPredicate
   execute: SelectedNoteCommandExecutor
+  group?: MobileCommandGroup
   keywords: string[]
   label: SelectedNoteCommandLabel
 } & (
@@ -99,7 +107,7 @@ const selectedNoteCommandSpecs: SelectedNoteCommandSpec[] = [
   },
   {
     desktopCommand: 'noteToggleFavorite',
-    enabled: (_handlers, note) => hasSelectedNote(note),
+    enabled: (_handlers, note) => isMarkdownSelectedNote(note),
     execute: (handlers, note) => (note ? handlers.onToggleFavorite : undefined),
     kind: 'desktop',
     keywords: ['favorite', 'star', 'pin'],
@@ -107,7 +115,7 @@ const selectedNoteCommandSpecs: SelectedNoteCommandSpec[] = [
   },
   {
     desktopCommand: 'noteToggleOrganized',
-    enabled: (_handlers, note) => hasSelectedNote(note),
+    enabled: (_handlers, note) => isMarkdownSelectedNote(note),
     execute: setSelectedNoteOrganized,
     kind: 'desktop',
     keywords: ['organized', 'inbox', 'triage'],
@@ -115,7 +123,7 @@ const selectedNoteCommandSpecs: SelectedNoteCommandSpec[] = [
   },
   {
     desktopCommand: 'noteArchive',
-    enabled: (_handlers, note) => hasSelectedNote(note),
+    enabled: (_handlers, note) => isMarkdownSelectedNote(note),
     execute: setSelectedNoteArchived,
     kind: 'desktop',
     keywords: ['archive'],
@@ -131,7 +139,7 @@ const selectedNoteCommandSpecs: SelectedNoteCommandSpec[] = [
   },
   {
     desktopCommand: 'noteExportPdf',
-    enabled: (handlers, note) => selectedNoteCommandEnabled(note, handlers.onExportNoteAsPdf),
+    enabled: (handlers, note) => markdownSelectedNoteCommandEnabled(note, handlers.onExportNoteAsPdf),
     execute: (handlers) => handlers.onExportNoteAsPdf,
     kind: 'desktop',
     keywords: ['export', 'pdf', 'print', 'share'],
@@ -146,7 +154,31 @@ const selectedNoteCommandSpecs: SelectedNoteCommandSpec[] = [
     label: 'command.note.copyDeepLink',
   },
   {
-    enabled: (handlers, note) => selectedNoteCommandEnabled(note, handlers.onOpenSetNoteIcon),
+    enabled: (handlers, note) => selectedNoteCommandEnabled(note, handlers.onCopyFilePath),
+    execute: (handlers) => handlers.onCopyFilePath,
+    id: 'copy-active-file-path',
+    kind: 'dynamic',
+    keywords: ['file', 'path', 'copy', 'clipboard', 'filesystem'],
+    label: 'editor.toolbar.copyFilePath',
+  },
+  {
+    enabled: (handlers, note) => selectedNoteCommandEnabled(note, handlers.onRevealFile),
+    execute: (handlers) => handlers.onRevealFile,
+    id: 'reveal-active-file',
+    kind: 'dynamic',
+    keywords: ['file', 'folder', 'finder', 'reveal', 'show', 'filesystem'],
+    label: 'editor.toolbar.revealFile',
+  },
+  {
+    enabled: (handlers, note) => textLikeSelectedNoteCommandEnabled(note, handlers.onEnterNeighborhood),
+    execute: openSelectedNeighborhood,
+    id: 'open-active-neighborhood',
+    kind: 'dynamic',
+    keywords: ['neighborhood', 'map', 'relationships', 'related', 'graph'],
+    label: 'editor.toolbar.openNeighborhood',
+  },
+  {
+    enabled: (handlers, note) => markdownSelectedNoteCommandEnabled(note, handlers.onOpenSetNoteIcon),
     execute: (handlers) => handlers.onOpenSetNoteIcon,
     id: 'set-note-icon',
     kind: 'dynamic',
@@ -154,7 +186,7 @@ const selectedNoteCommandSpecs: SelectedNoteCommandSpec[] = [
     label: 'command.note.setIcon',
   },
   {
-    enabled: (handlers, note) => selectedNoteIconCommandEnabled(note, handlers.onRemoveNoteIcon),
+    enabled: (handlers, note) => markdownSelectedNoteIconCommandEnabled(note, handlers.onRemoveNoteIcon),
     execute: (handlers) => handlers.onRemoveNoteIcon,
     id: 'remove-note-icon',
     kind: 'dynamic',
@@ -162,7 +194,7 @@ const selectedNoteCommandSpecs: SelectedNoteCommandSpec[] = [
     label: 'command.note.removeIcon',
   },
   {
-    enabled: (handlers, note) => selectedNoteCommandEnabled(note, handlers.onOpenChangeNoteType),
+    enabled: (handlers, note) => markdownSelectedNoteCommandEnabled(note, handlers.onOpenChangeNoteType),
     execute: (handlers) => handlers.onOpenChangeNoteType,
     id: 'change-note-type',
     kind: 'dynamic',
@@ -170,12 +202,56 @@ const selectedNoteCommandSpecs: SelectedNoteCommandSpec[] = [
     label: 'command.note.changeType',
   },
   {
-    enabled: (handlers, note) => selectedNoteCommandEnabled(note, handlers.onOpenMoveNoteToFolder),
+    enabled: (handlers, note) => markdownSelectedNoteCommandEnabled(note, handlers.onOpenMoveNoteToFolder),
     execute: (handlers) => handlers.onOpenMoveNoteToFolder,
     id: 'move-note-to-folder',
     kind: 'dynamic',
     keywords: ['move', 'folder', 'organize'],
     label: 'command.note.moveToFolder',
+  },
+  {
+    enabled: (handlers, note) => markdownSelectedNoteCommandEnabled(note, handlers.onOpenRenameNoteFile),
+    execute: (handlers) => handlers.onOpenRenameNoteFile,
+    id: 'rename-active-file',
+    kind: 'dynamic',
+    keywords: ['rename', 'filename', 'file', 'path'],
+    label: 'editor.filename.rename',
+  },
+  {
+    enabled: (handlers, note) => markdownSelectedNoteCommandEnabled(note, handlers.onRenameNoteFileToTitle),
+    execute: (handlers) => handlers.onRenameNoteFileToTitle,
+    id: 'rename-active-file-to-title',
+    kind: 'dynamic',
+    keywords: ['rename', 'filename', 'title', 'file'],
+    label: 'editor.filename.renameToTitle',
+  },
+  {
+    enabled: (handlers, note) => nonMarkdownSelectedNoteCommandEnabled(note, handlers.onOpenFileInDefaultApp),
+    execute: (handlers) => handlers.onOpenFileInDefaultApp,
+    id: 'open-active-file-external',
+    kind: 'dynamic',
+    keywords: ['file', 'open', 'external', 'default', 'attachment'],
+    label: 'editor.toolbar.openFileInDefaultApp',
+  },
+  {
+    enabled: (handlers, note) => markdownSelectedNoteCommandEnabled(note, handlers.onToggleNoteWidth)
+      && note?.noteWidth !== 'wide',
+    execute: (handlers) => handlers.onToggleNoteWidth,
+    group: 'View',
+    id: 'set-note-width-wide',
+    kind: 'dynamic',
+    keywords: ['layout', 'note', 'column', 'width', 'wide', 'reading'],
+    label: 'command.view.noteWidthWide',
+  },
+  {
+    enabled: (handlers, note) => markdownSelectedNoteCommandEnabled(note, handlers.onToggleNoteWidth)
+      && note?.noteWidth === 'wide',
+    execute: (handlers) => handlers.onToggleNoteWidth,
+    group: 'View',
+    id: 'set-note-width-normal',
+    kind: 'dynamic',
+    keywords: ['layout', 'note', 'column', 'width', 'normal', 'reading'],
+    label: 'command.view.noteWidthNormal',
   },
 ]
 
@@ -337,7 +413,7 @@ function selectedNoteCommand(
   const config = {
     enabled: spec.enabled(handlers, note),
     execute: spec.execute(handlers, note),
-    group: 'Note' as const,
+    group: spec.group ?? 'Note',
     keywords: spec.keywords,
     label: mobileText(selectedNoteCommandLabel(spec.label, note)),
   }
@@ -360,6 +436,18 @@ function hasSelectedNote(note: MobileNote | null): boolean {
   return note !== null
 }
 
+function isMarkdownSelectedNote(note: MobileNote | null): boolean {
+  return note !== null && (note.fileKind ?? 'markdown') === 'markdown'
+}
+
+function isNonMarkdownSelectedNote(note: MobileNote | null): boolean {
+  return note !== null && (note.fileKind ?? 'markdown') !== 'markdown'
+}
+
+function isTextLikeSelectedNote(note: MobileNote | null): boolean {
+  return note !== null && note.fileKind !== 'binary'
+}
+
 function selectedNoteCommandEnabled(
   note: MobileNote | null,
   handler: unknown,
@@ -367,11 +455,32 @@ function selectedNoteCommandEnabled(
   return hasSelectedNote(note) && handler !== undefined
 }
 
-function selectedNoteIconCommandEnabled(
+function markdownSelectedNoteCommandEnabled(
   note: MobileNote | null,
   handler: unknown,
 ): boolean {
-  return typeof note?.icon === 'string' && note.icon.length > 0 && handler !== undefined
+  return isMarkdownSelectedNote(note) && handler !== undefined
+}
+
+function nonMarkdownSelectedNoteCommandEnabled(
+  note: MobileNote | null,
+  handler: unknown,
+): boolean {
+  return isNonMarkdownSelectedNote(note) && handler !== undefined
+}
+
+function textLikeSelectedNoteCommandEnabled(
+  note: MobileNote | null,
+  handler: unknown,
+): boolean {
+  return isTextLikeSelectedNote(note) && handler !== undefined
+}
+
+function markdownSelectedNoteIconCommandEnabled(
+  note: MobileNote | null,
+  handler: unknown,
+): boolean {
+  return isMarkdownSelectedNote(note) && typeof note?.icon === 'string' && note.icon.length > 0 && handler !== undefined
 }
 
 function saveSelectedNote(
@@ -397,6 +506,15 @@ function setSelectedNoteArchived(
 ): (() => void) | undefined {
   if (!note) return undefined
   return () => handlers.onSetArchived(!note.archived)
+}
+
+function openSelectedNeighborhood(
+  handlers: MobileCommandPaletteHandlers,
+  note: MobileNote | null,
+): (() => void) | undefined {
+  const openNeighborhood = handlers.onEnterNeighborhood
+  if (!note || !isTextLikeSelectedNote(note) || openNeighborhood === undefined) return undefined
+  return () => openNeighborhood(note.id)
 }
 
 function favoriteLabelKey(note: MobileNote | null) {
