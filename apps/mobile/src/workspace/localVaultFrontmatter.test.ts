@@ -6,6 +6,7 @@ import {
   frontmatterRelationships,
   frontmatterScalar,
   parseLocalVaultDocument,
+  serializeLocalVaultFrontmatterScalar,
 } from './localVaultFrontmatter'
 
 describe('local vault frontmatter', () => {
@@ -149,6 +150,10 @@ Body.
     expect(document.frontmatter.empty).toBe('null')
     expect(document.frontmatter.quoted).toBe('null')
     expect(document.frontmatter.values).toEqual(['null', 'null'])
+  })
+
+  it('serializes multiline frontmatter strings as desktop block scalars', () => {
+    expect(serializeLocalVaultFrontmatterScalar('## Objective\n\n## Timeline\n')).toBe('|\n  ## Objective\n\n  ## Timeline')
   })
 
   it('reads desktop numeric boolean frontmatter flags', () => {

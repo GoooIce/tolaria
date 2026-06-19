@@ -32,6 +32,7 @@ const FRONTMATTER_CLOSE = /\r?\n---(?:\r?\n|$)/
 export function serializeLocalVaultFrontmatterScalar(value: LocalVaultFrontmatterScalar): string {
   if (typeof value === 'boolean' || typeof value === 'number') return String(value)
   if (value === null) return 'null'
+  if (value.includes('\n')) return frontmatterBlockScalar(value)
   if (shouldQuoteFrontmatterScalar(value)) return JSON.stringify(value)
   return value
 }
@@ -451,6 +452,16 @@ function stringValue(value: LocalVaultFrontmatterValue | undefined): string | nu
   if (typeof value === 'string') return value
   if (Array.isArray(value) && typeof value[0] === 'string') return value[0]
   return null
+}
+
+function frontmatterBlockScalar(value: string): string {
+  const lines = value.replace(/\r\n/gu, '\n').split('\n')
+  const clippedLines = lines.at(-1) === '' ? lines.slice(0, -1) : lines
+  return `|\n${clippedLines.map(indentedBlockScalarLine).join('\n')}`
+}
+
+function indentedBlockScalarLine(line: string): string {
+  return line === '' ? '' : `  ${line}`
 }
 
 function shouldQuoteFrontmatterScalar(value: string): boolean {

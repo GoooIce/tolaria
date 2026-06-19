@@ -8,6 +8,7 @@ describe('mobile type definitions', () => {
       label: 'Client Projects',
       order: 3,
       sort: 'property:Priority:asc',
+      template: '## Objective\n\nLaunch mobile parity.\n',
       tone: 'green',
       view: 'editor-list',
     })
@@ -17,6 +18,7 @@ describe('mobile type definitions', () => {
     expect(content).toContain('_sidebar_label: Client Projects')
     expect(content).toContain('_order: 3')
     expect(content).toContain('_sort: "property:Priority:asc"')
+    expect(content).toContain('template: |\n  ## Objective\n\n  Launch mobile parity.')
     expect(content).toContain('view: editor-list')
     expect(content).toContain('color: green')
     expect(content).not.toContain('\nicon:')
