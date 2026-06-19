@@ -648,8 +648,12 @@ files:
     editor.formatting.mermaid: ee9b155b26d2df2a2c103fae24e71222
     editor.formatting.table: 51c45b795d5d18a3e4e0c37e8b20a141
     editor.formatting.whiteboard: a709f53fbab6855ced85d9d508fce3aa
+    editor.whiteboard.edit: 0b7d645c0f097cba00955c2a40f40259
     editor.whiteboard.enterFullscreen: 606bf766125ecff4b33ca98122222c72
     editor.whiteboard.exitFullscreen: afd0a0414d79d047f00319921e4d4944
+    editor.whiteboard.height: eec6c4bdbd339edf8cbea68becb85244
+    editor.whiteboard.snapshot: 6836f4668b29e713e0584ebdff5f93c4
+    editor.whiteboard.width: 32954654ac8fe66a1d09be19001de2d4
     editor.exportPdf.unavailable: 2fce9834984172b64b66767485d815e9
     editor.exportPdf.failed: bf3fa78ff5725f5cbde8979b67ec2e2a
     filePreview.copyDeepLink: b75833669968adbef634495636e3fe50

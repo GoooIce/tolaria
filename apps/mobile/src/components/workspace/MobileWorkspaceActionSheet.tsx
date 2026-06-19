@@ -51,6 +51,7 @@ import { MobileViewFilterBuilder } from './MobileViewFilterBuilder'
 import { MobileEditorFindSheet } from './MobileEditorFindSheet'
 import { NoteMoreActionRows } from './MobileNoteMoreActions'
 import { MobileTableOfContentsSheet } from './MobileTableOfContentsSheet'
+import { MobileWhiteboardMoreActions } from './MobileWhiteboardMoreActions'
 import { MobileFavoriteActions, MobileSavedViewActions, MobileTypeSectionActions } from './MobileWorkspaceMoveActions'
 import { MobileWorkspaceSuggestionList } from './MobileWorkspaceSuggestionList'
 import type { MobileWorkspaceSuggestionItem } from './MobileWorkspaceSuggestionList'
@@ -1067,7 +1068,7 @@ function MoreActionsContent(props: MobileWorkspaceActionSheetProps) {
   const { selectedNote } = props
   const markdownSelected = selectedNote ? isMarkdownSelectedNote(selectedNote) : false
   return (
-    <View style={styles.content}>
+    <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" style={styles.scrollArea}>
       {selectedNote ? <SelectedNoteSummary note={selectedNote} /> : null}
       {selectedNote ? (
         <NoteMoreActionRows
@@ -1104,6 +1105,15 @@ function MoreActionsContent(props: MobileWorkspaceActionSheetProps) {
           onPress={props.onOpenTableOfContents}
         />
       ) : null}
+      {markdownSelected && selectedNote ? (
+        <MobileWhiteboardMoreActions
+          editorBlocks={props.editorBlocks}
+          editorBullets={props.editorBullets}
+          note={selectedNote}
+          onClose={props.onClose}
+          onUpdateNoteContent={props.onUpdateNoteContent}
+        />
+      ) : null}
       {selectedNote ? (
         <ActionRow
           icon={<LinkSimple color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />}
@@ -1126,7 +1136,7 @@ function MoreActionsContent(props: MobileWorkspaceActionSheetProps) {
           }}
         />
       ) : null}
-    </View>
+    </ScrollView>
   )
 }
 

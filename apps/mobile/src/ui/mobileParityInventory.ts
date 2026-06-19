@@ -113,9 +113,9 @@ export const mobileParityInventory = [
     surface: 'Workspace type icons',
   },
   {
-    assertions: ['search/create/properties/more user-flow checks'],
+    assertions: ['search/create/properties/more user-flow checks', 'source-backed tldraw whiteboard metadata and snapshot edit checks'],
     contracts: ['desktopPanelParity', 'desktopPropertyParity', 'desktopToolbarActionParity'],
-    desktopSource: 'Desktop command dialogs, note-list search, and inspector property forms',
+    desktopSource: 'Desktop command dialogs, note-list search, inspector property forms, and tldraw fenced markdown persistence',
     mobileFile: 'src/components/workspace/MobileWorkspaceActionSheet.tsx',
     surface: 'Read-only workspace action sheets',
   },
@@ -125,6 +125,13 @@ export const mobileParityInventory = [
     desktopSource: 'Desktop note context menu, BreadcrumbBar note actions, and editor command actions',
     mobileFile: 'src/components/workspace/MobileNoteMoreActions.tsx',
     surface: 'Note more actions',
+  },
+  {
+    assertions: ['source-backed tldraw whiteboard metadata and snapshot edit checks'],
+    contracts: ['desktopEditorParity', 'desktopToolbarActionParity'],
+    desktopSource: 'Desktop tldraw fenced markdown persistence and editor command actions',
+    mobileFile: 'src/components/workspace/MobileWhiteboardMoreActions.tsx',
+    surface: 'Whiteboard more actions',
   },
   {
     assertions: ['editor find/replace unit tests', 'editor find/replace user-flow checks'],
