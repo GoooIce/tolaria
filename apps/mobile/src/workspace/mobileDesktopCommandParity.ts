@@ -65,7 +65,7 @@ const parityDefinitions = {
   vaultResolveConflicts: outOfScope('Git conflict handling is explicitly excluded from this mobile batch'),
   vaultViewChanges: outOfScope('Git changes are explicitly excluded from this mobile batch'),
   vaultInstallMcp: outOfScope('desktop external AI/MCP setup is outside the mobile editing foundation'),
-  vaultReload: adapted('reselecting or reopening the native repository refreshes the mobile snapshot'),
+  vaultReload: implemented('mobile command palette reloads the active repository snapshot through the workspace controller'),
   vaultRepair: outOfScope('desktop vault repair tooling is outside the mobile editing foundation'),
 } satisfies Record<DesktopCommandKey, MobileDesktopCommandParityDefinition>
 

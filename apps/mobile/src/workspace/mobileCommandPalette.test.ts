@@ -21,8 +21,24 @@ describe('mobile command palette', () => {
     expect(commandIds).toContain(appCommandManifest.commands.viewGoForward.id)
     expect(commandIds).toContain(appCommandManifest.commands.viewToggleProperties.id)
     expect(commandIds).toContain(appCommandManifest.commands.vaultOpen.id)
+    expect(commandIds).toContain(appCommandManifest.commands.vaultReload.id)
     expect(commandIds).not.toContain(appCommandManifest.commands.vaultCommitPush.id)
     expect(commandIds).not.toContain(appCommandManifest.commands.viewToggleAiChat.id)
+  })
+
+  it('exposes the desktop reload-vault command through the mobile command palette', () => {
+    const handlers = commandHandlers()
+    const reload = enabledCommand(handlers, appCommandManifest.commands.vaultReload.id)
+
+    expect(reload).toMatchObject({
+      desktopCommand: 'vaultReload',
+      group: 'Settings',
+      label: 'Reload Vault',
+    })
+
+    reload.execute()
+
+    expect(handlers.onReloadVault).toHaveBeenCalledOnce()
   })
 
   it('uses desktop primary sidebar selections for navigation commands', () => {
@@ -400,6 +416,7 @@ function commandHandlers(
     onNoteListFilterChange: vi.fn(),
     onPastePlainText: vi.fn(),
     onRedoWorkspaceEdit: vi.fn(),
+    onReloadVault: vi.fn(),
     onRemoveNoteIcon: vi.fn(),
     onRenameNoteFileToTitle: vi.fn(),
     onRevealFile: vi.fn(),

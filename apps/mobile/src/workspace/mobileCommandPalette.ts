@@ -75,6 +75,7 @@ export type MobileCommandPaletteHandlers = {
   onDeleteNote: () => void
   onEnterNeighborhood?: (noteId: string) => void
   onExportNoteAsPdf?: () => void
+  onReloadVault?: () => void
   onRemoveNoteIcon?: () => void
   onRenameNoteFileToTitle?: () => void
   onRedoWorkspaceEdit: () => void
@@ -805,6 +806,14 @@ function settingsCommands(handlers: MobileCommandPaletteHandlers): MobileCommand
       group: 'Settings',
       keywords: ['vault', 'open', 'folder'],
       label: mobileText('command.settings.openVault'),
+    }),
+    command({
+      desktopCommand: 'vaultReload',
+      enabled: handlers.onReloadVault !== undefined,
+      execute: handlers.onReloadVault,
+      group: 'Settings',
+      keywords: ['vault', 'reload', 'refresh', 'disk'],
+      label: mobileText('command.settings.reloadVault'),
     }),
   ]
 }

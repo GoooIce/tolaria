@@ -168,6 +168,7 @@ export function useTabletWorkspaceController({
     canRedoWorkspaceEdit,
     canUndoWorkspaceEdit,
     redoWorkspaceEdit,
+    reloadWorkspaceSnapshot,
     undoWorkspaceEdit,
     workspaceSnapshot,
   } = useWorkspaceEditPipeline({
@@ -268,6 +269,7 @@ export function useTabletWorkspaceController({
     onGoBack: navigation.goBack,
     onGoForward: navigation.goForward,
     onRedoWorkspaceEdit: redoWorkspaceEdit,
+    onReloadVault: reloadWorkspaceSnapshot,
     onSelectFolder: navigation.selectFolder,
     onSelectNote: navigation.selectNote,
     onSelectSidebarItem: navigation.selectSidebarItem,

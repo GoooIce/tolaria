@@ -189,6 +189,7 @@ export type TabletWorkspaceChromeProps = {
   onRevealFile: () => void
   onSaveTypeDefinition: () => void
   onRedoWorkspaceEdit: () => void
+  onReloadVault: () => void
   onSavePrimaryNoteListProperties: () => void
   onSaveProperty: () => void
   onSaveRelationship: () => void

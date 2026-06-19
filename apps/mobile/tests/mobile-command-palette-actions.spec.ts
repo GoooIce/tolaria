@@ -89,6 +89,26 @@ test.describe('mobile command palette actions', () => {
     await expect(page.getByTestId('mobile-command-palette')).toBeHidden()
   })
 
+  test('reloads the active workspace from the tablet command palette', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'tablet-landscape', 'Command palette action checks use the full-width tablet layout.')
+
+    const title = 'Reloadable Command Draft'
+    const rowTestId = `note-row-${noteRowSlug(title)}.md`
+
+    await page.goto('/')
+    await page.getByTestId('note-list-create-action').click()
+    await page.getByTestId('workspace-create-note-title-input').fill(title)
+    await page.getByTestId('workspace-action-sheet-createNote').getByRole('button', { exact: true, name: 'Create' }).click()
+    await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
+    await expect(page.getByTestId(rowTestId)).toBeVisible()
+
+    await openCommandPalette(page)
+    await runCommand(page, 'reload vault', 'vault-reload')
+
+    await expect(page.getByTestId('mobile-command-palette')).toBeHidden()
+    await expect(page.getByTestId(rowTestId)).toBeHidden()
+  })
+
   test('dispatches selected-folder commands from the tablet command palette', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'tablet-landscape', 'Command palette action checks use the full-width tablet layout.')
 
@@ -134,6 +154,10 @@ async function openCommandPalette(page: Page) {
 async function runCommand(page: Page, query: string, commandId: string) {
   await page.getByTestId('mobile-command-palette-input').fill(query)
   await page.getByTestId(`mobile-command-palette-command-${commandId}`).click()
+}
+
+function noteRowSlug(title: string) {
+  return title.trim().toLowerCase().replace(/\s+/gu, '-')
 }
 
 async function latestClipboardAttempt(page: Page) {
