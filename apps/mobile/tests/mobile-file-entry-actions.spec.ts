@@ -24,14 +24,19 @@ test.describe('mobile non-markdown file action parity', () => {
     await assertFileActionSheet(page, {
       copiedPath: 'Files/config.yml',
       fileTitle: 'Mobile Config',
+      hasNeighborhoodAction: true,
       revealNoteId: 'Files/config.yml',
     })
+    await openSelectedFileNeighborhood(page, 'Mobile Config', 'note-row-Files/config.yml')
+    await page.getByRole('button', { name: 'Files' }).click()
+    await expect(page.getByTestId('note-list-toolbar-title')).toHaveText('Files')
 
     await page.getByTestId('note-row-Files/diagram.png').click()
     await expect(page.getByTestId('file-preview-fallback')).toBeVisible()
     await assertFileActionSheet(page, {
       copiedPath: 'Files/diagram.png',
       fileTitle: 'diagram.png',
+      hasNeighborhoodAction: false,
       revealNoteId: 'Files/diagram.png',
     })
     await deleteSelectedFileFromMoreSheet(page, 'note-row-Files/diagram.png')
@@ -50,16 +55,19 @@ test.describe('mobile non-markdown file action parity', () => {
     await assertFileActionSheet(page, {
       copiedPath: 'Files/config.yml',
       fileTitle: 'Mobile Config',
+      hasNeighborhoodAction: true,
       revealNoteId: 'Files/config.yml',
     })
+    await openSelectedFileNeighborhood(page, 'Mobile Config', 'note-row-Files/config.yml')
+    await openPhoneFolder(page, 'Files')
 
-    await page.getByTestId('phone-back-action').click()
     await page.getByTestId('note-row-Files/diagram.png').click()
     await expect(page.getByTestId('phone-editor-screen')).toBeVisible()
     await expect(page.getByTestId('file-preview-fallback')).toBeVisible()
     await assertFileActionSheet(page, {
       copiedPath: 'Files/diagram.png',
       fileTitle: 'diagram.png',
+      hasNeighborhoodAction: false,
       revealNoteId: 'Files/diagram.png',
     })
     await deleteSelectedFileFromMoreSheet(page, 'note-row-Files/diagram.png')
@@ -73,14 +81,21 @@ async function assertFileActionSheet(
   {
     copiedPath,
     fileTitle,
+    hasNeighborhoodAction,
     revealNoteId,
   }: {
     copiedPath: string
     fileTitle: string
+    hasNeighborhoodAction: boolean
     revealNoteId: string
   },
 ) {
   await page.getByTestId('editor-more-action').click()
+  if (hasNeighborhoodAction) {
+    await expect(page.getByTestId('workspace-action-open-neighborhood')).toBeVisible()
+  } else {
+    await expect(page.getByTestId('workspace-action-open-neighborhood')).toBeHidden()
+  }
   await expect(page.getByTestId('workspace-action-copy-file-path')).toBeVisible()
   await expect(page.getByTestId('workspace-action-open-default-app')).toBeVisible()
   await expect(page.getByTestId('workspace-action-reveal-file')).toBeVisible()
@@ -110,6 +125,14 @@ async function assertFileActionSheet(
     path: copiedPath,
     title: fileTitle,
   })
+}
+
+async function openSelectedFileNeighborhood(page: Page, title: string, rowTestId: string) {
+  await page.getByTestId('editor-more-action').click()
+  await page.getByTestId('workspace-action-open-neighborhood').click()
+  await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
+  await expect(page.getByTestId('note-list-toolbar-title')).toHaveText(title)
+  await expect(page.getByTestId(rowTestId)).toBeVisible()
 }
 
 async function deleteSelectedFileFromMoreSheet(page: Page, rowTestId: string) {

@@ -73,14 +73,23 @@ export function NoteMoreActionRows(props: NoteMoreActionRowsProps) {
 }
 
 function NonMarkdownFileActionRows({
+  note,
   onClose,
   onCopyFilePath,
   onDeleteNote,
+  onEnterNeighborhood,
   onOpenFileInDefaultApp,
   onRevealFile,
-}: Pick<NoteMoreActionRowsProps, 'onClose' | 'onCopyFilePath' | 'onDeleteNote' | 'onOpenFileInDefaultApp' | 'onRevealFile'>) {
+}: Pick<NoteMoreActionRowsProps, 'note' | 'onClose' | 'onCopyFilePath' | 'onDeleteNote' | 'onEnterNeighborhood' | 'onOpenFileInDefaultApp' | 'onRevealFile'>) {
   return (
     <>
+      {note.fileKind === 'text' ? (
+        <NoteNavigationActionRows
+          note={note}
+          onClose={onClose}
+          onEnterNeighborhood={onEnterNeighborhood}
+        />
+      ) : null}
       <NotePathActionRows
         onClose={onClose}
         onCopyFilePath={onCopyFilePath}
