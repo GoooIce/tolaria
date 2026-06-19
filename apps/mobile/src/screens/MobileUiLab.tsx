@@ -130,7 +130,12 @@ export function MobileUiLab() {
       onOpenNativeVault={handleOpenNativeVault}
       repository={repository}
       repositoryRequest={repositoryRequest}
+      sourceSelectionProbe={sourceSelectionProbe}
       snapshot={snapshot}
+      wysiwygAutocompleteProbe={wysiwygAutocompleteProbe}
+      wysiwygFormatCommandProbe={wysiwygFormatCommandProbe}
+      wysiwygWikilinkInsertProbe={wysiwygWikilinkInsertProbe}
+      wysiwygMutationProbe={wysiwygMutationProbe}
     />
   )
 }

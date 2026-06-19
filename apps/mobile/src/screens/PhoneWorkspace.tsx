@@ -44,7 +44,12 @@ export function PhoneWorkspace({
   onOpenNativeVault,
   repository = fixtureReadOnlyWorkspaceRepository,
   repositoryRequest,
+  sourceSelectionProbe = false,
   snapshot,
+  wysiwygAutocompleteProbe = false,
+  wysiwygFormatCommandProbe = false,
+  wysiwygWikilinkInsertProbe = false,
+  wysiwygMutationProbe = false,
 }: {
   initialEditorEditing?: boolean
   initialEditorEditingMode?: EditorEditingMode
@@ -53,7 +58,12 @@ export function PhoneWorkspace({
   onOpenNativeVault?: () => void
   repository?: ReadOnlyWorkspaceRepository
   repositoryRequest?: ReadOnlyWorkspaceRequest
+  sourceSelectionProbe?: boolean
   snapshot: MobileWorkspaceSnapshot
+  wysiwygAutocompleteProbe?: boolean
+  wysiwygFormatCommandProbe?: boolean
+  wysiwygWikilinkInsertProbe?: boolean
+  wysiwygMutationProbe?: boolean
 }) {
   const controller = useTabletWorkspaceController({ repository, repositoryRequest, snapshot })
   const { phoneState, previousPhoneState, setPhoneState } = usePhoneState(initialState)
@@ -92,7 +102,12 @@ export function PhoneWorkspace({
       phoneLayoutProbe={disabledPhoneLayoutProbe}
       phoneState={dragPreview.previewState}
       phoneSwipePreview={dragPreview}
+      sourceSelectionProbe={false}
       suggestionNotes={suggestionNotes}
+      wysiwygAutocompleteProbe={false}
+      wysiwygFormatCommandProbe={false}
+      wysiwygWikilinkInsertProbe={false}
+      wysiwygMutationProbe={false}
     />
   ) : null
 
@@ -117,7 +132,12 @@ export function PhoneWorkspace({
           phoneLayoutProbe={phoneLayoutProbe.probe}
           phoneState={phoneState}
           phoneSwipePreview={dragPreview}
+          sourceSelectionProbe={sourceSelectionProbe}
           suggestionNotes={suggestionNotes}
+          wysiwygAutocompleteProbe={wysiwygAutocompleteProbe}
+          wysiwygFormatCommandProbe={wysiwygFormatCommandProbe}
+          wysiwygWikilinkInsertProbe={wysiwygWikilinkInsertProbe}
+          wysiwygMutationProbe={wysiwygMutationProbe}
         />
       </PhoneWorkspaceTransition>
       <WorkspaceActionSheetHost
@@ -249,7 +269,12 @@ type PhoneWorkspaceStateViewProps = {
   phoneLayoutProbe: MobileLayoutProbe
   phoneState: PhoneWorkspaceState
   phoneSwipePreview: PhoneSwipePreview
+  sourceSelectionProbe: boolean
   suggestionNotes: MobileNote[]
+  wysiwygAutocompleteProbe: boolean
+  wysiwygFormatCommandProbe: boolean
+  wysiwygWikilinkInsertProbe: boolean
+  wysiwygMutationProbe: boolean
 }
 
 const disabledPhoneLayoutProbe: MobileLayoutProbe = () => ({})
@@ -387,7 +412,12 @@ function PhoneEditorScreen({
   openProperties,
   phoneLayoutProbe,
   phoneSwipePreview,
+  sourceSelectionProbe,
   suggestionNotes,
+  wysiwygAutocompleteProbe,
+  wysiwygFormatCommandProbe,
+  wysiwygWikilinkInsertProbe,
+  wysiwygMutationProbe,
 }: PhoneWorkspaceStateViewProps) {
   const swipeHandlers = useHorizontalSwipe({
     ...phoneSwipePreviewHandlers(phoneSwipePreview),
@@ -410,6 +440,11 @@ function PhoneEditorScreen({
         layoutProbe={layoutProbe}
         notes={suggestionNotes}
         onNavigateWikilink={handleNavigateWikilink}
+        sourceSelectionProbe={sourceSelectionProbe}
+        wysiwygAutocompleteProbe={wysiwygAutocompleteProbe}
+        wysiwygFormatCommandProbe={wysiwygFormatCommandProbe}
+        wysiwygWikilinkInsertProbe={wysiwygWikilinkInsertProbe}
+        wysiwygMutationProbe={wysiwygMutationProbe}
       />
     </View>
   )
@@ -444,6 +479,11 @@ function PhoneEditorBody({
   layoutProbe,
   notes,
   onNavigateWikilink,
+  sourceSelectionProbe,
+  wysiwygAutocompleteProbe,
+  wysiwygFormatCommandProbe,
+  wysiwygWikilinkInsertProbe,
+  wysiwygMutationProbe,
 }: {
   controller: PhoneWorkspaceController
   initialEditorEditing: boolean
@@ -451,6 +491,11 @@ function PhoneEditorBody({
   layoutProbe: boolean
   notes: MobileNote[]
   onNavigateWikilink: (target: string) => void
+  sourceSelectionProbe: boolean
+  wysiwygAutocompleteProbe: boolean
+  wysiwygFormatCommandProbe: boolean
+  wysiwygWikilinkInsertProbe: boolean
+  wysiwygMutationProbe: boolean
 }) {
   return (
     <TabletEditorPanel
@@ -466,7 +511,12 @@ function PhoneEditorBody({
       onOpenMoreActions={controller.onOpenMoreActions}
       onToggleFavorite={controller.onToggleFavorite}
       onUpdateContent={controller.onUpdateNoteContent}
+      sourceSelectionProbe={sourceSelectionProbe}
       vaultRootUri={controller.vaultRootUri}
+      wysiwygAutocompleteProbe={wysiwygAutocompleteProbe}
+      wysiwygFormatCommandProbe={wysiwygFormatCommandProbe}
+      wysiwygWikilinkInsertProbe={wysiwygWikilinkInsertProbe}
+      wysiwygMutationProbe={wysiwygMutationProbe}
     />
   )
 }
