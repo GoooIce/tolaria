@@ -48,6 +48,7 @@ export function PhoneWorkspace({
   snapshot,
   wysiwygAutocompleteProbe = false,
   wysiwygFormatCommandProbe = false,
+  wysiwygMarkdownBlockProbe = false,
   wysiwygWikilinkInsertProbe = false,
   wysiwygMutationProbe = false,
 }: {
@@ -62,6 +63,7 @@ export function PhoneWorkspace({
   snapshot: MobileWorkspaceSnapshot
   wysiwygAutocompleteProbe?: boolean
   wysiwygFormatCommandProbe?: boolean
+  wysiwygMarkdownBlockProbe?: boolean
   wysiwygWikilinkInsertProbe?: boolean
   wysiwygMutationProbe?: boolean
 }) {
@@ -89,27 +91,17 @@ export function PhoneWorkspace({
     phoneState,
   })
   const suggestionNotes = controller.snapshot.allNotes ?? controller.snapshot.notes
-  const preview = dragPreview.previewState ? (
-    <PhoneWorkspaceStateView
-      controller={controller}
-      initialEditorEditing={initialEditorEditing}
-      initialEditorEditingMode={initialEditorEditingMode}
-      layoutProbe={false}
-      openEditor={openEditor}
-      openList={openList}
-      openProperties={openProperties}
-      openSidebar={openSidebar}
-      phoneLayoutProbe={disabledPhoneLayoutProbe}
-      phoneState={dragPreview.previewState}
-      phoneSwipePreview={dragPreview}
-      sourceSelectionProbe={false}
-      suggestionNotes={suggestionNotes}
-      wysiwygAutocompleteProbe={false}
-      wysiwygFormatCommandProbe={false}
-      wysiwygWikilinkInsertProbe={false}
-      wysiwygMutationProbe={false}
-    />
-  ) : null
+  const preview = phoneWorkspaceDragPreview({
+    controller,
+    dragPreview,
+    initialEditorEditing,
+    initialEditorEditingMode,
+    openEditor,
+    openList,
+    openProperties,
+    openSidebar,
+    suggestionNotes,
+  })
 
   return (
     <View {...phoneLayoutProbe.probe('phone.root')} style={styles.root}>
@@ -136,6 +128,7 @@ export function PhoneWorkspace({
           suggestionNotes={suggestionNotes}
           wysiwygAutocompleteProbe={wysiwygAutocompleteProbe}
           wysiwygFormatCommandProbe={wysiwygFormatCommandProbe}
+          wysiwygMarkdownBlockProbe={wysiwygMarkdownBlockProbe}
           wysiwygWikilinkInsertProbe={wysiwygWikilinkInsertProbe}
           wysiwygMutationProbe={wysiwygMutationProbe}
         />
@@ -257,6 +250,54 @@ function nativePhoneDragPreviewEnabled() {
 
 type PhoneWorkspaceController = ReturnType<typeof useTabletWorkspaceController>
 type PhoneSwipePreview = ReturnType<typeof usePhoneDragPreview>
+
+function phoneWorkspaceDragPreview({
+  controller,
+  dragPreview,
+  initialEditorEditing,
+  initialEditorEditingMode,
+  openEditor,
+  openList,
+  openProperties,
+  openSidebar,
+  suggestionNotes,
+}: {
+  controller: PhoneWorkspaceController
+  dragPreview: PhoneSwipePreview
+  initialEditorEditing: boolean
+  initialEditorEditingMode: EditorEditingMode
+  openEditor: (noteId?: string) => void
+  openList: () => void
+  openProperties: () => void
+  openSidebar: () => void
+  suggestionNotes: MobileNote[]
+}): ReactNode {
+  if (!dragPreview.previewState) return null
+
+  return (
+    <PhoneWorkspaceStateView
+      controller={controller}
+      initialEditorEditing={initialEditorEditing}
+      initialEditorEditingMode={initialEditorEditingMode}
+      layoutProbe={false}
+      openEditor={openEditor}
+      openList={openList}
+      openProperties={openProperties}
+      openSidebar={openSidebar}
+      phoneLayoutProbe={disabledPhoneLayoutProbe}
+      phoneState={dragPreview.previewState}
+      phoneSwipePreview={dragPreview}
+      sourceSelectionProbe={false}
+      suggestionNotes={suggestionNotes}
+      wysiwygAutocompleteProbe={false}
+      wysiwygFormatCommandProbe={false}
+      wysiwygMarkdownBlockProbe={false}
+      wysiwygWikilinkInsertProbe={false}
+      wysiwygMutationProbe={false}
+    />
+  )
+}
+
 type PhoneWorkspaceStateViewProps = {
   controller: PhoneWorkspaceController
   initialEditorEditing: boolean
@@ -273,6 +314,7 @@ type PhoneWorkspaceStateViewProps = {
   suggestionNotes: MobileNote[]
   wysiwygAutocompleteProbe: boolean
   wysiwygFormatCommandProbe: boolean
+  wysiwygMarkdownBlockProbe: boolean
   wysiwygWikilinkInsertProbe: boolean
   wysiwygMutationProbe: boolean
 }
@@ -416,6 +458,7 @@ function PhoneEditorScreen({
   suggestionNotes,
   wysiwygAutocompleteProbe,
   wysiwygFormatCommandProbe,
+  wysiwygMarkdownBlockProbe,
   wysiwygWikilinkInsertProbe,
   wysiwygMutationProbe,
 }: PhoneWorkspaceStateViewProps) {
@@ -443,6 +486,7 @@ function PhoneEditorScreen({
         sourceSelectionProbe={sourceSelectionProbe}
         wysiwygAutocompleteProbe={wysiwygAutocompleteProbe}
         wysiwygFormatCommandProbe={wysiwygFormatCommandProbe}
+        wysiwygMarkdownBlockProbe={wysiwygMarkdownBlockProbe}
         wysiwygWikilinkInsertProbe={wysiwygWikilinkInsertProbe}
         wysiwygMutationProbe={wysiwygMutationProbe}
       />
@@ -482,6 +526,7 @@ function PhoneEditorBody({
   sourceSelectionProbe,
   wysiwygAutocompleteProbe,
   wysiwygFormatCommandProbe,
+  wysiwygMarkdownBlockProbe,
   wysiwygWikilinkInsertProbe,
   wysiwygMutationProbe,
 }: {
@@ -494,6 +539,7 @@ function PhoneEditorBody({
   sourceSelectionProbe: boolean
   wysiwygAutocompleteProbe: boolean
   wysiwygFormatCommandProbe: boolean
+  wysiwygMarkdownBlockProbe: boolean
   wysiwygWikilinkInsertProbe: boolean
   wysiwygMutationProbe: boolean
 }) {
@@ -515,6 +561,7 @@ function PhoneEditorBody({
       vaultRootUri={controller.vaultRootUri}
       wysiwygAutocompleteProbe={wysiwygAutocompleteProbe}
       wysiwygFormatCommandProbe={wysiwygFormatCommandProbe}
+      wysiwygMarkdownBlockProbe={wysiwygMarkdownBlockProbe}
       wysiwygWikilinkInsertProbe={wysiwygWikilinkInsertProbe}
       wysiwygMutationProbe={wysiwygMutationProbe}
     />

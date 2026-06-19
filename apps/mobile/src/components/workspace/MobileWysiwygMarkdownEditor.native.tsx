@@ -52,6 +52,11 @@ import {
   nativeWysiwygWikilinkInsertProbePayload,
   nativeWysiwygWikilinkInsertProof,
 } from '../../qa/nativeWysiwygWikilinkInsertProbe'
+import {
+  nativeWysiwygMarkdownBlockLogLine,
+  nativeWysiwygMarkdownBlockProbePayloads,
+  nativeWysiwygMarkdownBlockProof,
+} from '../../qa/nativeWysiwygMarkdownBlockProbe'
 
 type MobileWysiwygMarkdownEditorProps = {
   blocks: MobileEditorBlock[]
@@ -65,6 +70,7 @@ type MobileWysiwygMarkdownEditorProps = {
   vaultRootUri?: string | null
   wysiwygAutocompleteProbe?: boolean
   wysiwygFormatCommandProbe?: boolean
+  wysiwygMarkdownBlockProbe?: boolean
   wysiwygWikilinkInsertProbe?: boolean
   wysiwygMutationProbe?: boolean
 }
@@ -152,6 +158,7 @@ export function MobileWysiwygMarkdownEditor({
   vaultRootUri = null,
   wysiwygAutocompleteProbe = false,
   wysiwygFormatCommandProbe = false,
+  wysiwygMarkdownBlockProbe = false,
   wysiwygWikilinkInsertProbe = false,
   wysiwygMutationProbe = false,
 }: MobileWysiwygMarkdownEditorProps) {
@@ -180,6 +187,7 @@ export function MobileWysiwygMarkdownEditor({
     vaultRootUri,
     wysiwygAutocompleteProbe,
     wysiwygFormatCommandProbe,
+    wysiwygMarkdownBlockProbe,
     wysiwygWikilinkInsertProbe,
     wysiwygMutationProbe,
   })
@@ -296,6 +304,7 @@ function useNativeTentapEditorBridge({
   vaultRootUri = null,
   wysiwygAutocompleteProbe = false,
   wysiwygFormatCommandProbe = false,
+  wysiwygMarkdownBlockProbe = false,
   wysiwygWikilinkInsertProbe = false,
   wysiwygMutationProbe = false,
 }: NativeTentapEditorBridgeOptions) {
@@ -309,6 +318,7 @@ function useNativeTentapEditorBridge({
 
   const flushEditorDocument = useFlushEditorDocument({
     initialBodyHasContent,
+    markdownBlockProbeEnabled: wysiwygMarkdownBlockProbe,
     mutationProbeEnabled: wysiwygMutationProbe,
     noteId: note.id,
     onUpdateContent,
@@ -318,9 +328,24 @@ function useNativeTentapEditorBridge({
   })
   const scheduleEditorChange = useScheduleEditorChange(refs, flushEditorDocument, onInlineAutocomplete)
   const injectEditorCss = useEditorCssInjection({ compact, noteWidth: note.noteWidth, refs })
-  const insertWikilink = useNativeWysiwygWikilinkInserter({ flushEditorDocument, refs })
-  const insertAttachment = useNativeWysiwygAttachmentInserter({ flushEditorDocument, refs })
-  const insertMarkdownBlock = useNativeWysiwygMarkdownBlockInserter({ flushEditorDocument, refs })
+  const insertWikilink = useNativeWysiwygInserter({
+    flushEditorDocument,
+    insertIntoEditor: insertWikilinkIntoNativeEditor,
+    refs,
+    warning: '[mobile-editor] Failed to insert native WYSIWYG wikilink:',
+  })
+  const insertAttachment = useNativeWysiwygInserter({
+    flushEditorDocument,
+    insertIntoEditor: insertAttachmentIntoNativeEditor,
+    refs,
+    warning: '[mobile-editor] Failed to insert native WYSIWYG attachment:',
+  })
+  const insertMarkdownBlock = useNativeWysiwygInserter({
+    flushEditorDocument,
+    insertIntoEditor: insertMarkdownBlockIntoNativeEditor,
+    refs,
+    warning: '[mobile-editor] Failed to insert native WYSIWYG markdown block:',
+  })
 
   const editor = useEditorBridge({
     avoidIosKeyboard: true,
@@ -334,7 +359,20 @@ function useNativeTentapEditorBridge({
   useResetEditorChangeGate({ initialContent, noteId: note.id, refs })
   useNativeWysiwygAutocompleteProbe({ enabled: wysiwygAutocompleteProbe, refs })
   useNativeWysiwygFormatCommandProbe({ enabled: wysiwygFormatCommandProbe, refs })
-  useNativeWysiwygWikilinkInsertProbe({ enabled: wysiwygWikilinkInsertProbe, flushEditorDocument, refs })
+  useNativeWysiwygDeferredInsertionProbe({
+    enabled: wysiwygMarkdownBlockProbe,
+    flushEditorDocument,
+    insertIntoEditor: insertNativeWysiwygMarkdownBlockProbe,
+    refs,
+    warning: '[mobile-editor] Failed to run native WYSIWYG markdown block probe:',
+  })
+  useNativeWysiwygDeferredInsertionProbe({
+    enabled: wysiwygWikilinkInsertProbe,
+    flushEditorDocument,
+    insertIntoEditor: insertNativeWysiwygWikilinkProbe,
+    refs,
+    warning: '[mobile-editor] Failed to run native WYSIWYG wikilink insert probe:',
+  })
   useNativeWysiwygMutationProbe({ enabled: wysiwygMutationProbe, flushEditorDocument, refs, vaultRootUri })
   useFlushOnUnmount(refs, flushEditorDocument)
 
@@ -374,6 +412,7 @@ function useNativeTentapEditorRefs(initialDocumentContent: string): NativeTentap
 
 function useFlushEditorDocument({
   initialBodyHasContent,
+  markdownBlockProbeEnabled,
   mutationProbeEnabled,
   noteId,
   onUpdateContent,
@@ -382,6 +421,7 @@ function useFlushEditorDocument({
   wikilinkInsertProbeEnabled,
 }: {
   initialBodyHasContent: boolean
+  markdownBlockProbeEnabled: boolean
   mutationProbeEnabled: boolean
   noteId: string
   onUpdateContent: (noteId: string, content: string) => void
@@ -392,6 +432,7 @@ function useFlushEditorDocument({
   return useCallback(() => {
     flushEditorDocumentFromBridge({
       initialBodyHasContent,
+      markdownBlockProbeEnabled,
       mutationProbeEnabled,
       noteId,
       onUpdateContent,
@@ -399,11 +440,21 @@ function useFlushEditorDocument({
       vaultRootUri,
       wikilinkInsertProbeEnabled,
     })
-  }, [initialBodyHasContent, mutationProbeEnabled, noteId, onUpdateContent, refs, vaultRootUri, wikilinkInsertProbeEnabled])
+  }, [
+    initialBodyHasContent,
+    markdownBlockProbeEnabled,
+    mutationProbeEnabled,
+    noteId,
+    onUpdateContent,
+    refs,
+    vaultRootUri,
+    wikilinkInsertProbeEnabled,
+  ])
 }
 
 function flushEditorDocumentFromBridge({
   initialBodyHasContent,
+  markdownBlockProbeEnabled,
   mutationProbeEnabled,
   noteId,
   onUpdateContent,
@@ -412,6 +463,7 @@ function flushEditorDocumentFromBridge({
   wikilinkInsertProbeEnabled,
 }: {
   initialBodyHasContent: boolean
+  markdownBlockProbeEnabled: boolean
   mutationProbeEnabled: boolean
   noteId: string
   onUpdateContent: (noteId: string, content: string) => void
@@ -426,6 +478,7 @@ function flushEditorDocumentFromBridge({
     .then((json) => writeEditorJsonToMarkdown({
       initialBodyHasContent,
       json,
+      markdownBlockProbeEnabled,
       mutationProbeEnabled,
       noteId,
       onUpdateContent,
@@ -441,6 +494,7 @@ function flushEditorDocumentFromBridge({
 function writeEditorJsonToMarkdown({
   initialBodyHasContent,
   json,
+  markdownBlockProbeEnabled,
   mutationProbeEnabled,
   noteId,
   onUpdateContent,
@@ -450,6 +504,7 @@ function writeEditorJsonToMarkdown({
 }: {
   initialBodyHasContent: boolean
   json: unknown
+  markdownBlockProbeEnabled: boolean
   mutationProbeEnabled: boolean
   noteId: string
   onUpdateContent: (noteId: string, content: string) => void
@@ -467,6 +522,7 @@ function writeEditorJsonToMarkdown({
   refs.firstEditorSerializationRef.current = false
   if (!nextContent.skipped && nextContent.content !== refs.contentRef.current) {
     onUpdateContent(noteId, nextContent.content)
+    if (markdownBlockProbeEnabled) publishNativeWysiwygMarkdownBlockProof(noteId, nextContent.content)
     if (mutationProbeEnabled) publishNativeWysiwygMutationProof(noteId, nextContent.content)
     if (wikilinkInsertProbeEnabled) publishNativeWysiwygWikilinkInsertProof(noteId, nextContent.content)
   }
@@ -603,49 +659,10 @@ function publishNativeWysiwygWikilinkInsertProof(noteId: string, content: string
   console.info(nativeWysiwygWikilinkInsertLogLine(nativeWysiwygWikilinkInsertProof({ content, noteId })))
 }
 
-function useNativeWysiwygWikilinkInserter({
-  flushEditorDocument,
-  refs,
-}: {
-  flushEditorDocument: () => void
-  refs: NativeTentapEditorRefs
-}) {
-  return useNativeWysiwygInserter({
-    flushEditorDocument,
-    insertIntoEditor: insertWikilinkIntoNativeEditor,
-    refs,
-    warning: '[mobile-editor] Failed to insert native WYSIWYG wikilink:',
-  })
-}
+function publishNativeWysiwygMarkdownBlockProof(noteId: string, content: string): void {
+  if (Platform.OS === 'web') return
 
-function useNativeWysiwygAttachmentInserter({
-  flushEditorDocument,
-  refs,
-}: {
-  flushEditorDocument: () => void
-  refs: NativeTentapEditorRefs
-}) {
-  return useNativeWysiwygInserter({
-    flushEditorDocument,
-    insertIntoEditor: insertAttachmentIntoNativeEditor,
-    refs,
-    warning: '[mobile-editor] Failed to insert native WYSIWYG attachment:',
-  })
-}
-
-function useNativeWysiwygMarkdownBlockInserter({
-  flushEditorDocument,
-  refs,
-}: {
-  flushEditorDocument: () => void
-  refs: NativeTentapEditorRefs
-}) {
-  return useNativeWysiwygInserter({
-    flushEditorDocument,
-    insertIntoEditor: insertMarkdownBlockIntoNativeEditor,
-    refs,
-    warning: '[mobile-editor] Failed to insert native WYSIWYG markdown block:',
-  })
+  console.info(nativeWysiwygMarkdownBlockLogLine(nativeWysiwygMarkdownBlockProof({ content, noteId })))
 }
 
 function useNativeWysiwygInserter<Payload>({
@@ -700,6 +717,30 @@ async function insertMarkdownBlockIntoNativeEditor(
   return insertPayloadIntoNativeEditor(editor, payload, selection, nativeWysiwygDocumentWithInsertedMarkdownBlock)
 }
 
+async function insertMarkdownBlocksIntoNativeEditor(
+  editor: EditorBridge | null,
+  payloads: NativeWysiwygMarkdownBlockPayload[],
+): Promise<boolean> {
+  if (!isJsonReadableEditorBridge(editor) || !isContentSettableEditorBridge(editor)) return false
+
+  let nextJson: unknown = await editor.getJSON()
+  for (const payload of payloads) {
+    const insertedJson = nativeWysiwygDocumentWithInsertedMarkdownBlock({ json: nextJson, payload })
+    if (!insertedJson) return false
+    nextJson = insertedJson
+  }
+  editor.setContent(nextJson)
+  return true
+}
+
+function insertNativeWysiwygWikilinkProbe(editor: EditorBridge | null): Promise<boolean> {
+  return insertWikilinkIntoNativeEditor(editor, nativeWysiwygWikilinkInsertProbePayload())
+}
+
+function insertNativeWysiwygMarkdownBlockProbe(editor: EditorBridge | null): Promise<boolean> {
+  return insertMarkdownBlocksIntoNativeEditor(editor, nativeWysiwygMarkdownBlockProbePayloads())
+}
+
 async function insertPayloadIntoNativeEditor<Payload>(
   editor: EditorBridge | null,
   payload: Payload,
@@ -732,23 +773,27 @@ function nativeWysiwygEditorSelection(editor: EditorBridge): NativeWysiwygSelect
   }
 }
 
-function useNativeWysiwygWikilinkInsertProbe({
+function useNativeWysiwygDeferredInsertionProbe({
   enabled,
   flushEditorDocument,
+  insertIntoEditor,
   refs,
+  warning,
 }: {
   enabled: boolean
   flushEditorDocument: () => void
+  insertIntoEditor: (editor: EditorBridge | null) => Promise<boolean>
   refs: NativeTentapEditorRefs
+  warning: string
 }) {
-  const hasInsertedProbeWikilinkRef = useRef(false)
+  const hasInsertedRef = useRef(false)
 
   useEffect(() => {
     if (!enabled) {
-      hasInsertedProbeWikilinkRef.current = false
+      hasInsertedRef.current = false
       return undefined
     }
-    if (hasInsertedProbeWikilinkRef.current) return undefined
+    if (hasInsertedRef.current) return undefined
 
     let insertTimer: TimerHandle | null = null
     const insertWhenReady = () => {
@@ -758,11 +803,11 @@ function useNativeWysiwygWikilinkInsertProbe({
       }
 
       const editor = refs.editorRef.current
-      hasInsertedProbeWikilinkRef.current = true
-      void insertWikilinkIntoNativeEditor(editor, nativeWysiwygWikilinkInsertProbePayload())
+      hasInsertedRef.current = true
+      void insertIntoEditor(editor)
         .then((inserted) => {
           if (!inserted) {
-            hasInsertedProbeWikilinkRef.current = false
+            hasInsertedRef.current = false
             return
           }
 
@@ -770,8 +815,8 @@ function useNativeWysiwygWikilinkInsertProbe({
           refs.saveTimerRef.current = setTimeout(flushEditorDocument, 500)
         })
         .catch((error: unknown) => {
-          hasInsertedProbeWikilinkRef.current = false
-          console.warn('[mobile-editor] Failed to run native WYSIWYG wikilink insert probe:', error)
+          hasInsertedRef.current = false
+          console.warn(warning, error)
         })
     }
 
@@ -781,7 +826,7 @@ function useNativeWysiwygWikilinkInsertProbe({
       if (insertTimer) clearTimeout(insertTimer)
       if (refs.saveTimerRef.current) clearTimeout(refs.saveTimerRef.current)
     }
-  }, [enabled, flushEditorDocument, refs])
+  }, [enabled, flushEditorDocument, insertIntoEditor, refs, warning])
 }
 
 function inlineAutocompletePickerState(

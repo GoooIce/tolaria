@@ -29,6 +29,7 @@ export function TabletWorkspace({
   snapshot,
   wysiwygAutocompleteProbe = false,
   wysiwygFormatCommandProbe = false,
+  wysiwygMarkdownBlockProbe = false,
   wysiwygWikilinkInsertProbe = false,
   wysiwygMutationProbe = false,
 }: {
@@ -42,6 +43,7 @@ export function TabletWorkspace({
   snapshot: MobileWorkspaceSnapshot
   wysiwygAutocompleteProbe?: boolean
   wysiwygFormatCommandProbe?: boolean
+  wysiwygMarkdownBlockProbe?: boolean
   wysiwygWikilinkInsertProbe?: boolean
   wysiwygMutationProbe?: boolean
 }) {
@@ -59,6 +61,7 @@ export function TabletWorkspace({
         sourceSelectionProbe={sourceSelectionProbe}
         wysiwygAutocompleteProbe={wysiwygAutocompleteProbe}
         wysiwygFormatCommandProbe={wysiwygFormatCommandProbe}
+        wysiwygMarkdownBlockProbe={wysiwygMarkdownBlockProbe}
         wysiwygWikilinkInsertProbe={wysiwygWikilinkInsertProbe}
         wysiwygMutationProbe={wysiwygMutationProbe}
         {...controller}
@@ -210,6 +213,7 @@ type TabletEditorPanelHostProps = Pick<
   | 'vaultRootUri'
   | 'wysiwygAutocompleteProbe'
   | 'wysiwygFormatCommandProbe'
+  | 'wysiwygMarkdownBlockProbe'
   | 'wysiwygWikilinkInsertProbe'
   | 'wysiwygMutationProbe'
 > & {
@@ -234,6 +238,7 @@ function TabletEditorPanelHost({
   vaultRootUri,
   wysiwygAutocompleteProbe,
   wysiwygFormatCommandProbe,
+  wysiwygMarkdownBlockProbe,
   wysiwygWikilinkInsertProbe,
   wysiwygMutationProbe,
 }: TabletEditorPanelHostProps) {
@@ -255,6 +260,7 @@ function TabletEditorPanelHost({
       vaultRootUri={vaultRootUri}
       wysiwygAutocompleteProbe={wysiwygAutocompleteProbe}
       wysiwygFormatCommandProbe={wysiwygFormatCommandProbe}
+      wysiwygMarkdownBlockProbe={wysiwygMarkdownBlockProbe}
       wysiwygWikilinkInsertProbe={wysiwygWikilinkInsertProbe}
       wysiwygMutationProbe={wysiwygMutationProbe}
     />
