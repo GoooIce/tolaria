@@ -388,10 +388,7 @@ describe('applyMobileWorkspaceEdit', () => {
       title: 'Renamed Workflow Essay',
     })
     expect(renamed.rawContent).toContain('title: Renamed Workflow Essay')
-    expect(updatedRef.rawContent).toContain('[[Tolaria/Mobile UI/renamed-workflow-essay]]')
-    expect(updatedRef.rawContent).toContain('[[Tolaria/Mobile UI/renamed-workflow-essay|Workflow]]')
-    expect(updatedRef.rawContent).not.toContain('[[Workflow Orchestration Essay]]')
-    expect(updatedRef.rawContent).not.toContain('[[Tolaria/Mobile UI/Workflow Orchestration Essay')
+    expectRetargetedWikilinks(updatedRef, movedSource.id, 'Tolaria/Mobile UI/renamed-workflow-essay', 'Renamed Workflow Essay')
     expect(result.writes).toEqual([
       {
         content: renamed.rawContent,
@@ -1147,7 +1144,12 @@ function noteById(snapshot: MobileWorkspaceSnapshot, noteId: NoteId): MobileNote
   return note
 }
 
-function expectRetargetedWikilinks(note: MobileNote, movedNoteId: NoteId, target: WikilinkTarget) {
+function expectRetargetedWikilinks(
+  note: MobileNote,
+  movedNoteId: NoteId,
+  target: WikilinkTarget,
+  title = 'Workflow Orchestration Essay',
+) {
   const content = note.rawContent ?? ''
   expect(content).toContain(`[[${target}]]`)
   expect(content).toContain(`[[${target}|Workflow]]`)
@@ -1156,7 +1158,13 @@ function expectRetargetedWikilinks(note: MobileNote, movedNoteId: NoteId, target
   expect(content).not.toContain('[[Tolaria/Mobile UI/Workflow Orchestration Essay')
   expect(note.relationships.find((relationship) => relationship.key === 'related_to')?.values[0]).toMatchObject({
     id: movedNoteId,
-    title: 'Workflow Orchestration Essay',
+    ref: `[[${target}]]`,
+    title,
+  })
+  expect(note.relationships.find((relationship) => relationship.key === 'belongs_to')?.values[0]).toMatchObject({
+    id: movedNoteId,
+    ref: `[[${target}|Workflow]]`,
+    title,
   })
 }
 
