@@ -141,6 +141,16 @@ async function addSuggestedPhoneRelationship(page: Page) {
   await page.getByTestId('relationship-row-how-i-run-an-open-source-project-open').click()
   await expect(page.getByTestId('phone-editor-screen')).toBeVisible()
   await expect(page.getByTestId('editor-title')).toHaveText('How I Run an Open Source Project')
+
+  await page.getByTestId('phone-back-action').click()
+  await expect(page.getByTestId('phone-note-list-screen')).toBeVisible()
+  await page.getByTestId('note-row-phone-relationship-source.md').click()
+  await expect(page.getByTestId('phone-editor-screen')).toBeVisible()
+  await expectBodyOnlyPhoneNote(page, 'Phone Relationship Source')
+  await page.getByTestId('phone-properties-action').click()
+  await expect(page.getByTestId('relationship-row-how-i-run-an-open-source-project')).toBeVisible()
+  await page.getByTestId('relationship-row-how-i-run-an-open-source-project-remove').click()
+  await expect(page.getByTestId('relationship-row-how-i-run-an-open-source-project')).toBeHidden()
 }
 
 async function createPhoneSourceNoteProperties(page: Page, title: string) {

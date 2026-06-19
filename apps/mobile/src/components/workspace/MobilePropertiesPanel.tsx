@@ -450,6 +450,7 @@ function RelationshipValues({
             accessibilityRole="button"
             hitSlop={8}
             style={relationshipStyles.remove}
+            testID={`relationship-row-${testIdSegment(value.title)}-remove`}
             onPress={() => {
               if (relationship.key && value.ref) onRemoveRelationship(noteId, relationship.key, value.ref)
             }}
