@@ -5,6 +5,10 @@ import {
   mobileDesktopCommandParityGaps,
   mobileDesktopCommandParityImplementedCount,
 } from './mobileDesktopCommandParity'
+import {
+  mobileDesktopDynamicCommandParityEntries,
+  mobileDesktopDynamicCommandParityGaps,
+} from './mobileDesktopDynamicCommandParity'
 
 describe('mobile desktop command parity', () => {
   it('classifies every desktop app command for the mobile editing foundation', () => {
@@ -21,5 +25,20 @@ describe('mobile desktop command parity', () => {
 
   it('proves most non-git desktop commands already have mobile editing or navigation coverage', () => {
     expect(mobileDesktopCommandParityImplementedCount()).toBeGreaterThan(24)
+  })
+
+  it('tracks desktop dynamic command parity outside the shared app manifest', () => {
+    const entries = mobileDesktopDynamicCommandParityEntries()
+
+    expect(entries.length).toBeGreaterThan(40)
+    expect(entries.every((entry) => entry.desktopId.length > 0)).toBe(true)
+    expect(entries.every((entry) => entry.evidence.length > 0)).toBe(true)
+  })
+
+  it('keeps known dynamic command deferrals explicit', () => {
+    expect(mobileDesktopDynamicCommandParityGaps().map((entry) => entry.desktopId)).toEqual([
+      'set-default-note-width-normal',
+      'set-default-note-width-wide',
+    ])
   })
 })
