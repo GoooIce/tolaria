@@ -340,9 +340,13 @@ function collectNativeQaEvidence({ device, logStart, metricSink, options }) {
   })
 
   return {
-    layoutLogs: metricSink ? metricSink.logText() : simulatorLogs,
+    layoutLogs: combinedLayoutLogs(simulatorLogs, metricSink),
     proofLogs: simulatorLogs,
   }
+}
+
+function combinedLayoutLogs(simulatorLogs, metricSink) {
+  return [simulatorLogs, metricSink?.logText()].filter(Boolean).join('\n')
 }
 
 function layoutLogText(logs, options) {
