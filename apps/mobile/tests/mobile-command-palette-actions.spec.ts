@@ -35,6 +35,21 @@ test.describe('mobile command palette actions', () => {
     await expect(page.getByTestId('editor-title')).toBeHidden()
     await expect(page.getByTestId('property-row-type-edit')).toHaveText('Essay')
   })
+
+  test('opens active note-list column customization from the tablet command palette', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'tablet-landscape', 'Command palette action checks use the full-width tablet layout.')
+
+    await page.goto('/')
+    await page.getByTestId('sidebar-item-all-notes').click()
+    await expect(page.getByTestId('note-list-toolbar-title')).toHaveText('All Notes')
+
+    await openCommandPalette(page)
+    await runCommand(page, 'customize all columns', 'customize-note-list-columns')
+
+    await expect(page.getByTestId('mobile-command-palette')).toBeHidden()
+    await expect(page.getByTestId('workspace-action-sheet-editPrimaryListProperties')).toBeVisible()
+    await expect(page.getByTestId('workspace-all-notes-file-visibility')).toBeVisible()
+  })
 })
 
 async function openCommandPalette(page: Page) {

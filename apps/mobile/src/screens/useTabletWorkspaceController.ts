@@ -219,6 +219,11 @@ export function useTabletWorkspaceController({
     selectedNote,
     workspaceSnapshot,
   })
+  const selectedViewActions = selectedViewCommandActions({
+    applyEdit,
+    navigation,
+    workspaceSnapshot,
+  })
   const noteIconActions = noteIconWorkspaceActions({
     readOnlyForm,
     saveSelectedEdit,
@@ -236,6 +241,7 @@ export function useTabletWorkspaceController({
     ...propertyActions,
     ...relationshipActions,
     ...retargetActions,
+    ...selectedViewActions,
     openAction,
     readOnlyForm,
     searchQuery,
@@ -522,6 +528,22 @@ function createWorkspaceActions({
   }
 }
 
+function selectedViewCommandActions({
+  applyEdit,
+  navigation,
+  workspaceSnapshot,
+}: Pick<WorkspaceActionsContext, 'applyEdit' | 'navigation' | 'workspaceSnapshot'>) {
+  const viewId = selectedViewId(navigation.sidebarSelection)
+  const views = workspaceSnapshot.views ?? []
+
+  return {
+    canMoveSelectedViewDown: viewId ? canMoveMobileSavedView(views, viewId, 'down') : false,
+    canMoveSelectedViewUp: viewId ? canMoveMobileSavedView(views, viewId, 'up') : false,
+    onMoveSelectedViewDown: () => moveSelectedView({ applyEdit, direction: 'down', viewId }),
+    onMoveSelectedViewUp: () => moveSelectedView({ applyEdit, direction: 'up', viewId }),
+  }
+}
+
 function savedViewWorkspaceActions({
   applyEdit,
   closeAction,
@@ -565,6 +587,24 @@ function savedViewWorkspaceActions({
       workspaceSnapshot.typeDefinitions,
     ),
   }
+}
+
+function selectedViewId(selection: TabletWorkspaceNavigation['sidebarSelection']): string | null {
+  if (selection.kind !== 'item' || selection.sectionId !== 'views') return null
+  return selection.viewId ?? selection.id
+}
+
+function moveSelectedView({
+  applyEdit,
+  direction,
+  viewId,
+}: {
+  applyEdit: ApplyWorkspaceEdit
+  direction: 'down' | 'up'
+  viewId: string | null
+}) {
+  if (!viewId) return
+  moveWorkspaceSidebarItem({ applyEdit, direction, itemId: viewId, kind: 'view' })
 }
 
 function typeSectionWorkspaceActions({

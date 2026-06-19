@@ -25,8 +25,13 @@ export type MobileCommandPaletteGroup = {
 }
 
 export type MobileCommandPaletteHandlers = {
+  activeFolderId?: string | null
+  activeItemId?: string | null
+  canMoveSelectedViewDown?: boolean
+  canMoveSelectedViewUp?: boolean
   canRedoWorkspaceEdit: boolean
   canUndoWorkspaceEdit: boolean
+  onCreateNote?: (titleOverride?: string) => void
   onCreateNoteOfType?: (typeName: string) => void
   onOpenBacklinks?: () => void
   onOpenChangeNoteType?: () => void
@@ -40,8 +45,13 @@ export type MobileCommandPaletteHandlers = {
   onOpenReplaceInNote: () => void
   onOpenRenameNoteFile?: () => void
   onOpenSearch: () => void
+  onOpenPrimaryActions?: (selection: MobileSidebarItemSelection) => void
   onOpenSetNoteIcon?: () => void
   onOpenTableOfContents: () => void
+  onOpenTypeActions?: (selection: MobileSidebarItemSelection) => void
+  onOpenViewActions?: (selection: MobileSidebarItemSelection) => void
+  onMoveSelectedViewDown?: () => void
+  onMoveSelectedViewUp?: () => void
   onNoteListFilterChange?: (filter: MobileNoteListFilter) => void
   onPastePlainText?: () => void
   onCopyDeepLink?: () => void
@@ -80,6 +90,7 @@ type CommandConfig = {
 }
 
 type DynamicCommandConfig = Omit<CommandConfig, 'desktopCommand'> & { id: string; shortcut?: string }
+type ActiveSidebarItem = MobileSidebarItem & { sectionId: string }
 type MobileTextKey = Parameters<typeof mobileText>[0]
 type SelectedNoteCommandExecutor = (
   handlers: MobileCommandPaletteHandlers,
@@ -370,6 +381,7 @@ function noteCreationCommands(handlers: MobileCommandPaletteHandlers): MobileCom
       keywords: ['new', 'create', 'add'],
       label: mobileText('command.note.newNote'),
     }),
+    currentFolderNoteCommand(handlers),
     command({
       desktopCommand: 'fileNewType',
       execute: handlers.onOpenCreateType,
@@ -379,6 +391,17 @@ function noteCreationCommands(handlers: MobileCommandPaletteHandlers): MobileCom
     }),
     ...typedNoteCreationCommands(handlers),
   ]
+}
+
+function currentFolderNoteCommand(handlers: MobileCommandPaletteHandlers): MobileCommandPaletteCommand {
+  return dynamicCommand({
+    enabled: Boolean(handlers.activeFolderId && handlers.onCreateNote),
+    execute: () => handlers.onCreateNote?.(''),
+    group: 'Note',
+    id: 'create-note-current-folder',
+    keywords: ['new', 'create', 'add', 'folder', 'current'],
+    label: mobileText('command.note.newNoteInCurrentFolder'),
+  })
 }
 
 function typedNoteCreationCommands(handlers: MobileCommandPaletteHandlers): MobileCommandPaletteCommand[] {
@@ -639,7 +662,52 @@ function viewCommands(handlers: MobileCommandPaletteHandlers): MobileCommandPale
       keywords: ['raw', 'source', 'markdown', 'frontmatter'],
       label: mobileText('command.view.toggleRaw'),
     }),
+    ...selectedViewMoveCommands(handlers),
+    customizeNoteListColumnsCommand(handlers),
   ]
+}
+
+function selectedViewMoveCommands(handlers: MobileCommandPaletteHandlers): MobileCommandPaletteCommand[] {
+  const selectedView = selectedSidebarItem(handlers, 'views')
+  const viewName = selectedView?.label.trim()
+
+  return [
+    dynamicCommand({
+      enabled: Boolean(selectedView && handlers.canMoveSelectedViewUp && handlers.onMoveSelectedViewUp),
+      execute: handlers.onMoveSelectedViewUp,
+      group: 'View',
+      id: 'move-view-up',
+      keywords: ['saved view', 'view', 'views', 'order', 'sidebar', 'move', 'up'],
+      label: viewName
+        ? mobileText('command.view.moveNamedViewUp').replace('{name}', viewName)
+        : mobileText('command.view.moveViewUp'),
+    }),
+    dynamicCommand({
+      enabled: Boolean(selectedView && handlers.canMoveSelectedViewDown && handlers.onMoveSelectedViewDown),
+      execute: handlers.onMoveSelectedViewDown,
+      group: 'View',
+      id: 'move-view-down',
+      keywords: ['saved view', 'view', 'views', 'order', 'sidebar', 'move', 'down'],
+      label: viewName
+        ? mobileText('command.view.moveNamedViewDown').replace('{name}', viewName)
+        : mobileText('command.view.moveViewDown'),
+    }),
+  ]
+}
+
+function customizeNoteListColumnsCommand(handlers: MobileCommandPaletteHandlers): MobileCommandPaletteCommand {
+  const item = activeSidebarItem(handlers)
+  const selection = item ? sidebarSelectionFromItem(item, item.sectionId) : null
+  const config = selection ? customizeColumnsCommandConfig(selection, handlers) : null
+
+  return dynamicCommand({
+    enabled: config !== null,
+    execute: config?.execute,
+    group: 'View',
+    id: 'customize-note-list-columns',
+    keywords: ['columns', 'chips', 'properties', 'note list', selection?.label ?? ''],
+    label: config?.label ?? mobileText('noteList.properties.customizeColumns'),
+  })
 }
 
 function settingsCommands(handlers: MobileCommandPaletteHandlers): MobileCommandPaletteCommand[] {
@@ -694,6 +762,59 @@ function typeSidebarItems(snapshot: MobileWorkspaceSnapshot): MobileSidebarItem[
     ?.filter((item) => item.typeName || item.label) ?? []
 }
 
+function activeSidebarItem(handlers: MobileCommandPaletteHandlers): ActiveSidebarItem | null {
+  if (!handlers.activeItemId) return null
+
+  for (const section of handlers.snapshot.sidebarSections) {
+    const item = section.items?.find((candidate) => candidate.id === handlers.activeItemId)
+    if (item) return { ...item, sectionId: section.id }
+  }
+
+  return null
+}
+
+function selectedSidebarItem(
+  handlers: MobileCommandPaletteHandlers,
+  sectionId: string,
+): ActiveSidebarItem | null {
+  const item = activeSidebarItem(handlers)
+  return item?.sectionId === sectionId ? item : null
+}
+
+function customizeColumnsCommandConfig(
+  selection: MobileSidebarItemSelection,
+  handlers: MobileCommandPaletteHandlers,
+): { execute: () => void; label: string } | null {
+  if (selection.sectionId === 'primary') return primaryColumnsCommandConfig(selection, handlers)
+  if (selection.sectionId === 'types' && handlers.onOpenTypeActions) {
+    return {
+      execute: () => handlers.onOpenTypeActions?.(selection),
+      label: mobileText('noteList.properties.customizeColumns'),
+    }
+  }
+  if (selection.sectionId === 'views' && handlers.onOpenViewActions) {
+    return {
+      execute: () => handlers.onOpenViewActions?.(selection),
+      label: mobileText('noteList.properties.customizeViewColumns').replace('{name}', selection.label),
+    }
+  }
+  return null
+}
+
+function primaryColumnsCommandConfig(
+  selection: MobileSidebarItemSelection,
+  handlers: MobileCommandPaletteHandlers,
+): { execute: () => void; label: string } | null {
+  if (!handlers.onOpenPrimaryActions || !['all-notes', 'inbox'].includes(selection.id)) return null
+
+  return {
+    execute: () => handlers.onOpenPrimaryActions?.(selection),
+    label: selection.id === 'all-notes'
+      ? mobileText('noteList.properties.customizeAllColumns')
+      : mobileText('noteList.properties.customizeInboxColumns'),
+  }
+}
+
 function typeNameForCommand(item: MobileSidebarItem): string {
   return (item.typeName ?? item.label).trim()
 }
@@ -703,12 +824,19 @@ function genericTypeCommandName(typeName: string): boolean {
 }
 
 function sidebarSelectionFromTypeItem(item: MobileSidebarItem): MobileSidebarItemSelection {
+  return sidebarSelectionFromItem(item, 'types')
+}
+
+function sidebarSelectionFromItem(
+  item: MobileSidebarItem,
+  sectionId: string,
+): MobileSidebarItemSelection {
   return {
     count: item.count,
     id: item.id,
     label: item.label,
     noteId: item.noteId,
-    sectionId: 'types',
+    sectionId,
     typeName: item.typeName,
     viewId: item.viewId,
   }

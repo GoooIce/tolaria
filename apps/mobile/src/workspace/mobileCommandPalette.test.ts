@@ -78,6 +78,20 @@ describe('mobile command palette', () => {
     expect(handlers.onCreateNoteOfType).toHaveBeenCalledWith('Essay')
   })
 
+  it('exposes the desktop current-folder note creation command when a folder is selected', () => {
+    const handlers = commandHandlers({ activeFolderId: 'Writing/Essays' })
+    const command = enabledCommand(handlers, 'create-note-current-folder')
+
+    expect(command).toMatchObject({
+      group: 'Note',
+      label: 'Create New Note in Current Folder',
+    })
+
+    command.execute()
+
+    expect(handlers.onCreateNote).toHaveBeenCalledWith('')
+  })
+
   it('exposes desktop-style section filter commands when note-list filters are visible', () => {
     const handlers = commandHandlers({ noteListFilter: 'open', noteListFilterVisible: true })
     const results = mobileCommandPaletteResults(buildMobileCommandPaletteCommands(handlers), '')
@@ -89,6 +103,61 @@ describe('mobile command palette', () => {
     enabledCommand(handlers, 'filter-archived').execute()
 
     expect(handlers.onNoteListFilterChange).toHaveBeenCalledWith('archived')
+  })
+
+  it('opens active list customization from the command palette', () => {
+    const primaryHandlers = commandHandlers({ activeItemId: 'all-notes' })
+    const primaryCommand = enabledCommand(primaryHandlers, 'customize-note-list-columns')
+
+    expect(primaryCommand).toMatchObject({
+      group: 'View',
+      label: 'Customize All Notes columns',
+    })
+
+    primaryCommand.execute()
+
+    expect(primaryHandlers.onOpenPrimaryActions).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'all-notes',
+        sectionId: 'primary',
+      }),
+    )
+
+    const viewHandlers = commandHandlers({ activeItemId: 'view-active-procedures' })
+    const viewCommand = enabledCommand(viewHandlers, 'customize-note-list-columns')
+
+    expect(viewCommand).toMatchObject({
+      label: 'Customize Active Procedures columns',
+    })
+
+    viewCommand.execute()
+
+    expect(viewHandlers.onOpenViewActions).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'view-active-procedures',
+        sectionId: 'views',
+      }),
+    )
+  })
+
+  it('exposes desktop-style selected saved-view movement commands', () => {
+    const handlers = commandHandlers({
+      activeItemId: 'view-active-procedures',
+      canMoveSelectedViewDown: true,
+      canMoveSelectedViewUp: true,
+    })
+
+    const moveUp = enabledCommand(handlers, 'move-view-up')
+    const moveDown = enabledCommand(handlers, 'move-view-down')
+
+    expect(moveUp).toMatchObject({ label: 'Move Active Procedures Up' })
+    expect(moveDown).toMatchObject({ label: 'Move Active Procedures Down' })
+
+    moveUp.execute()
+    moveDown.execute()
+
+    expect(handlers.onMoveSelectedViewUp).toHaveBeenCalledOnce()
+    expect(handlers.onMoveSelectedViewDown).toHaveBeenCalledOnce()
   })
 
   it('exposes selected markdown note utility commands through the palette', () => {
@@ -199,6 +268,7 @@ function commandHandlers(
     canUndoWorkspaceEdit: true,
     onCopyDeepLink: vi.fn(),
     onCopyFilePath: vi.fn(),
+    onCreateNote: vi.fn(),
     onCreateNoteOfType: vi.fn(),
     onDeleteNote: vi.fn(),
     onEnterNeighborhood: vi.fn(),
@@ -211,11 +281,16 @@ function commandHandlers(
     onOpenFileInDefaultApp: vi.fn(),
     onOpenMoveNoteToFolder: vi.fn(),
     onOpenNativeVault: vi.fn(),
+    onOpenPrimaryActions: vi.fn(),
     onOpenReplaceInNote: vi.fn(),
     onOpenRenameNoteFile: vi.fn(),
     onOpenSearch: vi.fn(),
     onOpenSetNoteIcon: vi.fn(),
     onOpenTableOfContents: vi.fn(),
+    onOpenTypeActions: vi.fn(),
+    onOpenViewActions: vi.fn(),
+    onMoveSelectedViewDown: vi.fn(),
+    onMoveSelectedViewUp: vi.fn(),
     onNoteListFilterChange: vi.fn(),
     onPastePlainText: vi.fn(),
     onRedoWorkspaceEdit: vi.fn(),

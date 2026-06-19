@@ -86,6 +86,8 @@ export type TabletWorkspaceChromeProps = {
   canMoveFavoriteUp: boolean
   canMoveTypeDown: boolean
   canMoveTypeUp: boolean
+  canMoveSelectedViewDown: boolean
+  canMoveSelectedViewUp: boolean
   canMoveViewDown: boolean
   canMoveViewUp: boolean
   canRedoWorkspaceEdit: boolean
@@ -140,6 +142,8 @@ export type TabletWorkspaceChromeProps = {
   onMoveNoteToFolder: () => void
   onMoveTypeDown: () => void
   onMoveTypeUp: () => void
+  onMoveSelectedViewDown: () => void
+  onMoveSelectedViewUp: () => void
   onMoveViewDown: () => void
   onMoveViewUp: () => void
   onNoteIconChange: (value: ReadOnlyFormValue) => void
