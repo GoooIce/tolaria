@@ -49,6 +49,29 @@ filters:
     ]).map((candidate) => candidate.id)).toEqual(['active-project', 'draft-project'])
   })
 
+  it('loads legacy desktop saved views from the pre-migration .laputa directory', () => {
+    const view = parseMobileSavedViewFile({
+      relativePath: '.laputa/views/legacy-focus.yml',
+      content: `name: Legacy Focus
+filters:
+  all:
+    - field: type
+      op: equals
+      value: Essay
+`,
+    }, 0)
+
+    expect(view).toMatchObject({
+      filename: 'legacy-focus.yml',
+      id: 'view-legacy-focus',
+      definition: { name: 'Legacy Focus' },
+    })
+    expect(evaluateMobileSavedView(view!, [
+      note({ id: 'essay', type: 'Essay' }),
+      note({ id: 'procedure', type: 'Procedure' }),
+    ]).map((candidate) => candidate.id)).toEqual(['essay'])
+  })
+
   it('parses desktop saved-view inline YAML quoted scalars', () => {
     const commaView = parseMobileSavedViewFile({
       relativePath: 'views/tagged.yml',

@@ -219,7 +219,7 @@ export function serializeMobileSavedViewDefinition(definition: MobileViewDefinit
 }
 
 function isViewFile(path: ViewPath) {
-  return /^views\/[^/]+\.ya?ml$/u.test(path)
+  return /^(?:views|\.laputa\/views)\/[^/]+\.ya?ml$/u.test(path)
 }
 
 function parseViewDefinition(lines: YamlLine[], filename: ViewFilename, index: ViewIndex): MobileViewDefinition {

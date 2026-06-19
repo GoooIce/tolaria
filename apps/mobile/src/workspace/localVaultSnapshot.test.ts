@@ -337,6 +337,36 @@ _organized: false
     })
   })
 
+  it('loads legacy desktop saved views from .laputa/views for read-only mobile snapshots', () => {
+    const snapshot = buildLocalVaultWorkspaceSnapshot({
+      files: [
+        vaultFile('.laputa/views/legacy-focus.yml', `name: Legacy Focus
+filters:
+  all:
+    - field: type
+      op: equals
+      value: Project
+`),
+        vaultFile('project.md', projectTypeContent),
+        vaultFile('active-project.md', `---
+type: Project
+_organized: false
+---
+# Active Project
+`),
+      ],
+      vaultLabel: 'Laputa',
+      vaultPath: '/Users/luca/Laputa',
+    })
+
+    expect(snapshot.views?.map((view) => view.definition.name)).toEqual(['Legacy Focus'])
+    expect(snapshot.sidebarSections.find((section) => section.id === 'views')?.items?.[0]).toMatchObject({
+      count: '1',
+      id: 'view-legacy-focus',
+      label: 'Legacy Focus',
+    })
+  })
+
   it('preserves desktop type document sidebar metadata for mobile navigation', () => {
     const snapshot = buildLocalVaultWorkspaceSnapshot({
       files: typeMetadataVaultFiles(),
