@@ -120,11 +120,25 @@ export const mobileParityInventory = [
     surface: 'Read-only workspace action sheets',
   },
   {
+    assertions: ['note-more action user-flow checks', 'source-backed markdown table and tldraw edit checks'],
+    contracts: ['desktopPanelParity', 'desktopToolbarActionParity'],
+    desktopSource: 'Desktop note context menu, BreadcrumbBar note actions, editor command actions, markdown tables, and tldraw fenced markdown persistence',
+    mobileFile: 'src/components/workspace/MobileWorkspaceMoreActionsContent.tsx',
+    surface: 'Workspace More actions content',
+  },
+  {
     assertions: ['note-more action user-flow checks'],
     contracts: ['desktopPanelParity', 'desktopToolbarActionParity'],
     desktopSource: 'Desktop note context menu, BreadcrumbBar note actions, and editor command actions',
     mobileFile: 'src/components/workspace/MobileNoteMoreActions.tsx',
     surface: 'Note more actions',
+  },
+  {
+    assertions: ['source-backed markdown table resize and cell edit checks'],
+    contracts: ['desktopEditorParity', 'desktopToolbarActionParity'],
+    desktopSource: 'BlockNote table editing, markdown table serialization, and editor command actions',
+    mobileFile: 'src/components/workspace/MobileTableMoreActions.tsx',
+    surface: 'Table more actions',
   },
   {
     assertions: ['source-backed tldraw whiteboard metadata and snapshot edit checks'],

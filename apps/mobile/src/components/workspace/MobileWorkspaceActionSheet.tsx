@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Pressable, ScrollView, StyleSheet, View, type NativeSyntheticEvent, type TextInputKeyPressEventData } from 'react-native'
-import { CheckCircle, ClipboardText, FilePlus, FolderOpen, LinkSimple, ListBullets, Star, Trash } from 'phosphor-react-native'
+import { CheckCircle, ClipboardText, FilePlus, FolderOpen, Trash } from 'phosphor-react-native'
 import { Text } from '../ui/text'
 import { mobileText } from '../../i18n/mobileText'
 import { MobileButton } from '../../ui/MobileButton'
@@ -49,9 +49,8 @@ import { MobileTypeVisibilityEditor } from './MobileTypeVisibilityEditor'
 import { MobileViewDisplayPropertiesPicker } from './MobileViewDisplayPropertiesPicker'
 import { MobileViewFilterBuilder } from './MobileViewFilterBuilder'
 import { MobileEditorFindSheet } from './MobileEditorFindSheet'
-import { NoteMoreActionRows } from './MobileNoteMoreActions'
 import { MobileTableOfContentsSheet } from './MobileTableOfContentsSheet'
-import { MobileWhiteboardMoreActions } from './MobileWhiteboardMoreActions'
+import { MoreActionsContent } from './MobileWorkspaceMoreActionsContent'
 import { MobileFavoriteActions, MobileSavedViewActions, MobileTypeSectionActions } from './MobileWorkspaceMoveActions'
 import { MobileWorkspaceSuggestionList } from './MobileWorkspaceSuggestionList'
 import type { MobileWorkspaceSuggestionItem } from './MobileWorkspaceSuggestionList'
@@ -81,7 +80,7 @@ export type MobileWorkspaceAction =
   | 'setNoteIcon'
   | 'tableOfContents'
 
-type MobileWorkspaceActionSheetProps = {
+export type MobileWorkspaceActionSheetProps = {
   action: MobileWorkspaceAction
   allNotesShowImages: boolean
   allNotesShowPdfs: boolean
@@ -1064,97 +1063,6 @@ function notePathValidationBlocksSubmit(status: MobileNotePathValidationStatus) 
   return status !== 'ok'
 }
 
-function MoreActionsContent(props: MobileWorkspaceActionSheetProps) {
-  const { selectedNote } = props
-  const markdownSelected = selectedNote ? isMarkdownSelectedNote(selectedNote) : false
-  return (
-    <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" style={styles.scrollArea}>
-      {selectedNote ? <SelectedNoteSummary note={selectedNote} /> : null}
-      {selectedNote ? (
-        <NoteMoreActionRows
-          note={selectedNote}
-          canRedoWorkspaceEdit={props.canRedoWorkspaceEdit}
-          canUndoWorkspaceEdit={props.canUndoWorkspaceEdit}
-          onClose={props.onClose}
-          onCopyFilePath={props.onCopyFilePath}
-          onDeleteNote={props.onDeleteNote}
-          onEnterNeighborhood={props.onEnterNeighborhood}
-          onOpenChangeNoteType={props.onOpenChangeNoteType}
-          onOpenFileInDefaultApp={props.onOpenFileInDefaultApp}
-          onOpenFindInNote={props.onOpenFindInNote}
-          onOpenMoveNoteToFolder={props.onOpenMoveNoteToFolder}
-          onOpenReplaceInNote={props.onOpenReplaceInNote}
-          onOpenRenameNoteFile={props.onOpenRenameNoteFile}
-          onOpenSetNoteIcon={props.onOpenSetNoteIcon}
-          onRevealFile={props.onRevealFile}
-          onRenameNoteFileToTitle={props.onRenameNoteFileToTitle}
-          onRedoWorkspaceEdit={props.onRedoWorkspaceEdit}
-          onRemoveNoteIcon={props.onRemoveNoteIcon}
-          onSetArchived={props.onSetArchived}
-          onSetOrganized={props.onSetOrganized}
-          onToggleFavorite={props.onToggleFavorite}
-          onToggleNoteWidth={props.onToggleNoteWidth}
-          onUndoWorkspaceEdit={props.onUndoWorkspaceEdit}
-        />
-      ) : null}
-      {markdownSelected ? (
-        <ActionRow
-          icon={<ListBullets color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />}
-          label={mobileText('tableOfContents.title')}
-          testID="workspace-action-table-of-contents"
-          onPress={props.onOpenTableOfContents}
-        />
-      ) : null}
-      {markdownSelected && selectedNote ? (
-        <MobileWhiteboardMoreActions
-          editorBlocks={props.editorBlocks}
-          editorBullets={props.editorBullets}
-          note={selectedNote}
-          onClose={props.onClose}
-          onUpdateNoteContent={props.onUpdateNoteContent}
-        />
-      ) : null}
-      {selectedNote ? (
-        <ActionRow
-          icon={<LinkSimple color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />}
-          label={mobileText('command.note.copyDeepLink')}
-          testID="workspace-action-copy-deep-link"
-          onPress={() => {
-            props.onCopyDeepLink()
-            props.onClose()
-          }}
-        />
-      ) : null}
-      {markdownSelected ? (
-        <ActionRow
-          icon={<FilePlus color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />}
-          label={mobileText('command.note.exportPdf')}
-          testID="workspace-action-export-pdf"
-          onPress={() => {
-            props.onExportNoteAsPdf()
-            props.onClose()
-          }}
-        />
-      ) : null}
-    </ScrollView>
-  )
-}
-
-function isMarkdownSelectedNote(note: MobileNote): boolean {
-  return (note.fileKind ?? 'markdown') === 'markdown'
-}
-
-function SelectedNoteSummary({ note }: { note: MobileNote }) {
-  return (
-    <View style={actionStyles.summary} testID="workspace-action-sheet-note-summary">
-      <MobileTypeIcon size={desktopToolbarActionParity.iconSize} tone={note.typeTone} type={note.type} />
-      <Text numberOfLines={1} style={actionStyles.summaryTitle}>{note.title}</Text>
-      {note.favorite ? <Star color={mobileColors.primary} size={desktopToolbarActionParity.iconSize} weight="fill" /> : null}
-      <MobileChip label={note.type} tone={chipTone(note.typeTone)} />
-    </View>
-  )
-}
-
 function ActionRow({
   icon,
   destructive = false,
@@ -1380,21 +1288,5 @@ const actionStyles = StyleSheet.create({
   },
   actionTextDestructive: {
     color: mobileColors.red,
-  },
-  summary: {
-    minWidth: 0,
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: mobileSpace.sm,
-    borderBottomColor: mobileColors.border,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    paddingBottom: mobileSpace.md,
-  },
-  summaryTitle: {
-    minWidth: 0,
-    flex: 1,
-    color: mobileColors.text,
-    fontSize: mobileType.body,
-    fontWeight: '500',
   },
 })
