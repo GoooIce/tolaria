@@ -82,6 +82,8 @@ describe('native workspace persistence probe', () => {
 
   it('reports incomplete vault config persistence proofs', () => {
     expectProofFailures({
+      defaultNoteWidthHydrated: false,
+      fileVisibilityHydrated: false,
       propertyDisplayModesHydrated: false,
       propertyValuesHydrated: false,
       vaultConfigHydrated: false,
@@ -89,7 +91,13 @@ describe('native workspace persistence probe', () => {
       'workspace.persistence.propertyDisplayModes',
       'workspace.persistence.propertyValues',
       'workspace.persistence.vaultConfig',
+      'workspace.persistence.defaultNoteWidth',
+      'workspace.persistence.fileVisibility',
     ])
+  })
+
+  it('reports incomplete text file persistence proofs', () => {
+    expectProofFailures({ textFileContentHydrated: false }, ['workspace.persistence.updateTextFileContent'])
   })
 
   it('reports incomplete saved-view update persistence proofs', () => {
@@ -146,6 +154,8 @@ function passingWorkspaceProof(): NativeWorkspacePersistenceProof {
     createdNoteHydrated: true,
     deletedTypeDefinitionRemoved: true,
     deletedViewRemoved: true,
+    defaultNoteWidthHydrated: true,
+    fileVisibilityHydrated: true,
     folderDeleteApplied: true,
     folderRenameApplied: true,
     movedNoteContentPreserved: true,
@@ -168,6 +178,7 @@ function passingWorkspaceProof(): NativeWorkspacePersistenceProof {
     renamedTypeDefinitionHydrated: true,
     renamedTypeSchemaRefsHydrated: true,
     savedViewHydrated: true,
+    textFileContentHydrated: true,
     typeDefinitionHydrated: true,
     updatedViewHydrated: true,
     updatedTypeDefinitionHydrated: true,

@@ -44,6 +44,8 @@ const restoredTypeOrder = 42
 const restoredTypePath = 'restored-type.md'
 const restoredViewFilename = 'restored-view.yml'
 const restoredViewName = 'Restored View'
+const textFilePath = 'Files/mobile-config.txt'
+const textFileUpdatedContent = 'feature=mobile-editing\nmode=plain-text\n'
 const typeName = 'Proof Decision'
 const updatedTypeName = 'Section Proof'
 const updatedTypeTemplate = '## Next\n\n- Keep desktop sections durable.'
@@ -109,26 +111,12 @@ async function logWorkspacePersistenceProof(
   const movedNote = snapshot.allNotes?.find((note) => note.path === movedNotePath)
     ?? snapshot.notes.find((note) => note.path === movedNotePath)
   const movedContent = movedNote ? await baseRepository.readNoteContent(movedNote, request) : null
-  const propertyRelationshipNote = noteByPath(snapshot, propertyRelationshipNotePath)
-  const propertyRelationshipContent = propertyRelationshipNote
-    ? await baseRepository.readNoteContent(propertyRelationshipNote, request)
-    : null
-  const renamedAssignedNote = noteByPath(snapshot, renamedTypeAssignedNotePath)
-  const renamedAssignedContent = renamedAssignedNote
-    ? await baseRepository.readNoteContent(renamedAssignedNote, request)
-    : null
-  const restoredNote = noteByPath(snapshot, restoredNotePath)
-  const restoredNoteContent = restoredNote
-    ? await baseRepository.readNoteContent(restoredNote, request)
-    : null
-  const relationshipSource = noteByPath(snapshot, relationshipSourcePath)
-  const relationshipSourceContent = relationshipSource
-    ? await baseRepository.readNoteContent(relationshipSource, request)
-    : null
-  const metadataNote = noteByPath(snapshot, metadataNotePath)
-  const metadataContent = metadataNote
-    ? await baseRepository.readNoteContent(metadataNote, request)
-    : null
+  const propertyRelationshipContent = await readProbeNoteContent(baseRepository, snapshot, propertyRelationshipNotePath, request)
+  const renamedAssignedContent = await readProbeNoteContent(baseRepository, snapshot, renamedTypeAssignedNotePath, request)
+  const restoredNoteContent = await readProbeNoteContent(baseRepository, snapshot, restoredNotePath, request)
+  const relationshipSourceContent = await readProbeNoteContent(baseRepository, snapshot, relationshipSourcePath, request)
+  const metadataContent = await readProbeNoteContent(baseRepository, snapshot, metadataNotePath, request)
+  const textFileContent = await readProbeNoteContent(baseRepository, snapshot, textFilePath, request)
 
   console.info(nativeWorkspacePersistenceLogLine(workspacePersistenceProof(snapshot, {
     metadataContent,
@@ -137,7 +125,18 @@ async function logWorkspacePersistenceProof(
     relationshipSourceContent,
     renamedAssignedContent,
     restoredNoteContent,
+    textFileContent,
   })))
+}
+
+function readProbeNoteContent(
+  repository: ReadOnlyWorkspaceRepository,
+  snapshot: MobileWorkspaceSnapshot,
+  path: string,
+  request: ReadOnlyWorkspaceRequest,
+) {
+  const note = noteByPath(snapshot, path)
+  return note ? repository.readNoteContent(note, request) : null
 }
 
 function resetWorkspacePersistenceProbeVault(rootUri: string | null | undefined) {
@@ -165,7 +164,8 @@ function workspacePersistenceProbeWrites(seedSnapshot: MobileWorkspaceSnapshot) 
     ...workspacePersistencePropertyAndRelationshipWrites(seedSnapshot),
     ...workspacePersistenceRestorationWrites(seedSnapshot),
     ...workspacePersistenceViewWrites(seedSnapshot),
-    workspacePersistenceConfigWrite(),
+    ...workspacePersistenceConfigWrites(seedSnapshot),
+    ...workspacePersistenceTextFileWrites(seedSnapshot),
     ...workspacePersistenceFolderWrites(),
     ...workspacePersistenceTypeMoveWrites(seedSnapshot),
     ...workspacePersistenceTypeWrites(),
@@ -316,15 +316,38 @@ function updatedNativeProofViewDefinition(): MobileViewDefinition {
   }
 }
 
-function workspacePersistenceConfigWrite() {
-  return {
-    config: {
-      allNotes: { noteListProperties: ['status', 'belongs_to'] },
-      inbox: { explicitOrganization: true, noteListProperties: ['tags'] },
-      propertyDisplayModes: workspacePersistencePropertyDisplayModes,
+function workspacePersistenceConfigWrites(seedSnapshot: MobileWorkspaceSnapshot) {
+  return workspacePersistenceEditWrites(seedSnapshot, [
+    { mode: 'wide', type: 'setDefaultNoteWidth' },
+    { key: 'Priority', mode: workspacePersistencePropertyDisplayModes.Priority, type: 'updatePropertyDisplayMode' },
+    { key: 'Website', mode: workspacePersistencePropertyDisplayModes.Website, type: 'updatePropertyDisplayMode' },
+    {
+      allNotesFileVisibility: { images: true, pdfs: true, unsupported: false },
+      listPropertiesDisplay: ['status', 'belongs_to'],
+      target: 'allNotes',
+      type: 'updatePrimaryNoteListProperties',
     },
-    kind: 'saveVaultConfig' as const,
-  }
+    {
+      listPropertiesDisplay: ['tags'],
+      target: 'inbox',
+      type: 'updatePrimaryNoteListProperties',
+    },
+  ])
+}
+
+function workspacePersistenceTextFileWrites(seedSnapshot: MobileWorkspaceSnapshot) {
+  return workspacePersistenceEditWrites(seedSnapshot, [
+    {
+      noteId: textFilePath,
+      rawContent: textFileInitialContent(),
+      type: 'hydrateTextFileContent',
+    },
+    {
+      content: textFileUpdatedContent,
+      noteId: textFilePath,
+      type: 'updateTextFileContent',
+    },
+  ])
 }
 
 function workspacePersistenceFolderWrites() {
@@ -445,6 +468,11 @@ function seedWorkspaceNoteWrites() {
       path: propertyRelationshipNotePath,
     },
     {
+      content: textFileInitialContent(),
+      kind: 'createNote' as const,
+      path: textFilePath,
+    },
+    {
       content: renamedTypeAssignedNoteContent(),
       kind: 'createNote' as const,
       path: renamedTypeAssignedNotePath,
@@ -521,12 +549,15 @@ function workspacePersistenceProof(
     relationshipSourceContent: string | null
     renamedAssignedContent: string | null
     restoredNoteContent: string | null
+    textFileContent: string | null
   },
 ): NativeWorkspacePersistenceProof {
   return {
     createdNoteHydrated: snapshotContainsNotePath(snapshot, createdNotePath),
     deletedTypeDefinitionRemoved: !typeDefinitionExists(snapshot, oldTypeName),
     deletedViewRemoved: !viewExists(snapshot, oldViewName),
+    defaultNoteWidthHydrated: snapshot.vaultConfig?.defaultNoteWidth === 'wide',
+    fileVisibilityHydrated: fileVisibilityHydrated(snapshot),
     folderDeleteApplied: !folderPathStartsWith(snapshot, 'Scratch'),
     folderRenameApplied: folderRenameApplied(snapshot),
     movedNoteContentPreserved: movedContentPreserved(content.movedContent),
@@ -549,6 +580,7 @@ function workspacePersistenceProof(
     renamedTypeDefinitionHydrated: renamedTypeDefinitionHydrated(snapshot),
     renamedTypeSchemaRefsHydrated: renamedTypeSchemaRefsHydrated(snapshot),
     savedViewHydrated: viewExists(snapshot, 'Mobile Persistence'),
+    textFileContentHydrated: textFileContentHydrated(snapshot, content.textFileContent),
     typeDefinitionHydrated: snapshot.typeDefinitions?.[typeName]?.tone === 'green',
     updatedViewHydrated: updatedViewHydrated(snapshot),
     updatedTypeDefinitionHydrated: updatedTypeDefinitionHydrated(snapshot),
@@ -686,9 +718,23 @@ function vaultConfigHydrated(snapshot: MobileWorkspaceSnapshot) {
     && snapshot.vaultConfig?.inbox?.explicitOrganization === true
 }
 
+function fileVisibilityHydrated(snapshot: MobileWorkspaceSnapshot) {
+  const visibility = snapshot.vaultConfig?.allNotes?.fileVisibility
+  return visibility?.images === true
+    && visibility.pdfs === true
+    && visibility.unsupported === false
+}
+
 function propertyDisplayModesHydrated(snapshot: MobileWorkspaceSnapshot) {
   return snapshot.vaultConfig?.propertyDisplayModes?.Priority === 'number'
     && snapshot.vaultConfig.propertyDisplayModes.Website === 'url'
+}
+
+function textFileContentHydrated(snapshot: MobileWorkspaceSnapshot, content: string | null) {
+  const note = noteByPath(snapshot, textFilePath)
+  return note?.fileKind === 'text'
+    && note.snippet === 'feature=mobile-editing'
+    && content === textFileUpdatedContent
 }
 
 function propertyValuesHydrated(snapshot: MobileWorkspaceSnapshot, content: string | null) {
@@ -924,6 +970,10 @@ function propertyRelationshipNoteContent() {
     'Property and relationship persistence seed.',
     '',
   ].join('\n')
+}
+
+function textFileInitialContent() {
+  return 'feature=seed\nmode=plain-text\n'
 }
 
 function renamedTypeAssignedNoteContent() {

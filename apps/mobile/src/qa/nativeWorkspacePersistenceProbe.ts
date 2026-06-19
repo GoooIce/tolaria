@@ -5,6 +5,8 @@ export type NativeWorkspacePersistenceProof = {
   createdNoteHydrated: boolean
   deletedTypeDefinitionRemoved: boolean
   deletedViewRemoved: boolean
+  defaultNoteWidthHydrated: boolean
+  fileVisibilityHydrated: boolean
   folderDeleteApplied: boolean
   folderRenameApplied: boolean
   movedNoteContentPreserved: boolean
@@ -27,6 +29,7 @@ export type NativeWorkspacePersistenceProof = {
   renamedTypeDefinitionHydrated: boolean
   renamedTypeSchemaRefsHydrated: boolean
   savedViewHydrated: boolean
+  textFileContentHydrated: boolean
   typeDefinitionHydrated: boolean
   updatedViewHydrated: boolean
   updatedTypeDefinitionHydrated: boolean
@@ -72,6 +75,7 @@ export function assertNativeWorkspacePersistenceProofs(
     proofFailure(latest.persistedToNativeRepository, 'workspace.persistence.native', 'Workspace writes ran through the native Expo filesystem repository'),
     proofFailure(latest.createdNoteHydrated, 'workspace.persistence.createNote', 'Created notes rehydrate from the native vault snapshot'),
     proofFailure(latest.movedNoteContentPreserved, 'workspace.persistence.moveNote', 'Saved and moved note content is read back from the native repository'),
+    proofFailure(latest.textFileContentHydrated, 'workspace.persistence.updateTextFileContent', 'Plain text file edits rehydrate from native filesystem writes'),
     proofFailure(latest.noteChromeMetadataHydrated, 'workspace.persistence.noteChromeMetadata', 'Note icon and width metadata rehydrate from native frontmatter writes'),
     proofFailure(latest.noteStateMetadataHydrated, 'workspace.persistence.noteStateMetadata', 'Note archive, organized, and favorite metadata rehydrate from native frontmatter writes'),
     proofFailure(latest.propertyDisplayModesHydrated, 'workspace.persistence.propertyDisplayModes', 'Property display modes rehydrate from native vault-scoped config storage'),
@@ -98,6 +102,8 @@ export function assertNativeWorkspacePersistenceProofs(
     proofFailure(latest.restoredTypeDefinitionHydrated, 'workspace.persistence.restoreType', 'Restored Type documents rehydrate from undo/redo native Type writes'),
     proofFailure(latest.restoredNoteHydrated, 'workspace.persistence.restoreNote', 'Restored notes rehydrate from undo/redo native note writes'),
     proofFailure(latest.vaultConfigHydrated, 'workspace.persistence.vaultConfig', 'Primary note-list config rehydrates from native vault-scoped config storage'),
+    proofFailure(latest.defaultNoteWidthHydrated, 'workspace.persistence.defaultNoteWidth', 'Default note width rehydrates from native vault-scoped config storage'),
+    proofFailure(latest.fileVisibilityHydrated, 'workspace.persistence.fileVisibility', 'All Notes file visibility rehydrates from native vault-scoped config storage'),
   ].filter((failure): failure is NativeWorkspacePersistenceAssertionFailure => failure !== null)
 }
 
@@ -159,6 +165,8 @@ const workspacePersistenceProofKeys = [
   'createdNoteHydrated',
   'deletedTypeDefinitionRemoved',
   'deletedViewRemoved',
+  'defaultNoteWidthHydrated',
+  'fileVisibilityHydrated',
   'folderDeleteApplied',
   'folderRenameApplied',
   'movedNoteContentPreserved',
@@ -181,6 +189,7 @@ const workspacePersistenceProofKeys = [
   'renamedTypeDefinitionHydrated',
   'renamedTypeSchemaRefsHydrated',
   'savedViewHydrated',
+  'textFileContentHydrated',
   'typeDefinitionHydrated',
   'updatedViewHydrated',
   'updatedTypeDefinitionHydrated',
