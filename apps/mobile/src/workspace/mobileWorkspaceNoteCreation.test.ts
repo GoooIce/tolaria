@@ -188,8 +188,9 @@ describe('mobile note creation parity', () => {
       title: 'New Dependency',
       type: 'Note',
     })
-    expect(updatedSource?.rawContent).toContain('related_to:\n  - "[[Tolaria/Mobile UI/new-dependency]]"')
-    expect(updatedSource?.relationships.find((relationship) => relationship.key === 'related_to')?.values).toContainEqual(
+    expect(updatedSource?.rawContent).toContain('Related to:\n  - "[[Tolaria/Mobile UI/new-dependency]]"')
+    expect(updatedSource?.rawContent).not.toContain('related_to:')
+    expect(updatedSource?.relationships.find((relationship) => relationship.key === 'Related to')?.values).toContainEqual(
       expect.objectContaining({
         id: target?.id,
         title: 'New Dependency',
@@ -268,7 +269,7 @@ describe('mobile note creation parity', () => {
     const updatedSource = result.snapshot.allNotes?.find((note) => note.id === sourceNote.id)
 
     expect(target).toMatchObject({ workspaceAlias: 'laputa' })
-    expect(updatedSource?.rawContent).toContain('related_to:\n  - "[[Tolaria/Mobile UI/new-dependency]]"')
+    expect(updatedSource?.rawContent).toContain('Related to:\n  - "[[Tolaria/Mobile UI/new-dependency]]"')
     expect(updatedSource?.rawContent).not.toContain('[[laputa/Tolaria/Mobile UI/new-dependency]]')
   })
 

@@ -81,7 +81,6 @@ import {
 import type { MobileTypeDefinitionPatch } from './mobileTypeDefinitions'
 import { applyMobileTypeEdit } from './mobileWorkspaceTypeEditing'
 import { applyMobileRestorationEdit } from './mobileWorkspaceRestoration'
-import { normalizeRelationshipKey } from './mobileWorkspaceSuggestions'
 import {
   applyMobileTextFileContentEdit,
   canApplyMobileMarkdownEdit,
@@ -552,7 +551,7 @@ function addRelationship({
   targetRef,
   targetTitle,
 }: AddRelationshipInput): MobileNote {
-  const trimmedKey = normalizeRelationshipKey(key)
+  const trimmedKey = key.trim()
   const trimmedTitle = targetTitle.trim()
   if (!trimmedKey || !trimmedTitle) return note
 
@@ -802,7 +801,7 @@ function createRelationshipTarget(
 ): MobileWorkspaceEditResult {
   const sourceNote = workspaceNoteById(snapshot, edit.sourceNoteId)
   const targetTitle = edit.targetTitle.trim()
-  const relationshipKey = normalizeRelationshipKey(edit.key)
+  const relationshipKey = edit.key.trim()
   if (!sourceNote?.rawContent || !targetTitle || !relationshipKey) return { snapshot, writes: [] }
 
   const targetResult = createMobileNoteResult(
