@@ -82,6 +82,27 @@ test.describe('phone saved view configuration parity', () => {
     await page.getByTestId('workspace-action-sheet-toolbar').getByRole('button', { name: 'Cancel' }).click()
     await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
   })
+
+  test('customizes phone primary note-list display properties', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'phone-portrait', 'Phone primary note-list settings run through the phone sidebar drawer.')
+
+    await page.goto('/')
+    await addNumericPropertyToPhoneNote(page, 'note-row-workflow-orchestration', 'Priority', '2')
+    await addNumericPropertyToPhoneNote(page, 'note-row-open-source-project', 'Priority', '1')
+
+    await openPhoneSidebar(page)
+    await page.getByTestId('sidebar-item-all-notes').click()
+    await expect(page.getByTestId('note-list-toolbar-title')).toHaveText('All Notes')
+    await openPhoneSidebar(page)
+    await longPressTestId(page, 'sidebar-item-all-notes')
+    await expect(page.getByTestId('workspace-action-sheet-editPrimaryListProperties')).toBeVisible()
+    await page.getByTestId('workspace-primary-property-search-input').fill('Pri')
+    await page.getByTestId('workspace-primary-property-option-priority').click()
+    await page.getByTestId('workspace-action-sheet-editPrimaryListProperties').getByRole('button', { name: 'Save' }).click()
+    await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
+    await expect(page.getByTestId('note-row-workflow-orchestration').getByText('2')).toBeVisible()
+    await expect(page.getByTestId('note-row-open-source-project').getByText('1')).toBeVisible()
+  })
 })
 
 async function addNumericPropertyToPhoneNote(page: Page, rowTestId: string, propertyName: string, propertyValue: string) {
