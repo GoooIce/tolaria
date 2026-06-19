@@ -38,9 +38,10 @@ type RelationshipTargetSuggestionOptions = {
   selectedNote?: MobileNote | null
 }
 
-const DESKTOP_SUGGESTED_PROPERTY_KEYS = ['Status', 'Date', 'URL'] as const
+const DESKTOP_SUGGESTED_PROPERTY_KEYS = ['Status', 'Date', 'URL', 'icon'] as const
 const DESKTOP_SUGGESTED_RELATIONSHIP_KEYS = ['belongs_to', 'related_to', 'has'] as const
 const DESKTOP_VIEW_BUILT_IN_FIELDS = ['type', 'status', 'title', 'favorite', 'body'] as const
+const ICON_PROPERTY_KEYS = ['icon', '_icon'] as const
 const BUILT_IN_VIEW_VALUE_RESOLVERS: Record<string, ViewValueResolver> = {
   archived: (note) => [String(note.archived === true)],
   body: (note) => note.snippet ? [note.snippet] : [],
@@ -420,6 +421,7 @@ function selectedPropertyKeys(note: MobileNote | null): Set<NormalizedSuggestion
   const keys = new Set(propertiesForNote(note).map((property) => canonicalSuggestionKey(property.key)))
   if (note.status) keys.add('status')
   if (note.tags.length > 0) keys.add('tags')
+  if (note.icon) addCanonicalSuggestionKeys(keys, ICON_PROPERTY_KEYS)
   return keys
 }
 
@@ -438,6 +440,7 @@ function specialPropertyValuesForSuggestion(
 ): PropertyValueText[] | null {
   if (normalizedKey === 'status') return note.status ? [note.status] : []
   if (normalizedKey === 'tags') return note.tags
+  if (normalizedKey === 'icon' || normalizedKey === '_icon') return note.icon ? [note.icon] : []
   return null
 }
 
@@ -492,6 +495,10 @@ function uniqueSuggestedKeys(values: readonly SuggestionText[]): SuggestionText[
   }
 
   return result
+}
+
+function addCanonicalSuggestionKeys(keys: Set<NormalizedSuggestionKey>, aliases: readonly string[]) {
+  for (const alias of aliases) keys.add(canonicalSuggestionKey(alias))
 }
 
 function uniqueSuggestionItems(items: readonly MobileViewValueSuggestion[]): MobileViewValueSuggestion[] {

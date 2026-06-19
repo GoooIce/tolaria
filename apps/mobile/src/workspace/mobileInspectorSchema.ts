@@ -24,8 +24,10 @@ const SUGGESTED_PROPERTY_SLOTS = [
   { key: 'Status', label: 'Status' },
   { key: 'Date', label: 'Date' },
   { key: 'URL', label: 'URL' },
+  { key: 'icon', label: 'Icon' },
 ] as const
 const SUGGESTED_RELATIONSHIP_KEYS = ['belongs_to', 'related_to', 'has'] as const
+const ICON_PROPERTY_KEYS = ['icon', '_icon'] as const
 const RELATIONSHIP_SCHEMA_KEYS = new Set(SUGGESTED_RELATIONSHIP_KEYS)
 
 export function mobileInspectorPropertySlots(
@@ -113,7 +115,7 @@ function pushRelationshipSlot(
 
 function suggestedPropertySlots(existingKeys: Set<string>): MobileInspectorPropertySlot[] {
   return SUGGESTED_PROPERTY_SLOTS
-    .filter(({ key }) => !existingKeys.has(canonicalSlotKey(key)))
+    .filter(({ key }) => !hasExistingPropertySlot(existingKeys, key))
     .map(({ key, label }) => ({ key, label, source: 'suggested' }))
 }
 
@@ -135,8 +137,18 @@ function existingPropertyKeys(note: MobileNote): Set<string> {
   const keys = new Set((note.properties ?? []).map((property) => canonicalSlotKey(property.key)))
   if (note.status) keys.add('status')
   if (note.tags.length > 0) keys.add('tags')
+  if (note.icon) addCanonicalSlotKeys(keys, ICON_PROPERTY_KEYS)
   keys.add('type')
   return keys
+}
+
+function hasExistingPropertySlot(existingKeys: Set<string>, key: string): boolean {
+  if (key === 'icon') return ICON_PROPERTY_KEYS.some((alias) => existingKeys.has(canonicalSlotKey(alias)))
+  return existingKeys.has(canonicalSlotKey(key))
+}
+
+function addCanonicalSlotKeys(keys: Set<string>, aliases: readonly string[]) {
+  for (const alias of aliases) keys.add(canonicalSlotKey(alias))
 }
 
 function existingRelationshipCanonicalKeys(note: MobileNote): Set<string> {

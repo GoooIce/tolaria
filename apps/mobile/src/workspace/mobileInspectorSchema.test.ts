@@ -26,6 +26,24 @@ describe('mobile inspector schema slots', () => {
       { key: 'Priority', label: 'Priority', source: 'typeDerived' },
       { key: 'Status', label: 'Status', source: 'suggested' },
       { key: 'Date', label: 'Date', source: 'suggested' },
+      { key: 'icon', label: 'Icon', source: 'suggested' },
+    ])
+  })
+
+  it('matches desktop suggested property slots including note icons', () => {
+    expect(mobileInspectorPropertySlots(noteFixture({ status: '' }), undefined)).toEqual([
+      { key: 'Status', label: 'Status', source: 'suggested' },
+      { key: 'Date', label: 'Date', source: 'suggested' },
+      { key: 'URL', label: 'URL', source: 'suggested' },
+      { key: 'icon', label: 'Icon', source: 'suggested' },
+    ])
+  })
+
+  it('does not suggest the desktop icon property when note icon metadata exists', () => {
+    expect(mobileInspectorPropertySlots(noteFixture({ icon: 'star', status: '' }), undefined)).toEqual([
+      { key: 'Status', label: 'Status', source: 'suggested' },
+      { key: 'Date', label: 'Date', source: 'suggested' },
+      { key: 'URL', label: 'URL', source: 'suggested' },
     ])
   })
 
