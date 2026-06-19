@@ -26,6 +26,7 @@ export type MobileWikilinkAutocompleteReplacement = {
 }
 
 const MAX_WIKILINK_SUGGESTIONS = 10
+const MIN_WIKILINK_QUERY_LENGTH = 2
 const wikilinkQueryOptions: InlineQueryOptions = {
   invalidQuery: (query) => query.includes(']') || query.includes('\n'),
   replacement: (target) => `[[${target}]]`,
@@ -58,7 +59,7 @@ export function mobileWikilinkAutocompleteSuggestions(
   query: WikilinkQuery,
 ): MobileNote[] {
   const candidates = notes.filter((note) => !note.archived)
-  if (query.length === 0) return topMobileWikilinkSuggestions(candidates)
+  if (query.length < MIN_WIKILINK_QUERY_LENGTH) return []
 
   return finalizeMobileWikilinkSuggestions(candidates
     .filter((note) => mobileWikilinkMatchesQuery(note, query)))
@@ -97,12 +98,6 @@ export function mobilePersonMentionAutocompleteSuggestions(
   return finalizeMobileWikilinkSuggestions(notes
     .filter((note) => !note.archived && note.type === 'Person')
     .filter((note) => mobilePersonMentionMatchesQuery(note, normalizedQuery)))
-}
-
-function topMobileWikilinkSuggestions(notes: MobileNote[]): MobileNote[] {
-  return prepareMobileWikilinkSuggestions(notes)
-    .sort((left, right) => left.title.localeCompare(right.title))
-    .slice(0, MAX_WIKILINK_SUGGESTIONS)
 }
 
 function finalizeMobileWikilinkSuggestions(notes: MobileNote[]): MobileNote[] {

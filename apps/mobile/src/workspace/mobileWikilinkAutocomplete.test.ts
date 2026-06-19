@@ -44,7 +44,7 @@ describe('mobile wikilink autocomplete', () => {
     ], 'important')
 
     expect(suggestions.map((suggestion) => suggestion.title)).toEqual(['Project Alpha'])
-    expect(mobileWikilinkAutocompleteSuggestions(suggestions, 'a')).toHaveLength(1)
+    expect(mobileWikilinkAutocompleteSuggestions(suggestions, 'al')).toHaveLength(1)
     expect(mobileWikilinkAutocompleteSuggestions(suggestions, 'str')).toHaveLength(1)
     expect(mobileWikilinkAutocompleteSuggestions(suggestions, 'project-alpha')).toHaveLength(1)
   })
@@ -57,14 +57,16 @@ describe('mobile wikilink autocomplete', () => {
     expect(suggestions.map((suggestion) => suggestion.title)).toEqual(['Café Notes'])
   })
 
-  it('shows desktop-style top suggestions for an empty wikilink query', () => {
-    const suggestions = mobileWikilinkAutocompleteSuggestions([
+  it('suppresses wikilink suggestions until the desktop two-character query threshold', () => {
+    const notes = [
       note({ path: 'zeta.md', title: 'Zeta' }),
       note({ path: 'alpha.md', title: 'Alpha' }),
       note({ archived: true, path: 'archived-alpha.md', title: 'Archived Alpha' }),
-    ], '')
+    ]
 
-    expect(suggestions.map((suggestion) => suggestion.title)).toEqual(['Alpha', 'Zeta'])
+    expect(mobileWikilinkAutocompleteSuggestions(notes, '')).toEqual([])
+    expect(mobileWikilinkAutocompleteSuggestions(notes, 'a')).toEqual([])
+    expect(mobileWikilinkAutocompleteSuggestions(notes, 'al').map((suggestion) => suggestion.title)).toEqual(['Alpha'])
   })
 
   it('deduplicates path collisions and disambiguates duplicate titles by parent folder', () => {
