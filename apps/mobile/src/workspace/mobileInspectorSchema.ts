@@ -5,7 +5,6 @@ import type {
   MobileTypeDefinition,
   MobileTypeDefinitions,
 } from './mobileWorkspaceModel'
-import { normalizeRelationshipKey } from './mobileWorkspaceSuggestions'
 
 type SlotSource = 'suggested' | 'typeDerived'
 
@@ -44,9 +43,10 @@ export function mobileInspectorRelationshipSlots(
   note: MobileNote,
   typeDefinitions?: MobileTypeDefinitions,
 ): MobileInspectorRelationshipSlot[] {
-  const existingKeys = existingRelationshipKeys(note)
-  const typeDerivedSlots = typeDerivedRelationshipSlots(note, typeDefinitions, existingKeys)
-  const suggestedSlots = suggestedRelationshipSlots(existingKeys)
+  const existingCanonicalKeys = existingRelationshipCanonicalKeys(note)
+  const existingRawKeys = existingRelationshipRawKeys(note)
+  const typeDerivedSlots = typeDerivedRelationshipSlots(note, typeDefinitions, existingCanonicalKeys)
+  const suggestedSlots = suggestedRelationshipSlots(rawKeysWithSlots(existingRawKeys, typeDerivedSlots))
 
   return [...typeDerivedSlots, ...suggestedSlots]
 }
@@ -102,12 +102,13 @@ function pushRelationshipSlot(
   existingKeys: Set<string>,
   key: string,
 ) {
-  const normalizedKey = normalizeRelationshipKey(key)
-  const canonicalKey = canonicalSlotKey(normalizedKey)
+  const trimmedKey = key.trim()
+  const canonicalKey = canonicalSlotKey(trimmedKey)
+  if (!trimmedKey || canonicalKey === 'type') return
   if (existingKeys.has(canonicalKey)) return
 
   existingKeys.add(canonicalKey)
-  slots.push({ key: normalizedKey, label: humanizeSlotKey(normalizedKey), source: 'typeDerived' })
+  slots.push({ key: trimmedKey, label: humanizeSlotKey(trimmedKey), source: 'typeDerived' })
 }
 
 function suggestedPropertySlots(existingKeys: Set<string>): MobileInspectorPropertySlot[] {
@@ -116,9 +117,9 @@ function suggestedPropertySlots(existingKeys: Set<string>): MobileInspectorPrope
     .map(({ key, label }) => ({ key, label, source: 'suggested' }))
 }
 
-function suggestedRelationshipSlots(existingKeys: Set<string>): MobileInspectorRelationshipSlot[] {
+function suggestedRelationshipSlots(existingRawKeys: Set<string>): MobileInspectorRelationshipSlot[] {
   return SUGGESTED_RELATIONSHIP_KEYS
-    .filter((key) => !existingKeys.has(canonicalSlotKey(key)))
+    .filter((key) => !existingRawKeys.has(rawSlotKey(key)))
     .map((key) => ({ key, label: humanizeSlotKey(key), source: 'suggested' }))
 }
 
@@ -138,12 +139,16 @@ function existingPropertyKeys(note: MobileNote): Set<string> {
   return keys
 }
 
-function existingRelationshipKeys(note: MobileNote): Set<string> {
-  return new Set(note.relationships.map((relationship) => canonicalSlotKey(relationshipFrontmatterKey(relationship))))
+function existingRelationshipCanonicalKeys(note: MobileNote): Set<string> {
+  return new Set(note.relationships.map((relationship) => canonicalSlotKey(rawRelationshipFrontmatterKey(relationship))))
 }
 
-function relationshipFrontmatterKey(relationship: MobileRelationship): string {
-  if (relationship.key) return normalizeRelationshipKey(relationship.key)
+function existingRelationshipRawKeys(note: MobileNote): Set<string> {
+  return new Set(note.relationships.map((relationship) => rawSlotKey(rawRelationshipFrontmatterKey(relationship))))
+}
+
+function rawRelationshipFrontmatterKey(relationship: MobileRelationship): string {
+  if (relationship.key) return relationship.key
   if (relationship.kind === 'belongsTo') return 'belongs_to'
   if (relationship.kind === 'relatedTo') return 'related_to'
   if (relationship.kind === 'has') return 'has'
@@ -172,7 +177,20 @@ function isVisiblePlaceholderValue(value: MobilePropertyValue): boolean {
 }
 
 function canonicalSlotKey(key: string): string {
-  return key.trim().toLowerCase().replace(/[-\s]+/g, '_')
+  return key.trim().toLowerCase().replace(/\s+/g, '_')
+}
+
+function rawKeysWithSlots(
+  existingRawKeys: Set<string>,
+  slots: MobileInspectorRelationshipSlot[],
+): Set<string> {
+  const next = new Set(existingRawKeys)
+  for (const slot of slots) next.add(rawSlotKey(slot.key))
+  return next
+}
+
+function rawSlotKey(key: string): string {
+  return key.trim().toLowerCase()
 }
 
 function humanizeSlotKey(key: string): string {

@@ -58,6 +58,31 @@ describe('mobile inspector schema slots', () => {
       { key: 'has', label: 'Has', source: 'suggested' },
     ])
   })
+
+  it('keeps desktop spaced and snake_case relationship keys distinct for suggestions', () => {
+    expect(mobileInspectorRelationshipSlots(noteFixture({
+      relationships: [{ key: 'Belongs to', kind: 'custom', label: 'Belongs to', values: [] }],
+    }), undefined)).toEqual([
+      { key: 'belongs_to', label: 'Belongs to', source: 'suggested' },
+      { key: 'related_to', label: 'Related to', source: 'suggested' },
+      { key: 'has', label: 'Has', source: 'suggested' },
+    ])
+  })
+
+  it('preserves desktop Type-derived relationship key spelling before suggested slots', () => {
+    expect(mobileInspectorRelationshipSlots(noteFixture({ type: 'Project' }), {
+      Project: {
+        relationships: {
+          'Belongs to': ['[[Roadmap]]'],
+        },
+      },
+    })).toEqual([
+      { key: 'Belongs to', label: 'Belongs to', source: 'typeDerived' },
+      { key: 'belongs_to', label: 'Belongs to', source: 'suggested' },
+      { key: 'related_to', label: 'Related to', source: 'suggested' },
+      { key: 'has', label: 'Has', source: 'suggested' },
+    ])
+  })
 })
 
 function noteFixture(overrides: Partial<MobileNote> = {}): MobileNote {
