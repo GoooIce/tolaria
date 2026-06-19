@@ -20,6 +20,14 @@ type NativeWysiwygFormatCommandSpec = {
   run: NativeWysiwygFormatCommand
 }
 
+export const nativeWysiwygMarkdownBlockActions = [
+  'divider',
+  'codeBlock',
+  'table',
+] as const satisfies readonly MobileMarkdownFormatAction[]
+
+export type NativeWysiwygMarkdownBlockAction = typeof nativeWysiwygMarkdownBlockActions[number]
+
 export const nativeWysiwygFormattingActions = [
   'attachment',
   'bold',
@@ -38,6 +46,7 @@ export const nativeWysiwygFormattingActions = [
   'orderedList',
   'taskList',
   'quote',
+  ...nativeWysiwygMarkdownBlockActions,
 ] as const satisfies readonly MobileMarkdownFormatAction[]
 
 const nativeWysiwygFormatCommands = [
@@ -64,4 +73,10 @@ export function applyNativeWysiwygFormat(
 ): void {
   const command = nativeWysiwygFormatCommands.find((candidate) => candidate.action === action)
   command?.run(editor)
+}
+
+export function isNativeWysiwygMarkdownBlockAction(
+  action: MobileMarkdownFormatAction,
+): action is NativeWysiwygMarkdownBlockAction {
+  return nativeWysiwygMarkdownBlockActions.includes(action as NativeWysiwygMarkdownBlockAction)
 }

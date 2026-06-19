@@ -688,6 +688,7 @@ function normalizeMobileFallbackParagraphMarkdown(markdown: MarkdownBody): Markd
 const mobileFallbackParagraphNormalizers: MarkdownNormalizer[] = [
   normalizeMobileDisplayMathMarkdown,
   normalizeInlineImageSourceMarkdown,
+  normalizeHorizontalRuleSourceMarkdown,
   normalizeCodeFenceSourceMarkdown,
   normalizeUnsupportedHtmlBlockMarkdown,
   normalizeIndentedCodeFenceSourceMarkdown,
@@ -703,6 +704,14 @@ const mobileFallbackParagraphNormalizers: MarkdownNormalizer[] = [
 function normalizeInlineImageSourceMarkdown(markdown: MarkdownBody): MarkdownBody {
   const lines = markdown.split('\n').map(stripHardBreakMarker)
   return lines.some(hasInlineMarkdownImageSource) ? lines.join('\n') : markdown
+}
+
+function normalizeHorizontalRuleSourceMarkdown(markdown: MarkdownBody): MarkdownBody {
+  const lines = markdown.split('\n').map(stripHardBreakMarker)
+  if (lines.length !== 1) return markdown
+
+  const line = lines[0] ?? ''
+  return line.trim() === '---' ? line : markdown
 }
 
 function hasInlineMarkdownImageSource(markdown: MarkdownBody): boolean {

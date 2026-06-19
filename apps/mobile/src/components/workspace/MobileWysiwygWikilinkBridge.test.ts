@@ -3,6 +3,7 @@ import { tiptapJsonToMobileMarkdown, type TiptapJsonNode } from '../../workspace
 import {
   nativeWysiwygDocumentWithInsertedWikilink,
   nativeWysiwygDocumentWithInsertedAttachment,
+  nativeWysiwygDocumentWithInsertedMarkdownBlock,
   nativeWysiwygInlineAutocompleteAtSelection,
   nativeWysiwygAttachmentContent,
   nativeWysiwygWikilinkContent,
@@ -79,6 +80,20 @@ describe('native WYSIWYG wikilink bridge', () => {
     })
 
     expect(tiptapJsonToMobileMarkdown(nextDocument)).toBe('Intro\n\n![mobile diagram.png](<attachments/mobile diagram.png>)\n\nTail')
+  })
+
+  it.each([
+    ['divider', 'Intro\n\n---\n\nTail'],
+    ['codeBlock', 'Intro\n\n```text\ncode\n```\n\nTail'],
+    ['table', 'Intro\n\n| Column | Value |\n| --- | --- |\n| Item | Detail |\n\nTail'],
+  ] as const)('inserts native WYSIWYG %s as durable markdown source lines', (action, expectedMarkdown) => {
+    const nextDocument = nativeWysiwygDocumentWithInsertedMarkdownBlock({
+      json: documentNode(paragraphNode('Intro'), paragraphNode('Tail')),
+      payload: { action },
+      selection: { from: 3, to: 3 },
+    })
+
+    expect(tiptapJsonToMobileMarkdown(nextDocument)).toBe(expectedMarkdown)
   })
 
   it('inserts the wikilink at the current native editor selection', () => {

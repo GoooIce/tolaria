@@ -14,6 +14,7 @@ import { MobileMarkdownFormattingToolbar } from './MobileMarkdownFormattingToolb
 import { mobileTentapEditorCss } from './MobileWysiwygMarkdownEditorCss'
 import {
   applyNativeWysiwygFormat,
+  isNativeWysiwygMarkdownBlockAction,
   nativeWysiwygFormattingActions,
   type NativeWysiwygCommandBridge,
 } from './MobileWysiwygFormatCommands'
@@ -22,10 +23,12 @@ import { MobileWysiwygWikilinkPicker } from './MobileWysiwygWikilinkPicker'
 import {
   nativeWysiwygDocumentWithInsertedWikilink,
   nativeWysiwygDocumentWithInsertedAttachment,
+  nativeWysiwygDocumentWithInsertedMarkdownBlock,
   nativeWysiwygInlineAutocompleteAtSelection,
   type NativeWysiwygAttachmentPayload,
   type NativeWysiwygInlineAutocomplete,
   type NativeWysiwygInlineAutocompleteKind,
+  type NativeWysiwygMarkdownBlockPayload,
   type NativeWysiwygSelection,
   type NativeWysiwygWikilinkPayload,
 } from './MobileWysiwygWikilinkBridgeModel'
@@ -93,6 +96,7 @@ type NativeTentapEditorSurfaceProps = {
   injectEditorCss: () => void
   insertWikilink: (payload: NativeWysiwygWikilinkPayload, selection?: NativeWysiwygSelection) => void
   insertAttachment: (payload: NativeWysiwygAttachmentPayload, selection?: NativeWysiwygSelection) => void
+  insertMarkdownBlock: (payload: NativeWysiwygMarkdownBlockPayload, selection?: NativeWysiwygSelection) => void
   layoutProbe?: MobileLayoutProbe
   notes: MobileNote[]
   onCloseWikilinkPicker: () => void
@@ -198,6 +202,7 @@ function NativeTentapEditorSurface({
   editor,
   injectEditorCss,
   insertAttachment,
+  insertMarkdownBlock,
   insertWikilink,
   layoutProbe,
   notes,
@@ -220,8 +225,14 @@ function NativeTentapEditorSurface({
       onOpenToolbarWikilinkPicker()
       return
     }
+
+    if (isNativeWysiwygMarkdownBlockAction(action)) {
+      insertMarkdownBlock({ action })
+      return
+    }
+
     applyNativeWysiwygFormat(editor as NativeWysiwygCommandBridge, action)
-  }, [editor, insertAttachment, onImportAttachment, onOpenToolbarWikilinkPicker])
+  }, [editor, insertAttachment, insertMarkdownBlock, onImportAttachment, onOpenToolbarWikilinkPicker])
   const handleInsertWikilink = useCallback((payload: NativeWysiwygWikilinkPayload) => {
     insertWikilink(payload, pickerState?.replacementRange)
     onCloseWikilinkPicker()
@@ -309,6 +320,7 @@ function useNativeTentapEditorBridge({
   const injectEditorCss = useEditorCssInjection({ compact, noteWidth: note.noteWidth, refs })
   const insertWikilink = useNativeWysiwygWikilinkInserter({ flushEditorDocument, refs })
   const insertAttachment = useNativeWysiwygAttachmentInserter({ flushEditorDocument, refs })
+  const insertMarkdownBlock = useNativeWysiwygMarkdownBlockInserter({ flushEditorDocument, refs })
 
   const editor = useEditorBridge({
     avoidIosKeyboard: true,
@@ -326,7 +338,7 @@ function useNativeTentapEditorBridge({
   useNativeWysiwygMutationProbe({ enabled: wysiwygMutationProbe, flushEditorDocument, refs, vaultRootUri })
   useFlushOnUnmount(refs, flushEditorDocument)
 
-  return { editor, injectEditorCss, insertAttachment, insertWikilink }
+  return { editor, injectEditorCss, insertAttachment, insertMarkdownBlock, insertWikilink }
 }
 
 function useNativeTentapEditorRefs(initialDocumentContent: string): NativeTentapEditorRefs {
@@ -621,6 +633,21 @@ function useNativeWysiwygAttachmentInserter({
   })
 }
 
+function useNativeWysiwygMarkdownBlockInserter({
+  flushEditorDocument,
+  refs,
+}: {
+  flushEditorDocument: () => void
+  refs: NativeTentapEditorRefs
+}) {
+  return useNativeWysiwygInserter({
+    flushEditorDocument,
+    insertIntoEditor: insertMarkdownBlockIntoNativeEditor,
+    refs,
+    warning: '[mobile-editor] Failed to insert native WYSIWYG markdown block:',
+  })
+}
+
 function useNativeWysiwygInserter<Payload>({
   flushEditorDocument,
   insertIntoEditor,
@@ -663,6 +690,14 @@ async function insertAttachmentIntoNativeEditor(
   selection?: NativeWysiwygSelection,
 ): Promise<boolean> {
   return insertPayloadIntoNativeEditor(editor, payload, selection, nativeWysiwygDocumentWithInsertedAttachment)
+}
+
+async function insertMarkdownBlockIntoNativeEditor(
+  editor: EditorBridge | null,
+  payload: NativeWysiwygMarkdownBlockPayload,
+  selection?: NativeWysiwygSelection,
+): Promise<boolean> {
+  return insertPayloadIntoNativeEditor(editor, payload, selection, nativeWysiwygDocumentWithInsertedMarkdownBlock)
 }
 
 async function insertPayloadIntoNativeEditor<Payload>(

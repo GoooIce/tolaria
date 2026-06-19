@@ -83,6 +83,17 @@ describe('native WYSIWYG document serialization', () => {
     expect(result.markdown).toBe(['| Surface | Target |', '| --- | --- |', '| Editor | WYSIWYG |'].join('\n'))
   })
 
+  it('keeps source-backed horizontal rules editable as markdown lines', () => {
+    const result = nativeWysiwygDocumentContentFromJson({
+      currentContent: '---\n',
+      initialBodyHasContent: true,
+      isFirstSerialization: false,
+      json: documentNode(paragraphNode('---')),
+    })
+
+    expect(result.content).toBe('---\n')
+  })
+
   it('skips the first empty native serialization for hydrated documents', () => {
     const result = nativeWysiwygDocumentContentFromJson({
       currentContent: '# Existing body\n\nKeep me.\n',

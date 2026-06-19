@@ -8,6 +8,7 @@ import {
   activeMobileWikilinkQuery,
 } from '../../workspace/mobileWikilinkAutocomplete'
 import type { TiptapJsonNode } from '../../workspace/mobileDocumentContent'
+import type { NativeWysiwygMarkdownBlockAction } from './MobileWysiwygFormatCommands'
 
 type NativeWysiwygWikilinkTextNode = {
   marks?: Array<{ attrs: { href: string }; type: 'link' }>
@@ -45,6 +46,9 @@ export type NativeWysiwygInlineAutocomplete = {
 }
 
 export type NativeWysiwygAttachmentPayload = MobileAttachmentImport
+export type NativeWysiwygMarkdownBlockPayload = {
+  action: NativeWysiwygMarkdownBlockAction
+}
 
 export function nativeWysiwygWikilinkContent(
   payload: NativeWysiwygWikilinkPayload,
@@ -103,6 +107,20 @@ export function nativeWysiwygDocumentWithInsertedAttachment({
     : insertLinkAttachment(json, payload, selection)
 }
 
+export function nativeWysiwygDocumentWithInsertedMarkdownBlock({
+  json,
+  payload,
+  selection,
+}: {
+  json: unknown
+  payload: NativeWysiwygMarkdownBlockPayload
+  selection?: NativeWysiwygSelection
+}): TiptapJsonNode | null {
+  if (!isTiptapDocument(json)) return null
+
+  return insertBlockAfterSelection(json, nativeWysiwygMarkdownBlockNode(payload.action), selection).node
+}
+
 function nativeWysiwygImageAttachmentContent(payload: NativeWysiwygAttachmentPayload): TiptapJsonNode[] | null {
   const path = payload.path.trim()
   if (!path) return null
@@ -127,6 +145,26 @@ function nativeWysiwygLinkAttachmentContent(
     },
     { text: ' ', type: 'text' },
   ]
+}
+
+function nativeWysiwygMarkdownBlockNode(action: NativeWysiwygMarkdownBlockAction): TiptapJsonNode {
+  if (action === 'divider') return nativeWysiwygSourceParagraph(['---'])
+  if (action === 'codeBlock') return nativeWysiwygSourceParagraph(['```text', 'code', '```'])
+  return nativeWysiwygSourceParagraph([
+    '| Column | Value |',
+    '| --- | --- |',
+    '| Item | Detail |',
+  ])
+}
+
+function nativeWysiwygSourceParagraph(lines: string[]): TiptapJsonNode {
+  return {
+    content: lines.flatMap((line, index): TiptapJsonNode[] => [
+      ...(index > 0 ? [{ type: 'hardBreak' }] : []),
+      ...(line ? [{ text: line, type: 'text' }] : []),
+    ]),
+    type: 'paragraph',
+  }
 }
 
 function insertImageAttachment(
