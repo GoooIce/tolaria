@@ -241,6 +241,7 @@ describe('mobile workspace suggestions', () => {
           has: 'Milestone',
         },
         relationships: {
+          'Belongs to': ['[[Roadmap]]'],
           depends_on: ['[[Mobile UI]]'],
           related_to: [],
         },
@@ -248,12 +249,15 @@ describe('mobile workspace suggestions', () => {
     }
 
     expect(mobileViewFieldSuggestions(notes, '', typeDefinitions)).toEqual(
-      expect.arrayContaining(['Priority', 'has', 'depends_on']),
+      expect.arrayContaining(['Priority', 'depends_on']),
     )
+    expect(mobileViewFieldSuggestions(notes, 'has', typeDefinitions)).toEqual(['has'])
     expect(mobileViewFieldSuggestions(notes, '', typeDefinitions)).not.toContain('EmptyList')
     expect(mobileListPropertySuggestions(notes, '', typeDefinitions)).toEqual(
       expect.arrayContaining(['Priority', 'has', 'depends_on']),
     )
+    expect(mobileViewFieldSuggestions(notes, 'Belongs', typeDefinitions)).toEqual(['Belongs to'])
+    expect(mobileListPropertySuggestions(notes, 'Belongs', typeDefinitions)).toEqual(['Belongs to'])
     expect(mobileSortablePropertySuggestions(notes, '', typeDefinitions)).toContain('Priority')
     expect(mobileSortablePropertySuggestions(notes, '', typeDefinitions)).not.toEqual(
       expect.arrayContaining(['has', 'depends_on']),

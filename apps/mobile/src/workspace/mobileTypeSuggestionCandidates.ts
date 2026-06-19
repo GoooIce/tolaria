@@ -87,10 +87,9 @@ function relationshipCandidatesForDefinition(definition: MobileTypeDefinition | 
   return [
     ...Object.entries(definition.relationships ?? {})
       .filter(([, refs]) => refs.length > 0)
-      .map(([key]) => normalizeMobileRelationshipKey(key)),
+      .map(([key]) => key),
     ...Object.keys(definition.properties ?? {})
       .filter(isRelationshipSchemaKey)
-      .map(normalizeMobileRelationshipKey),
   ]
 }
 
