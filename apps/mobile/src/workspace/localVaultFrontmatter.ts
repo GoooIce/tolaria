@@ -6,6 +6,18 @@ type FrontmatterLine = string
 type FrontmatterText = string
 type MarkdownContent = string
 type LocalVaultFrontmatterKeys = readonly FrontmatterKey[]
+type BlockScalarStyle = 'folded' | 'literal'
+type BlockScalarState = {
+  key: FrontmatterKey
+  lines: FrontmatterLine[]
+  style: BlockScalarStyle
+}
+type FrontmatterParseState = {
+  blockScalar: BlockScalarState | null
+  frontmatter: LocalVaultFrontmatter
+  listItems: LocalVaultFrontmatterScalar[]
+  listKey: FrontmatterKey | null
+}
 
 export type LocalVaultFrontmatter = Record<string, LocalVaultFrontmatterValue>
 
@@ -98,37 +110,75 @@ export function frontmatterProperties(
 }
 
 function parseFrontmatterLines(lines: FrontmatterLine[]): LocalVaultFrontmatter {
-  const frontmatter: LocalVaultFrontmatter = {}
-  let listKey: string | null = null
-  let listItems: LocalVaultFrontmatterScalar[] = []
-
-  for (const line of lines) {
-    const listItem = parseListItem(line)
-    if (listKey && listItem !== null) {
-      listItems.push(parseScalar(listItem))
-      continue
-    }
-
-    flushList(frontmatter, listKey, listItems)
-    listKey = null
-    listItems = []
-
-    const keyValue = parseKeyValueLine(line)
-    if (!keyValue) continue
-
-    const { key, value } = keyValue
-    if (!value) {
-      assignFrontmatterValue(frontmatter, key, '')
-      listKey = key
-      continue
-    }
-
-    const parsedValue = parseValue(value)
-    if (parsedValue !== undefined) assignFrontmatterValue(frontmatter, key, parsedValue)
+  const state: FrontmatterParseState = {
+    blockScalar: null,
+    frontmatter: {},
+    listItems: [],
+    listKey: null,
   }
 
-  flushList(frontmatter, listKey, listItems)
-  return frontmatter
+  for (const line of lines) {
+    parseFrontmatterLine(state, line)
+  }
+
+  flushBlockScalar(state.frontmatter, state.blockScalar)
+  flushList(state.frontmatter, state.listKey, state.listItems)
+  return state.frontmatter
+}
+
+function parseFrontmatterLine(state: FrontmatterParseState, line: FrontmatterLine) {
+  if (consumeBlockScalarLine(state, line)) return
+  if (appendListItem(state, line)) return
+
+  flushPendingList(state)
+  const keyValue = parseKeyValueLine(line)
+  if (keyValue) applyFrontmatterKeyValue(state, keyValue)
+}
+
+function consumeBlockScalarLine(state: FrontmatterParseState, line: FrontmatterLine): boolean {
+  if (!state.blockScalar) return false
+  if (isBlockScalarContentLine(line)) {
+    state.blockScalar.lines.push(line)
+    return true
+  }
+
+  flushBlockScalar(state.frontmatter, state.blockScalar)
+  state.blockScalar = null
+  return false
+}
+
+function appendListItem(state: FrontmatterParseState, line: FrontmatterLine): boolean {
+  const listItem = parseListItem(line)
+  if (!state.listKey || listItem === null) return false
+
+  state.listItems.push(parseScalar(listItem))
+  return true
+}
+
+function flushPendingList(state: FrontmatterParseState) {
+  flushList(state.frontmatter, state.listKey, state.listItems)
+  state.listKey = null
+  state.listItems = []
+}
+
+function applyFrontmatterKeyValue(
+  state: FrontmatterParseState,
+  keyValue: { key: FrontmatterKey; value: FrontmatterText },
+) {
+  const { key, value } = keyValue
+  if (isBlockScalar(value)) {
+    state.blockScalar = supportedBlockScalarState(key, value)
+    return
+  }
+
+  if (!value) {
+    assignFrontmatterValue(state.frontmatter, key, '')
+    state.listKey = key
+    return
+  }
+
+  const parsedValue = parseValue(value)
+  if (parsedValue !== undefined) assignFrontmatterValue(state.frontmatter, key, parsedValue)
 }
 
 function parseKeyValueLine(line: FrontmatterLine): { key: FrontmatterKey; value: FrontmatterText } | null {
@@ -180,6 +230,55 @@ function parseValue(value: FrontmatterText): LocalVaultFrontmatterValue | undefi
 
 function isBlockScalar(value: FrontmatterText): boolean {
   return value === '|' || value === '>'
+}
+
+function supportedBlockScalarState(key: FrontmatterKey, value: FrontmatterText): BlockScalarState | null {
+  if (normalizedFrontmatterKey(key) !== 'template') return null
+  return {
+    key,
+    lines: [],
+    style: value === '>' ? 'folded' : 'literal',
+  }
+}
+
+function isBlockScalarContentLine(line: FrontmatterLine): boolean {
+  return line.trim() === '' || /^\s/u.test(line)
+}
+
+function flushBlockScalar(
+  frontmatter: LocalVaultFrontmatter,
+  blockScalar: BlockScalarState | null,
+) {
+  if (!blockScalar) return
+  assignFrontmatterValue(frontmatter, blockScalar.key, blockScalarValue(blockScalar))
+}
+
+function blockScalarValue(blockScalar: BlockScalarState): FrontmatterText {
+  const lines = normalizedBlockScalarLines(blockScalar.lines)
+  if (blockScalar.style === 'literal') return lines.join('\n')
+  return foldedBlockScalarValue(lines)
+}
+
+function normalizedBlockScalarLines(lines: FrontmatterLine[]): FrontmatterLine[] {
+  const indent = minimumBlockScalarIndent(lines)
+  return lines.map((line) => line.trim() === '' ? '' : line.slice(indent))
+}
+
+function minimumBlockScalarIndent(lines: FrontmatterLine[]): number {
+  const indents = lines
+    .filter((line) => line.trim() !== '')
+    .map((line) => line.search(/\S/u))
+    .filter((indent) => indent >= 0)
+
+  return indents.length > 0 ? Math.min(...indents) : 0
+}
+
+function foldedBlockScalarValue(lines: FrontmatterLine[]): FrontmatterText {
+  return lines.reduce<FrontmatterText>((text, line) => {
+    if (line === '') return text.endsWith('\n') || text === '' ? text : `${text}\n`
+    if (text === '' || text.endsWith('\n')) return `${text}${line}`
+    return `${text} ${line}`
+  }, '')
 }
 
 function isInlineArrayLiteral(value: FrontmatterText): boolean {

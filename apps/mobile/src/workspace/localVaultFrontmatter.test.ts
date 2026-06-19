@@ -70,12 +70,18 @@ summary: |
   Mobile should not surface the YAML pipe marker.
 notes: >
   Folded text is not parsed by the lightweight desktop parser.
+template: |
+  ## Objective
+
+  ## Timeline
 status: Active
 ---
 Body.
 `)
 
     expect(frontmatterScalar(document.frontmatter, ['status'])).toBe('Active')
+    expect(frontmatterScalar(document.frontmatter, ['template'])).toContain('## Objective')
+    expect(frontmatterScalar(document.frontmatter, ['template'])).toContain('## Timeline')
     expect(frontmatterProperties(document.frontmatter)).toEqual({})
   })
 

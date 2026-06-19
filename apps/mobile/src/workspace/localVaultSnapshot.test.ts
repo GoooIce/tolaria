@@ -387,6 +387,7 @@ _organized: false
         depends_on: ['[[project-template]]'],
       },
       sort: 'property:Priority:asc',
+      template: '## Objective\n\nUse this project shape.',
       tone: 'red',
     })
     expect(snapshot.typeDefinitions?.Project?.rawContent).toContain('sidebar_label: Client Work')
@@ -591,6 +592,10 @@ color: red
 order: 2
 sidebar_label: Client Work
 sort: "property:Priority:asc"
+template: |
+  ## Objective
+
+  Use this project shape.
 _list_properties_display:
   - Priority
   - belongs_to
