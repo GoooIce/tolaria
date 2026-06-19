@@ -168,6 +168,38 @@ describe('tablet workspace editing history', () => {
     expect(noteById(redoneSnapshot, 'workflow-orchestration').rawContent).toContain('related_to:\n  - "[[Tolaria/Mobile UI/new-dependency]]"')
   })
 
+  it('persists relationship target undo and redo write plans', () => {
+    const sourcePath = 'Tolaria/Mobile UI/Workflow Orchestration Essay.md'
+    const targetPath = 'Tolaria/Mobile UI/new-dependency.md'
+    const { redoWrites, undoWrites } = historyRoundTripWithWrites(relationshipTargetHistorySnapshot(), {
+      key: 'related_to',
+      sourceNoteId: 'workflow-orchestration',
+      targetTitle: 'New Dependency',
+      type: 'createRelationshipTarget',
+    })
+
+    expect(undoWrites).toEqual([
+      {
+        content: '# Workflow Orchestration Essay\n\nSource body.\n',
+        kind: 'saveNote',
+        path: sourcePath,
+      },
+      { kind: 'deleteNote', path: targetPath },
+    ])
+    expect(redoWrites).toEqual([
+      {
+        content: expect.stringContaining('related_to:\n  - "[[Tolaria/Mobile UI/new-dependency]]"'),
+        kind: 'saveNote',
+        path: sourcePath,
+      },
+      {
+        content: '---\ntitle: New Dependency\ntype: Note\n---\n',
+        kind: 'createNote',
+        path: targetPath,
+      },
+    ])
+  })
+
   it('undoes and redoes saved views without losing their generated filename', () => {
     const previousSnapshot = workspaceScenarioForId('default')
     const edit: MobileWorkspaceEdit = {
