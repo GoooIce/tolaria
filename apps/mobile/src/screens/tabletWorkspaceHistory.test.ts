@@ -273,6 +273,20 @@ describe('tablet workspace editing history', () => {
     })
   })
 
+  it('persists saved-view restoration write plans from history', () => {
+    const { redoWrites, undoWrites } = historyRoundTripWithWrites(workspaceScenarioForId('default'), {
+      type: 'deleteView',
+      viewId: 'view-active-procedures',
+    })
+
+    expect(undoWrites).toEqual([{
+      content: expect.stringContaining('name: "Active Procedures"'),
+      kind: 'saveView',
+      path: 'views/active-procedures.yml',
+    }])
+    expect(redoWrites).toEqual([{ kind: 'deleteView', path: 'views/active-procedures.yml' }])
+  })
+
   it('undoes and redoes type section metadata updates exactly', () => {
     const previousSnapshot = workspaceScenarioForId('default')
     const edit: MobileWorkspaceEdit = {
@@ -457,6 +471,20 @@ describe('tablet workspace editing history', () => {
       redonePath: 'Research/Mobile UI/Workflow Orchestration Essay.md',
       undonePath: 'Tolaria/Mobile UI/Workflow Orchestration Essay.md',
     })
+  })
+
+  it('persists folder restoration write plans from history', () => {
+    const { redoWrites, undoWrites } = historyRoundTripWithWrites(snapshotWithFolderPaths([
+      'Tolaria/Mobile UI',
+      'Tolaria/Releases',
+    ]), {
+      name: 'Restored Folder',
+      parentPath: 'Workspace QA',
+      type: 'createFolder',
+    })
+
+    expect(undoWrites).toEqual([{ kind: 'deleteFolder', path: 'Workspace QA/Restored Folder' }])
+    expect(redoWrites).toEqual([{ kind: 'createFolder', path: 'Workspace QA/Restored Folder' }])
   })
 
   it('undoes and redoes primary note-list display property overrides', () => {
