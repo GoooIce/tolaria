@@ -38,6 +38,7 @@ export type MobileSidebarItemSelection = {
   count?: string
   id: string
   label: string
+  noteId?: string
   sectionId: string
   typeName?: string
   viewId?: string
@@ -48,6 +49,7 @@ type SidebarItemId = string
 type SidebarMetricId = string
 type SidebarSectionId = string
 type SidebarSlug = string
+type SidebarSelectionHandler = (selection: MobileSidebarItemSelection) => void
 
 type MobileWorkspaceSidebarProps = {
   activeFolderId?: string | null
@@ -58,6 +60,7 @@ type MobileWorkspaceSidebarProps = {
   onCreateType?: () => void
   onCreateView?: () => void
   onOpenFolderActions?: (selection: MobileSidebarFolderSelection) => void
+  onOpenFavoriteActions?: (selection: MobileSidebarItemSelection) => void
   onOpenPrimaryActions?: (selection: MobileSidebarItemSelection) => void
   onOpenTypeVisibility?: () => void
   onOpenTypeActions?: (selection: MobileSidebarItemSelection) => void
@@ -92,6 +95,7 @@ export function MobileWorkspaceSidebar(props: MobileWorkspaceSidebarProps) {
     onCreateType,
     onCreateView,
     onOpenFolderActions,
+    onOpenFavoriteActions,
     onOpenPrimaryActions,
     onOpenTypeVisibility,
     onOpenTypeActions,
@@ -123,6 +127,7 @@ export function MobileWorkspaceSidebar(props: MobileWorkspaceSidebarProps) {
             onCreateType={onCreateType}
             onCreateView={onCreateView}
             onOpenFolderActions={onOpenFolderActions}
+            onOpenFavoriteActions={onOpenFavoriteActions}
             onOpenPrimaryActions={onOpenPrimaryActions}
             onOpenTypeVisibility={onOpenTypeVisibility}
             onOpenTypeActions={onOpenTypeActions}
@@ -145,6 +150,7 @@ function SidebarSection({
   onCreateFolder,
   onCreateType,
   onOpenFolderActions,
+  onOpenFavoriteActions,
   onOpenPrimaryActions,
   onOpenTypeVisibility,
   onOpenTypeActions,
@@ -160,6 +166,7 @@ function SidebarSection({
   onCreateType?: () => void
   onCreateView?: () => void
   onOpenFolderActions?: (selection: MobileSidebarFolderSelection) => void
+  onOpenFavoriteActions?: (selection: MobileSidebarItemSelection) => void
   onOpenPrimaryActions?: (selection: MobileSidebarItemSelection) => void
   onOpenTypeVisibility?: () => void
   onOpenTypeActions?: (selection: MobileSidebarItemSelection) => void
@@ -188,6 +195,7 @@ function SidebarSection({
         section={section}
         onOpenTypeActions={onOpenTypeActions}
         onOpenViewActions={onOpenViewActions}
+        onOpenFavoriteActions={onOpenFavoriteActions}
         onOpenPrimaryActions={onOpenPrimaryActions}
         onSelectItem={onSelectItem}
       />
@@ -273,6 +281,7 @@ function SidebarSectionItems({
   onSelectItem,
   onOpenTypeActions,
   onOpenViewActions,
+  onOpenFavoriteActions,
   onOpenPrimaryActions,
   section,
 }: {
@@ -281,6 +290,7 @@ function SidebarSectionItems({
   onSelectItem?: (selection: MobileSidebarItemSelection) => void
   onOpenTypeActions?: (selection: MobileSidebarItemSelection) => void
   onOpenViewActions?: (selection: MobileSidebarItemSelection) => void
+  onOpenFavoriteActions?: (selection: MobileSidebarItemSelection) => void
   onOpenPrimaryActions?: (selection: MobileSidebarItemSelection) => void
   section: MobileSidebarSection
 }) {
@@ -305,6 +315,7 @@ function SidebarSectionItems({
           onOpenPrimaryActions,
           onOpenTypeActions,
           onOpenViewActions,
+          onOpenFavoriteActions,
           sectionId: section.id,
           selection,
         })}
@@ -318,19 +329,52 @@ function sidebarItemLongPress({
   onOpenPrimaryActions,
   onOpenTypeActions,
   onOpenViewActions,
+  onOpenFavoriteActions,
   sectionId,
   selection,
 }: {
   onOpenPrimaryActions?: (selection: MobileSidebarItemSelection) => void
   onOpenTypeActions?: (selection: MobileSidebarItemSelection) => void
   onOpenViewActions?: (selection: MobileSidebarItemSelection) => void
+  onOpenFavoriteActions?: (selection: MobileSidebarItemSelection) => void
   sectionId: SidebarSectionId
   selection: MobileSidebarItemSelection
 }) {
-  if (sectionId === 'primary' && primaryItemCanCustomizeColumns(selection.id)) return () => onOpenPrimaryActions?.(selection)
-  if (sectionId === 'types') return () => onOpenTypeActions?.(selection)
-  if (sectionId === 'views') return () => onOpenViewActions?.(selection)
-  return undefined
+  const handler = sidebarLongPressHandler({
+    onOpenFavoriteActions,
+    onOpenPrimaryActions,
+    onOpenTypeActions,
+    onOpenViewActions,
+    sectionId,
+    selection,
+  })
+
+  return handler ? () => handler(selection) : undefined
+}
+
+function sidebarLongPressHandler({
+  onOpenFavoriteActions,
+  onOpenPrimaryActions,
+  onOpenTypeActions,
+  onOpenViewActions,
+  sectionId,
+  selection,
+}: {
+  onOpenFavoriteActions?: SidebarSelectionHandler
+  onOpenPrimaryActions?: SidebarSelectionHandler
+  onOpenTypeActions?: SidebarSelectionHandler
+  onOpenViewActions?: SidebarSelectionHandler
+  sectionId: SidebarSectionId
+  selection: MobileSidebarItemSelection
+}): SidebarSelectionHandler | undefined {
+  if (sectionId === 'primary') return primaryItemCanCustomizeColumns(selection.id) ? onOpenPrimaryActions : undefined
+
+  const handlers: Partial<Record<SidebarSectionId, SidebarSelectionHandler | undefined>> = {
+    favorites: onOpenFavoriteActions,
+    types: onOpenTypeActions,
+    views: onOpenViewActions,
+  }
+  return handlers[sectionId]
 }
 
 function primaryItemCanCustomizeColumns(itemId: SidebarItemId) {
@@ -346,6 +390,7 @@ function sidebarItemSelection(
     count: item.count,
     id: item.id,
     label,
+    noteId: item.noteId,
     sectionId,
     typeName: item.typeName,
     viewId: item.viewId,

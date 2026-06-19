@@ -486,6 +486,8 @@
   "sidebar.action.reorderView": "重新排序视图",
   "sidebar.action.moveViewUp": "向上移动视图",
   "sidebar.action.moveViewDown": "向下移动视图",
+  "sidebar.action.moveFavoriteUp": "将收藏向上移动",
+  "sidebar.action.moveFavoriteDown": "将收藏向下移动",
   "sidebar.action.moveSectionUp": "将章节上移",
   "sidebar.action.moveSectionDown": "将章节下移",
   "sidebar.action.customizeSections": "自定义分组",

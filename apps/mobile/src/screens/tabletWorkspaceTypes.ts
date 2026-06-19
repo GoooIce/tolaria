@@ -35,6 +35,7 @@ export type TabletReadOnlyForm = {
   allNotesShowPdfs: boolean
   allNotesShowUnsupported: boolean
   createTitle: ReadOnlyFormValue
+  editingFavoriteNoteId: ReadOnlyFormValue
   editingFolderPath: ReadOnlyFormValue
   editingViewId: ReadOnlyFormValue
   filenameStem: ReadOnlyFormValue
@@ -81,6 +82,8 @@ export type TabletReadOnlyForm = {
 export type TabletWorkspaceChromeProps = {
   activeFolderId: string | null
   activeItemId: string | null
+  canMoveFavoriteDown: boolean
+  canMoveFavoriteUp: boolean
   canMoveTypeDown: boolean
   canMoveTypeUp: boolean
   canMoveViewDown: boolean
@@ -129,6 +132,8 @@ export type TabletWorkspaceChromeProps = {
   onFilenameStemChange: (value: ReadOnlyFormValue) => void
   onFolderNameChange: (value: ReadOnlyFormValue) => void
   onFolderPathChange: (value: ReadOnlyFormValue) => void
+  onMoveFavoriteDown: () => void
+  onMoveFavoriteUp: () => void
   onMoveNoteToFolder: () => void
   onMoveTypeDown: () => void
   onMoveTypeUp: () => void
@@ -143,6 +148,7 @@ export type TabletWorkspaceChromeProps = {
   onOpenCreateView: () => void
   onOpenFindInNote: () => void
   onOpenFolderActions: (selection: MobileSidebarFolderSelection) => void
+  onOpenFavoriteActions: (selection: MobileSidebarItemSelection) => void
   onOpenMoveNoteToFolder: () => void
   onOpenPrimaryActions: (selection: MobileSidebarItemSelection) => void
   onOpenTypeActions: (selection: MobileSidebarItemSelection) => void

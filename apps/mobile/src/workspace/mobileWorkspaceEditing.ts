@@ -85,6 +85,7 @@ import {
 import type { MobileTypeDefinitionPatch } from './mobileTypeDefinitions'
 import { applyMobileTypeEdit } from './mobileWorkspaceTypeEditing'
 import { applyMobileRestorationEdit } from './mobileWorkspaceRestoration'
+import { moveMobileFavorite } from './mobileWorkspaceFavoriteOrdering'
 import {
   applyMobileTextFileContentEdit,
   canApplyMobileMarkdownEdit,
@@ -125,6 +126,7 @@ export type MobileWorkspaceEdit =
   | { folderPath: FolderPath; type: 'deleteFolder' }
   | { path: FolderPath; type: 'restoreFolder' }
   | { noteId: NoteId; type: 'toggleFavorite' }
+  | { direction: MobileViewMoveDirection; noteId: NoteId; type: 'moveFavorite' }
   | { archived: boolean; noteId: NoteId; type: 'setArchived' }
   | { noteId: NoteId; organized: boolean; type: 'setOrganized' }
   | { definition: MobileViewDefinition; type: 'createView' }
@@ -142,10 +144,11 @@ export type MobileWorkspaceEdit =
 type MobileViewEdit = Extract<MobileWorkspaceEdit, { type: 'createView' | 'deleteView' | 'moveView' | 'updateView' }>
 type MobileTypeEdit = Extract<MobileWorkspaceEdit, { type: 'createTypeDefinition' | 'deleteTypeDefinition' | 'moveTypeSection' | 'renameTypeDefinition' | 'updateTypeDefinition' }>
 type MobileFolderEdit = Extract<MobileWorkspaceEdit, { type: 'createFolder' | 'deleteFolder' | 'renameFolder' }>
+type MobileFavoriteEdit = Extract<MobileWorkspaceEdit, { type: 'moveFavorite' }>
 type MobilePrimaryNoteListEdit = Extract<MobileWorkspaceEdit, { type: 'updatePrimaryNoteListProperties' }>
 type MobileRestorationEdit = Extract<MobileWorkspaceEdit, { type: 'restoreFolder' | 'restoreNote' | 'restoreTypeDefinition' | 'restoreView' }>
 type MobileSnapshotEdit = Extract<MobileWorkspaceEdit, { type: 'createRelationshipTarget' | 'deleteNote' | 'moveNoteToFolder' | 'renameNoteFile' }>
-type MobileNoteEdit = Exclude<MobileWorkspaceEdit, MobileFolderEdit | MobilePrimaryNoteListEdit | MobileRestorationEdit | MobileSnapshotEdit | MobileTypeEdit | MobileViewEdit | { type: 'bulkEdit' | 'createNote' }>
+type MobileNoteEdit = Exclude<MobileWorkspaceEdit, MobileFavoriteEdit | MobileFolderEdit | MobilePrimaryNoteListEdit | MobileRestorationEdit | MobileSnapshotEdit | MobileTypeEdit | MobileViewEdit | { type: 'bulkEdit' | 'createNote' }>
 type MobileWorkspaceResultHandlerMap = {
   [Type in MobileWorkspaceEdit['type']]?: (
     snapshot: MobileWorkspaceSnapshot,
@@ -267,6 +270,12 @@ const mobileWorkspaceResultHandlers: MobileWorkspaceResultHandlerMap = {
   deleteNote: (snapshot, edit) => deleteMobileNote(snapshot, edit.noteId),
   deleteTypeDefinition: (snapshot, edit) => applyMobileTypeEdit(snapshot, edit, rebuildSnapshot),
   deleteView: (snapshot, edit) => deleteMobileView(snapshot, edit.viewId),
+  moveFavorite: (snapshot, edit) => moveMobileFavorite({
+    direction: edit.direction,
+    noteId: edit.noteId,
+    rebuildSnapshot,
+    snapshot,
+  }),
   moveView: (snapshot, edit) => moveMobileView(snapshot, edit.viewId, edit.direction),
   moveTypeSection: (snapshot, edit) => applyMobileTypeEdit(snapshot, edit, rebuildSnapshot),
   moveNoteToFolder: (snapshot, edit) => moveNoteToFolder(snapshot, edit),

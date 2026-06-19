@@ -442,6 +442,7 @@ function PhoneSidebarDrawer({
           onCreateType={controller.onOpenCreateType}
           onCreateView={controller.onOpenCreateView}
           onOpenFolderActions={controller.onOpenFolderActions}
+          onOpenFavoriteActions={controller.onOpenFavoriteActions}
           onOpenPrimaryActions={controller.onOpenPrimaryActions}
           onOpenTypeActions={controller.onOpenTypeActions}
           onOpenTypeVisibility={controller.onOpenTypeVisibility}

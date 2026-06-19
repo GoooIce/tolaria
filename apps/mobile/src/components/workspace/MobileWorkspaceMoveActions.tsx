@@ -41,9 +41,21 @@ const savedViewMoveLabels = {
   upTestID: 'workspace-move-view-up-action',
 }
 
+const favoriteMoveLabels = {
+  downLabel: mobileText('sidebar.action.moveFavoriteDown'),
+  downTestID: 'workspace-move-favorite-down-action',
+  upLabel: mobileText('sidebar.action.moveFavoriteUp'),
+  upTestID: 'workspace-move-favorite-up-action',
+}
+
 export const MobileTypeSectionActions = moveActionComponent<TypeSectionActionsProps>(
   typeSectionMoveLabels,
   ({ canDelete, onDelete }) => canDelete ? <DeleteTypeButton onPress={onDelete} /> : null,
+)
+
+export const MobileFavoriteActions = moveActionComponent<MoveActionsProps>(
+  favoriteMoveLabels,
+  () => null,
 )
 
 export const MobileSavedViewActions = moveActionComponent<SavedViewActionsProps>(

@@ -120,6 +120,7 @@ function TabletSidebarHost({
   onOpenCreateType,
   onOpenCreateView,
   onOpenFolderActions,
+  onOpenFavoriteActions,
   onOpenPrimaryActions,
   onOpenTypeActions,
   onOpenTypeVisibility,
@@ -142,6 +143,7 @@ function TabletSidebarHost({
         onCreateType={onOpenCreateType}
         onCreateView={onOpenCreateView}
         onOpenFolderActions={onOpenFolderActions}
+        onOpenFavoriteActions={onOpenFavoriteActions}
         onOpenPrimaryActions={onOpenPrimaryActions}
         onOpenTypeActions={onOpenTypeActions}
         onOpenTypeVisibility={onOpenTypeVisibility}
@@ -335,6 +337,8 @@ function actionSheetValues(props: ActionSheetHostProps) {
   const {
     canRedoWorkspaceEdit,
     canUndoWorkspaceEdit,
+    canMoveFavoriteDown,
+    canMoveFavoriteUp,
     canMoveViewDown,
     canMoveViewUp,
     readOnlyForm,
@@ -351,6 +355,8 @@ function actionSheetValues(props: ActionSheetHostProps) {
 
   return {
     canDeleteType: props.canDeleteType,
+    canMoveFavoriteDown,
+    canMoveFavoriteUp,
     canMoveViewDown,
     canMoveViewUp,
     canRedoWorkspaceEdit,
@@ -439,6 +445,8 @@ function actionSheetHandlers(props: ActionSheetHostProps) {
     onFilenameStemChange: props.onFilenameStemChange,
     onFolderNameChange: props.onFolderNameChange,
     onFolderPathChange: props.onFolderPathChange,
+    onMoveFavoriteDown: props.onMoveFavoriteDown,
+    onMoveFavoriteUp: props.onMoveFavoriteUp,
     onMoveNoteToFolder: props.onMoveNoteToFolder,
     onMoveViewDown: props.onMoveViewDown,
     onMoveViewUp: props.onMoveViewUp,

@@ -57,6 +57,7 @@ import type { TabletReadOnlyForm } from './tabletWorkspaceTypes'
 import { createNoteDefaultsForSelection } from './tabletWorkspaceCreateDefaults'
 import { editorWorkspaceActions } from './tabletWorkspaceEditorActions'
 import { selectAfterWorkspaceEdit } from './tabletWorkspaceEditSelection'
+import { favoriteWorkspaceActions, openFavoriteActions } from './tabletWorkspaceFavoriteActions'
 import { useWorkspaceEditPipeline } from './tabletWorkspacePersistence'
 import {
   createFolderFields,
@@ -81,6 +82,7 @@ const emptyReadOnlyForm: TabletReadOnlyForm = {
   allNotesShowPdfs: false,
   allNotesShowUnsupported: false,
   createTitle: '',
+  editingFavoriteNoteId: '',
   editingFolderPath: '',
   editingViewId: '',
   filenameStem: '',
@@ -427,6 +429,12 @@ function sidebarWorkspaceActionOpeners({
       setOpenAction,
       updateReadOnlyForm,
     }),
+    onOpenFavoriteActions: (selection: MobileSidebarItemSelection) => openFavoriteActions({
+      selection,
+      setOpenAction,
+      snapshot: workspaceSnapshot,
+      updateReadOnlyForm,
+    }),
     onOpenPrimaryActions: (selection: MobileSidebarItemSelection) => openPrimaryListProperties({
       selection,
       setOpenAction,
@@ -487,6 +495,7 @@ function createWorkspaceActions({
     }),
     onTypeNameChange: (value: string) => updateReadOnlyForm('typeName', value),
     ...folderWorkspaceActions({ applyEdit, closeAction, readOnlyForm, setOpenAction, updateReadOnlyForm }),
+    ...favoriteWorkspaceActions({ applyEdit, readOnlyForm, workspaceSnapshot }),
     ...primaryNoteListWorkspaceActions({ applyEdit, closeAction, readOnlyForm, updateReadOnlyForm, workspaceSnapshot }),
     ...savedViewWorkspaceActions({ applyEdit, closeAction, readOnlyForm, updateReadOnlyForm, workspaceSnapshot }),
     ...typeSectionWorkspaceActions({ applyEdit, closeAction, readOnlyForm, updateReadOnlyForm, workspaceSnapshot }),
@@ -1174,9 +1183,8 @@ function moveSidebarItemEdit(
   itemId: string,
   direction: 'down' | 'up',
 ): MobileWorkspaceEdit {
-  return kind === 'view'
-    ? { direction, type: 'moveView', viewId: itemId }
-    : { direction, type: 'moveTypeSection', typeName: itemId }
+  if (kind === 'view') return { direction, type: 'moveView', viewId: itemId }
+  return { direction, type: 'moveTypeSection', typeName: itemId }
 }
 
 function canMoveTypeSection(

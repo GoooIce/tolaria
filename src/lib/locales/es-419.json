@@ -486,6 +486,8 @@
   "sidebar.action.reorderView": "Reorganizar vista",
   "sidebar.action.moveViewUp": "Mover vista hacia arriba",
   "sidebar.action.moveViewDown": "Mover vista hacia abajo",
+  "sidebar.action.moveFavoriteUp": "Subir favorito",
+  "sidebar.action.moveFavoriteDown": "Mover favorito hacia abajo",
   "sidebar.action.moveSectionUp": "Mover la sección hacia arriba",
   "sidebar.action.moveSectionDown": "Mover sección hacia abajo",
   "sidebar.action.customizeSections": "Personalizar secciones",

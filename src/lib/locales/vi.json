@@ -486,6 +486,8 @@
   "sidebar.action.reorderView": "Sắp xếp lại chế độ xem",
   "sidebar.action.moveViewUp": "Di chuyển chế độ xem lên",
   "sidebar.action.moveViewDown": "Di chuyển chế độ xem xuống",
+  "sidebar.action.moveFavoriteUp": "Di chuyển mục yêu thích lên trên",
+  "sidebar.action.moveFavoriteDown": "Di chuyển mục yêu thích xuống",
   "sidebar.action.moveSectionUp": "Di chuyển phần lên",
   "sidebar.action.moveSectionDown": "Di chuyển phần xuống",
   "sidebar.action.customizeSections": "Tùy chỉnh các mục",

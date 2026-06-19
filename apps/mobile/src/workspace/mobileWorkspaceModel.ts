@@ -94,6 +94,7 @@ export type MobileSidebarItem = {
   icon: MobileSidebarIcon
   id: string
   label: string
+  noteId?: string
   tone?: MobileTone
   typeName?: string
   viewId?: string

@@ -486,6 +486,8 @@
   "sidebar.action.reorderView": "Змяніць парадак",
   "sidebar.action.moveViewUp": "Перамясціць вышэй",
   "sidebar.action.moveViewDown": "Перамясціць ніжэй",
+  "sidebar.action.moveFavoriteUp": "Перамясціць абранае ўверх",
+  "sidebar.action.moveFavoriteDown": "Перамясціць абранае ўніз",
   "sidebar.action.moveSectionUp": "Перамясціць раздзел уверх",
   "sidebar.action.moveSectionDown": "Перамясціць раздзел уніз",
   "sidebar.action.customizeSections": "Наладзіць секцыі",

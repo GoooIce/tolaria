@@ -486,6 +486,8 @@
   "sidebar.action.reorderView": "重新排序檢視",
   "sidebar.action.moveViewUp": "將檢視向上移動",
   "sidebar.action.moveViewDown": "將檢視向下移動",
+  "sidebar.action.moveFavoriteUp": "將我的最愛向上移動",
+  "sidebar.action.moveFavoriteDown": "將我的最愛向下移動",
   "sidebar.action.moveSectionUp": "將區段上移",
   "sidebar.action.moveSectionDown": "將區段下移",
   "sidebar.action.customizeSections": "自定義分組",

@@ -51,7 +51,7 @@ import { MobileViewFilterBuilder } from './MobileViewFilterBuilder'
 import { MobileEditorFindSheet } from './MobileEditorFindSheet'
 import { NoteMoreActionRows } from './MobileNoteMoreActions'
 import { MobileTableOfContentsSheet } from './MobileTableOfContentsSheet'
-import { MobileSavedViewActions, MobileTypeSectionActions } from './MobileWorkspaceMoveActions'
+import { MobileFavoriteActions, MobileSavedViewActions, MobileTypeSectionActions } from './MobileWorkspaceMoveActions'
 import { MobileWorkspaceSuggestionList } from './MobileWorkspaceSuggestionList'
 import type { MobileWorkspaceSuggestionItem } from './MobileWorkspaceSuggestionList'
 import { chipTone, noteTypeColor, noteTypeSoftColor, statusTone, tagTone } from './mobileWorkspaceTone'
@@ -65,6 +65,7 @@ export type MobileWorkspaceAction =
   | 'createType'
   | 'createView'
   | 'editFolder'
+  | 'editFavorite'
   | 'editProperty'
   | 'editPrimaryListProperties'
   | 'editTypeSection'
@@ -84,6 +85,8 @@ type MobileWorkspaceActionSheetProps = {
   allNotesShowImages: boolean
   allNotesShowPdfs: boolean
   allNotesShowUnsupported: boolean
+  canMoveFavoriteDown: boolean
+  canMoveFavoriteUp: boolean
   canMoveTypeDown: boolean
   canMoveTypeUp: boolean
   canMoveViewDown: boolean
@@ -123,6 +126,8 @@ type MobileWorkspaceActionSheetProps = {
   onFilenameStemChange: (value: string) => void
   onFolderNameChange: (value: string) => void
   onFolderPathChange: (value: string) => void
+  onMoveFavoriteDown: () => void
+  onMoveFavoriteUp: () => void
   onMoveNoteToFolder: () => void
   onMoveTypeDown: () => void
   onMoveTypeUp: () => void
@@ -291,6 +296,7 @@ const actionContentByAction: Record<MobileWorkspaceAction, (props: MobileWorkspa
   createType: (props) => <SingleTextFieldContent config={singleTextFieldConfig(props)} />,
   createView: (props) => <SingleTextFieldContent config={singleTextFieldConfig(props)} />,
   editFolder: (props) => <FolderActionsContent {...props} />,
+  editFavorite: (props) => <FavoriteActionsContent {...props} />,
   editProperty: (props) => <AddPropertyContent {...props} />,
   editPrimaryListProperties: (props) => <PrimaryListPropertiesContent {...props} />,
   editTypeSection: (props) => <TypeSectionContent {...props} />,
@@ -581,6 +587,22 @@ function FolderActionsContent(props: MobileWorkspaceActionSheetProps) {
       <SheetFooter>
         <MobileButton label={mobileText('common.cancel')} variant="ghost" onPress={props.onClose} />
         <MobileButton disabled={props.folderName.trim().length === 0} label={mobileText('common.save')} variant="primary" onPress={props.onRenameFolder} />
+      </SheetFooter>
+    </ScrollView>
+  )
+}
+
+function FavoriteActionsContent(props: MobileWorkspaceActionSheetProps) {
+  return (
+    <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" style={styles.scrollArea}>
+      <MobileFavoriteActions
+        canMoveDown={props.canMoveFavoriteDown}
+        canMoveUp={props.canMoveFavoriteUp}
+        onMoveDown={props.onMoveFavoriteDown}
+        onMoveUp={props.onMoveFavoriteUp}
+      />
+      <SheetFooter>
+        <MobileButton label={mobileText('common.cancel')} variant="ghost" onPress={props.onClose} />
       </SheetFooter>
     </ScrollView>
   )
@@ -1120,6 +1142,7 @@ const actionTitleByAction: Record<MobileWorkspaceAction, () => string> = {
   createType: () => mobileText('sidebar.action.createType'),
   createView: () => mobileText('viewDialog.title.create'),
   editFolder: () => mobileText('sidebar.action.renameFolder'),
+  editFavorite: () => mobileText('sidebar.group.favorites'),
   editProperty: () => mobileText('inspector.title.properties'),
   editPrimaryListProperties: () => mobileText('noteList.properties.customizeColumns'),
   editTypeSection: () => mobileText('sidebar.section.name'),

@@ -104,6 +104,7 @@ function favoriteItem(note: MobileNote): MobileSidebarItem {
     icon: 'star',
     id: `favorite-${note.id}`,
     label: note.title,
+    noteId: note.id,
     tone: note.typeTone,
   }
 }
