@@ -275,30 +275,6 @@ filters:
     const view = parseMobileSavedViewFile({ content: 'name: Custom\nfilters:\n  all:\n    - field: created\n      op: equals\n      value: 2026-06-01\n    - field: modified\n      op: equals\n      value: custom-modified\n    - field: path\n      op: equals\n      value: Roadmap\n    - field: organized\n      op: equals\n      value: planned\n', relativePath: 'views/custom.yml' }, 0)
     const notes = [note({ createdAt: Date.parse('2020-01-01'), id: 'custom-property-match', modifiedAt: Date.parse('2020-01-02'), organized: false, path: 'Actual/Location.md', properties: [{ key: 'created', label: 'created', value: '2026-06-01' }, { key: 'modified', label: 'modified', value: 'custom-modified' }, { key: 'path', label: 'path', value: 'Roadmap' }, { key: 'organized', label: 'organized', value: 'planned' }] }), note({ createdAt: Date.parse('2026-06-01'), id: 'metadata-only-match', modifiedAt: Date.parse('2020-01-02'), organized: true, path: 'Roadmap' })]
     expect(evaluateMobileSavedView(view!, notes).map((candidate) => candidate.id)).toEqual(['custom-property-match'])
-    const internalView = { ...view!, definition: { ...view!.definition, evaluationMode: 'mobileInternal' as const, filters: { all: [{ field: 'path', op: 'equals' as const, value: 'Roadmap' }, { field: 'organized', op: 'equals' as const, value: true }] } } }
-    expect(evaluateMobileSavedView(internalView, notes).map((candidate) => candidate.id)).toEqual(['metadata-only-match'])
-  })
-
-  it('evaluates mobile folder-derived path filters with folder boundaries', () => {
-    const view = {
-      definition: {
-        color: null,
-        evaluationMode: 'mobileInternal' as const,
-        filters: { all: [{ field: 'path', op: 'contains' as const, value: 'Writing' }] },
-        icon: null,
-        name: 'Writing',
-        sort: null,
-      },
-      filename: 'writing.yml',
-      id: 'view-writing',
-    }
-
-    expect(evaluateMobileSavedView(view, [
-      note({ id: 'root', path: 'Writing/Root.md' }),
-      note({ id: 'descendant', path: 'Writing/Projects/Alpha.md' }),
-      note({ id: 'substring', path: 'Copywriting/Idea.md' }),
-      note({ id: 'duplicate-label', path: 'Archive/Writing/Old.md' }),
-    ]).map((candidate) => candidate.id)).toEqual(['root', 'descendant'])
   })
 
   it('evaluates regex-enabled saved-view filters like desktop', () => {

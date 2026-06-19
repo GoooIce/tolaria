@@ -31,7 +31,6 @@ type ResolvedMobileField =
   | { kind: 'scalar'; value: string | number | boolean | null }
 type FilterGroupKind = 'all' | 'any'
 type BuiltInFieldResolver = (note: MobileNote) => ResolvedMobileField
-type ViewEvaluationMode = MobileViewDefinition['evaluationMode'] | 'desktop'
 type IndentLevel = number
 type LineIndex = number
 type MobileTextValues = string[]
@@ -107,10 +106,6 @@ const builtInFieldResolvers: Record<string, BuiltInFieldResolver> = {
   title: (note) => scalarField(note.title),
   type: (note) => scalarField(note.type),
 }
-const mobileInternalFieldResolvers: Record<string, BuiltInFieldResolver> = {
-  organized: (note) => scalarField(note.organized === true),
-  path: (note) => scalarField(note.path ?? note.id),
-}
 const doubleQuote = '"'
 const singleQuote = '\''
 
@@ -177,8 +172,7 @@ export function mobileSavedViewOrderUpdates(views: MobileSavedView[]): MobileSav
 }
 
 export function evaluateMobileSavedView(view: MobileSavedView, notes: MobileNote[]): MobileNote[] {
-  const mode = view.definition.evaluationMode ?? 'desktop'
-  const matchingNotes = notes.filter((note) => !note.archived && evaluateFilterGroup(view.definition.filters, note, mode))
+  const matchingNotes = notes.filter((note) => !note.archived && evaluateFilterGroup(view.definition.filters, note))
   return sortMobileNotesBySort(matchingNotes, view.definition.sort)
 }
 
@@ -359,19 +353,17 @@ function normalizedFilterOp(value: unknown): MobileViewFilterOp {
 function evaluateFilterGroup(
   group: MobileViewFilterGroup,
   note: MobileNote,
-  mode: ViewEvaluationMode,
 ): boolean {
-  if ('any' in group) return evaluateAnyFilterNodes(group.any, note, mode)
-  return evaluateAllFilterNodes(group.all, note, mode)
+  if ('any' in group) return evaluateAnyFilterNodes(group.any, note)
+  return evaluateAllFilterNodes(group.all, note)
 }
 
 function evaluateAnyFilterNodes(
   nodes: MobileViewFilterNode[],
   note: MobileNote,
-  mode: ViewEvaluationMode,
 ): boolean {
   for (const node of nodes) {
-    if (evaluateFilterNode(node, note, mode)) return true
+    if (evaluateFilterNode(node, note)) return true
   }
   return false
 }
@@ -379,10 +371,9 @@ function evaluateAnyFilterNodes(
 function evaluateAllFilterNodes(
   nodes: MobileViewFilterNode[],
   note: MobileNote,
-  mode: ViewEvaluationMode,
 ): boolean {
   for (const node of nodes) {
-    if (!evaluateFilterNode(node, note, mode)) return false
+    if (!evaluateFilterNode(node, note)) return false
   }
   return true
 }
@@ -390,21 +381,16 @@ function evaluateAllFilterNodes(
 function evaluateFilterNode(
   node: MobileViewFilterNode,
   note: MobileNote,
-  mode: ViewEvaluationMode,
 ): boolean {
-  if (isFilterGroup(node)) return evaluateFilterGroup(node, note, mode)
-  return evaluateCondition(node, note, mode)
+  if (isFilterGroup(node)) return evaluateFilterGroup(node, note)
+  return evaluateCondition(node, note)
 }
 
 function evaluateCondition(
   condition: MobileViewFilterCondition,
   note: MobileNote,
-  mode: ViewEvaluationMode,
 ): boolean {
-  const internalPathResult = evaluateInternalPathCondition(condition, note, mode)
-  if (internalPathResult !== null) return internalPathResult
-
-  const field = resolveNoteField(note, condition.field, mode)
+  const field = resolveNoteField(note, condition.field)
   const emptyResult = emptyConditionResult(condition.op, field)
   if (emptyResult !== null) return emptyResult
 
@@ -531,28 +517,6 @@ function scalarTextComparisonResult(op: MobileViewFilterOp, text: string, target
   return null
 }
 
-function evaluateInternalPathCondition(
-  condition: MobileViewFilterCondition,
-  note: MobileNote,
-  mode: ViewEvaluationMode,
-): boolean | null {
-  if (mode !== 'mobileInternal' || condition.field.toLowerCase() !== 'path') return null
-  if (condition.regex === true || (condition.op !== 'contains' && condition.op !== 'not_contains')) return null
-
-  const matched = folderContainsNotePath(textValue(condition.value), note.path ?? note.id)
-  return condition.op === 'contains' ? matched : !matched
-}
-
-function folderContainsNotePath(folderPath: string, notePath: string): boolean {
-  const folder = normalizedPath(folderPath)
-  const noteFolder = normalizedPath(notePath).split('/').slice(0, -1).join('/')
-  return Boolean(folder && noteFolder && (noteFolder === folder || noteFolder.startsWith(`${folder}/`)))
-}
-
-function normalizedPath(path: string): string {
-  return path.toLowerCase().replace(/^\/+|\/+$/g, '').replace(/\/+/g, '/')
-}
-
 function scalarSetConditionResult(condition: MobileViewFilterCondition, text: string): boolean | null {
   if (condition.op === 'any_of') return conditionValues(condition.value).includes(text)
   if (condition.op === 'none_of') return !conditionValues(condition.value).includes(text)
@@ -562,11 +526,9 @@ function scalarSetConditionResult(condition: MobileViewFilterCondition, text: st
 function resolveNoteField(
   note: MobileNote,
   field: FieldKey,
-  mode: ViewEvaluationMode,
 ): ResolvedMobileField {
   const lower = field.toLowerCase()
   return builtInFieldResolvers[lower]?.(note)
-    ?? (mode === 'mobileInternal' ? mobileInternalFieldResolvers[lower]?.(note) : null)
     ?? resolveRelationshipField(note, lower)
     ?? resolvePropertyField(note, lower)
     ?? scalarField(null)

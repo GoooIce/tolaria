@@ -928,7 +928,7 @@ describe('applyMobileWorkspaceEdit', () => {
     const view = result.snapshot.views?.find((candidate) => candidate.filename === 'roadmap.yml')
     if (!view) throw new Error('Missing created saved view')
 
-    expect(view.definition.evaluationMode).toBeUndefined()
+    expect('evaluationMode' in view.definition).toBe(false)
     expect(evaluateMobileSavedView(view, result.snapshot.allNotes ?? [])).toEqual([customPropertyMatch])
   })
 
