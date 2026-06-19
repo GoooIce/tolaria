@@ -158,6 +158,7 @@ type MobileWorkspaceActionSheetProps = {
   onSetArchived: (archived: boolean) => void
   onSetNoteIcon: () => void
   onSetOrganized: (organized: boolean) => void
+  onToggleFavorite: () => void
   onToggleNoteWidth: () => void
   onUndoWorkspaceEdit: () => void
   onUpdateNoteContent: (noteId: string, content: string) => void
@@ -1008,6 +1009,7 @@ function MoreActionsContent(props: MobileWorkspaceActionSheetProps) {
           onRemoveNoteIcon={props.onRemoveNoteIcon}
           onSetArchived={props.onSetArchived}
           onSetOrganized={props.onSetOrganized}
+          onToggleFavorite={props.onToggleFavorite}
           onToggleNoteWidth={props.onToggleNoteWidth}
           onUndoWorkspaceEdit={props.onUndoWorkspaceEdit}
         />

@@ -6,6 +6,7 @@ test.describe('phone note action parity', () => {
 
     await createPhoneNote(page, 'Phone Action Source')
     await changePhoneNoteType(page)
+    await addAndRemovePhoneNoteFavorite(page)
     await setAndRemovePhoneNoteIcon(page)
     await moveAndRenamePhoneNote(page)
     await togglePhoneNoteWidth(page)
@@ -35,6 +36,30 @@ async function changePhoneNoteType(page: Page) {
   await expect(page.getByTestId('property-row-type')).toContainText('Procedure')
   await page.getByTestId('phone-back-action').click()
   await expect(page.getByTestId('phone-editor-screen')).toBeVisible()
+}
+
+async function addAndRemovePhoneNoteFavorite(page: Page) {
+  await page.getByTestId('editor-more-action').click()
+  await expect(page.getByText('Add to Favorites')).toBeVisible()
+  await page.getByTestId('workspace-action-toggle-favorite').click()
+  await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
+
+  await page.getByTestId('phone-back-action').click()
+  await openPhoneSidebar(page)
+  await expect(page.getByTestId('sidebar-item-favorite-phone-action-source.md')).toBeVisible()
+  await page.getByTestId('sidebar-item-all-notes').click()
+  await phoneActionRow(page).click()
+
+  await page.getByTestId('editor-more-action').click()
+  await expect(page.getByText('Remove from Favorites')).toBeVisible()
+  await page.getByTestId('workspace-action-toggle-favorite').click()
+  await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
+
+  await page.getByTestId('phone-back-action').click()
+  await openPhoneSidebar(page)
+  await expect(page.getByTestId('sidebar-item-favorite-phone-action-source.md')).toBeHidden()
+  await page.getByTestId('sidebar-item-all-notes').click()
+  await phoneActionRow(page).click()
 }
 
 async function setAndRemovePhoneNoteIcon(page: Page) {

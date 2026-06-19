@@ -11,6 +11,7 @@ import {
   MagnifyingGlass,
   PencilSimple,
   Smiley,
+  Star,
   Tag,
   TextAa,
   Trash,
@@ -38,6 +39,7 @@ export function NoteMoreActionRows(props: {
   onRemoveNoteIcon: () => void
   onSetArchived: (archived: boolean) => void
   onSetOrganized: (organized: boolean) => void
+  onToggleFavorite: () => void
   onToggleNoteWidth: () => void
   onUndoWorkspaceEdit: () => void
 }) {
@@ -103,14 +105,27 @@ function NoteStateActionRows({
   onClose,
   onSetArchived,
   onSetOrganized,
+  onToggleFavorite,
 }: {
   note: MobileNote
   onClose: () => void
   onSetArchived: (archived: boolean) => void
   onSetOrganized: (organized: boolean) => void
+  onToggleFavorite: () => void
 }) {
   return (
     <>
+      <NoteFlagActionRow
+        active={note.favorite === true}
+        activeLabelKey="command.note.removeFavorite"
+        icon={<Star color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} weight={note.favorite ? 'fill' : 'regular'} />}
+        inactiveLabelKey="command.note.addFavorite"
+        testID="workspace-action-toggle-favorite"
+        onPress={() => {
+          onToggleFavorite()
+          onClose()
+        }}
+      />
       <NoteFlagActionRow
         active={note.organized === true}
         activeLabelKey="command.note.markUnorganized"

@@ -472,6 +472,7 @@ function actionSheetHandlers(props: ActionSheetHostProps) {
     onSetArchived: props.onSetArchived,
     onSetNoteIcon: props.onSetNoteIcon,
     onSetOrganized: props.onSetOrganized,
+    onToggleFavorite: props.onToggleFavorite,
     onToggleNoteWidth: props.onToggleNoteWidth,
     onUndoWorkspaceEdit: props.onUndoWorkspaceEdit,
     onTypeDisplayPropertiesChange: props.onTypeDisplayPropertiesChange,
