@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { MOBILE_ATTACHMENT_IMPORTS_GLOBAL_KEY } from '../src/workspace/mobileAttachmentImport'
 
 test.describe('phone editor command parity', () => {
   test('exercises phone source editor autocomplete and formatting commands', async ({ page }, testInfo) => {
@@ -75,6 +76,19 @@ async function applyPhoneFormattingCommands(page: Page) {
   await page.evaluate(() => navigator.clipboard.writeText('Plain\nClipboard'))
   await page.getByTestId('editor-format-paste-plain-text').click()
   await expect(input).toHaveValue('# Phone Editor Commands\n\nPaste: Plain\nClipboard')
+
+  await input.fill('# Phone Editor Commands\n\nAttachment: ')
+  await page.evaluate((key) => {
+    const target = window as unknown as Record<string, unknown>
+    target[key] = {
+      mimeType: 'application/pdf',
+      name: 'Project Brief.pdf',
+      path: 'attachments/project brief.pdf',
+    }
+  }, MOBILE_ATTACHMENT_IMPORTS_GLOBAL_KEY)
+  await page.getByTestId('editor-format-attachment').scrollIntoViewIfNeeded()
+  await page.getByTestId('editor-format-attachment').click()
+  await expect(input).toHaveValue('# Phone Editor Commands\n\nAttachment: \n\n[Project Brief.pdf](<attachments/project brief.pdf>)')
 
   await input.fill('# Phone Editor Commands\n\nFollow up')
   await page.getByTestId('editor-format-task-list').scrollIntoViewIfNeeded()
