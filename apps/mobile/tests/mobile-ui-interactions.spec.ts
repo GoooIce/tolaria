@@ -817,7 +817,7 @@ async function addDatePropertyFromSuggestion(page: PageLike) {
   await page.getByTestId('workspace-property-value-input').fill('2026-06-14')
   await page.getByRole('button', { name: 'Save' }).click()
   await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
-  await expect(page.getByTestId('property-row-date')).toContainText('2026-06-14')
+  await expect(page.getByTestId('property-row-date')).toContainText('June 14, 2026')
   await page.getByTestId('property-row-date-edit').click()
   await expect(page.getByTestId('workspace-action-sheet-editProperty')).toBeVisible()
   await expect(page.getByTestId('workspace-property-name-input')).toHaveValue('Date')
@@ -825,7 +825,7 @@ async function addDatePropertyFromSuggestion(page: PageLike) {
   await page.getByTestId('workspace-property-value-input').fill('2026-06-15')
   await page.getByTestId('workspace-action-sheet-editProperty').getByRole('button', { name: 'Save' }).click()
   await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
-  await expect(page.getByTestId('property-row-date')).toContainText('2026-06-15')
+  await expect(page.getByTestId('property-row-date')).toContainText('June 15, 2026')
 }
 
 async function addRelationshipFromSuggestion(page: PageLike) {

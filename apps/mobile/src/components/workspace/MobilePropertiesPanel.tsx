@@ -8,6 +8,7 @@ import { MobilePanel, MobileToolbar, MobileToolbarTitle } from '../../ui/MobileP
 import { MobilePropertyRow } from '../../ui/MobilePropertyRow'
 import { desktopPanelParity, desktopPropertyParity, desktopRelationshipParity } from '../../ui/desktopParity'
 import { mobileColors, mobileRadius, mobileSpace, mobileType } from '../../ui/tokens'
+import { mobilePropertyDisplay, type MobilePropertyDisplay } from '../../workspace/mobilePropertyDisplay'
 import type { MobileNote, MobileProperty, MobilePropertyValue, MobileRelationship, MobileTone, MobileTypeDefinitions } from '../../workspace/mobileWorkspaceModel'
 import {
   mobileInspectorPropertySlots,
@@ -214,6 +215,10 @@ function EditablePropertyRow({
   property: MobileProperty
 }) {
   const testId = `property-row-${testIdSegment(property.key)}`
+  const display = mobilePropertyDisplay(property.key, property.value, {
+    false: mobileText('inspector.properties.no'),
+    true: mobileText('inspector.properties.yes'),
+  })
 
   return (
     <MobilePropertyRow
@@ -221,14 +226,14 @@ function EditablePropertyRow({
       testID={testId}
       value={(
         <Pressable
-          accessibilityLabel={`${property.label}: ${propertyValueText(property.value)}`}
+          accessibilityLabel={`${property.label}: ${display.text}`}
           accessibilityRole="button"
           style={({ pressed }) => [propertyStyles.editableValue, pressed ? propertyStyles.editableValuePressed : null]}
           testID={`${testId}-edit`}
           onLongPress={() => onDeleteProperty(noteId, property.key)}
           onPress={() => onEditProperty(noteId, property.key, property.value)}
         >
-          <Text numberOfLines={1} style={propertyStyles.editableText}>{propertyValueText(property.value)}</Text>
+          <EditablePropertyValueDisplay display={display} />
           <Pressable
             accessibilityLabel={mobileText('inspector.properties.deleteProperty')}
             accessibilityRole="button"
@@ -240,6 +245,42 @@ function EditablePropertyRow({
         </Pressable>
       )}
     />
+  )
+}
+
+function EditablePropertyValueDisplay({ display }: { display: MobilePropertyDisplay }) {
+  if (display.kind === 'list' && display.listItems.length > 0) {
+    return (
+      <View style={propertyDisplayStyles.listValue}>
+        {display.listItems.map((item) => <MobileChip key={item} label={item} tone={tagTone(item)} />)}
+      </View>
+    )
+  }
+
+  if (display.kind === 'status') {
+    return <MobileChip label={display.text} tone={statusTone(display.text)} />
+  }
+
+  if (display.kind === 'color') {
+    return (
+      <View style={propertyDisplayStyles.colorValue}>
+        <View style={[propertyDisplayStyles.colorSwatch, display.colorValue ? { backgroundColor: display.colorValue } : null]} />
+        <Text numberOfLines={1} style={propertyStyles.editableText}>{display.text}</Text>
+      </View>
+    )
+  }
+
+  return (
+    <Text
+      numberOfLines={1}
+      style={[
+        propertyStyles.editableText,
+        display.kind === 'number' ? propertyDisplayStyles.numberText : null,
+        display.kind === 'url' ? propertyDisplayStyles.urlText : null,
+      ]}
+    >
+      {display.text}
+    </Text>
   )
 }
 
@@ -440,12 +481,6 @@ function testIdSegment(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 }
 
-function propertyValueText(value: MobilePropertyValue): string {
-  if (Array.isArray(value)) return value.join(', ')
-  if (typeof value === 'boolean') return value ? mobileText('inspector.properties.yes') : mobileText('inspector.properties.no')
-  return String(value)
-}
-
 const panelStyles = StyleSheet.create({
   content: {
     flexGrow: 1,
@@ -583,8 +618,10 @@ const propertyStyles = StyleSheet.create({
   editableValue: {
     minWidth: 0,
     alignItems: 'center',
+    alignSelf: 'stretch',
     flexDirection: 'row',
     gap: mobileSpace.xs,
+    justifyContent: 'flex-end',
     borderRadius: 4,
     paddingHorizontal: mobileSpace.xs,
     paddingVertical: 2,
@@ -607,6 +644,39 @@ const propertyStyles = StyleSheet.create({
     fontWeight: '400',
     paddingHorizontal: 6,
     paddingVertical: 2,
+  },
+})
+
+const propertyDisplayStyles = StyleSheet.create({
+  colorSwatch: {
+    height: 12,
+    width: 12,
+    borderColor: mobileColors.borderStrong,
+    borderRadius: mobileRadius.sm,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  colorValue: {
+    minWidth: 0,
+    alignItems: 'center',
+    flex: 1,
+    flexDirection: 'row',
+    gap: mobileSpace.xs,
+    justifyContent: 'flex-end',
+  },
+  listValue: {
+    minWidth: 0,
+    alignItems: 'center',
+    flex: 1,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: mobileSpace.xs,
+    justifyContent: 'flex-end',
+  },
+  numberText: {
+    fontVariant: ['tabular-nums'],
+  },
+  urlText: {
+    color: mobileColors.primary,
   },
 })
 
