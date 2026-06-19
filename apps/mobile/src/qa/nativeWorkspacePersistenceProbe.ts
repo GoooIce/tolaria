@@ -12,6 +12,8 @@ export type NativeWorkspacePersistenceProof = {
   noteStateMetadataHydrated: boolean
   persistedToNativeRepository: boolean
   propertyDisplayModesHydrated: boolean
+  propertyValuesHydrated: boolean
+  relationshipEditHydrated: boolean
   relationshipSourceRefHydrated: boolean
   relationshipMovedRefHydrated: boolean
   relationshipTargetHydrated: boolean
@@ -46,7 +48,7 @@ export function nativeWorkspacePersistenceProbeEnabled(searchParams: URLSearchPa
 export function nativeWorkspacePersistenceLogLine(
   proof: NativeWorkspacePersistenceProof,
 ): NativeWorkspacePersistenceLine {
-  return `${nativeWorkspacePersistenceLogPrefix} ${JSON.stringify(proof)}`
+  return `${nativeWorkspacePersistenceLogPrefix} ${JSON.stringify(workspacePersistenceProofValues(proof))}`
 }
 
 export function parseNativeWorkspacePersistenceProofs(
@@ -73,6 +75,8 @@ export function assertNativeWorkspacePersistenceProofs(
     proofFailure(latest.noteChromeMetadataHydrated, 'workspace.persistence.noteChromeMetadata', 'Note icon and width metadata rehydrate from native frontmatter writes'),
     proofFailure(latest.noteStateMetadataHydrated, 'workspace.persistence.noteStateMetadata', 'Note archive, organized, and favorite metadata rehydrate from native frontmatter writes'),
     proofFailure(latest.propertyDisplayModesHydrated, 'workspace.persistence.propertyDisplayModes', 'Property display modes rehydrate from native vault-scoped config storage'),
+    proofFailure(latest.propertyValuesHydrated, 'workspace.persistence.propertyValues', 'Typed property values rehydrate from native frontmatter writes'),
+    proofFailure(latest.relationshipEditHydrated, 'workspace.persistence.relationshipEdit', 'Relationship add/remove edits rehydrate from native frontmatter writes'),
     proofFailure(latest.relationshipTargetHydrated, 'workspace.persistence.relationshipTarget', 'Relationship target creation rehydrates the reducer-created target note'),
     proofFailure(latest.relationshipSourceRefHydrated, 'workspace.persistence.relationshipSourceRef', 'Relationship target creation rehydrates the saved source note relationship ref'),
     proofFailure(latest.relationshipMovedRefHydrated, 'workspace.persistence.relationshipMovedRef', 'Moved note relationship refs rehydrate from reducer-generated native rewrite writes'),
@@ -119,37 +123,13 @@ function parseWorkspacePersistenceProofLine(
 }
 
 function parsedWorkspacePersistenceProof(value: unknown): NativeWorkspacePersistenceProof | null {
+  if (isWorkspacePersistenceProofValueArray(value)) {
+    return workspacePersistenceProofFromValues(value)
+  }
+
   if (!isWorkspacePersistenceProofShape(value)) return null
 
-  return {
-    createdNoteHydrated: value.createdNoteHydrated,
-    deletedTypeDefinitionRemoved: value.deletedTypeDefinitionRemoved,
-    deletedViewRemoved: value.deletedViewRemoved,
-    folderDeleteApplied: value.folderDeleteApplied,
-    folderRenameApplied: value.folderRenameApplied,
-    movedNoteContentPreserved: value.movedNoteContentPreserved,
-    noteChromeMetadataHydrated: value.noteChromeMetadataHydrated,
-    noteStateMetadataHydrated: value.noteStateMetadataHydrated,
-    persistedToNativeRepository: value.persistedToNativeRepository,
-    propertyDisplayModesHydrated: value.propertyDisplayModesHydrated,
-    relationshipSourceRefHydrated: value.relationshipSourceRefHydrated,
-    relationshipMovedRefHydrated: value.relationshipMovedRefHydrated,
-    relationshipTargetHydrated: value.relationshipTargetHydrated,
-    reorderedTypeSectionHydrated: value.reorderedTypeSectionHydrated,
-    reorderedViewHydrated: value.reorderedViewHydrated,
-    restoredFolderHydrated: value.restoredFolderHydrated,
-    restoredNoteHydrated: value.restoredNoteHydrated,
-    restoredTypeDefinitionHydrated: value.restoredTypeDefinitionHydrated,
-    restoredViewHydrated: value.restoredViewHydrated,
-    renamedTypeAssignedNoteHydrated: value.renamedTypeAssignedNoteHydrated,
-    renamedTypeDefinitionHydrated: value.renamedTypeDefinitionHydrated,
-    renamedTypeSchemaRefsHydrated: value.renamedTypeSchemaRefsHydrated,
-    savedViewHydrated: value.savedViewHydrated,
-    typeDefinitionHydrated: value.typeDefinitionHydrated,
-    updatedViewHydrated: value.updatedViewHydrated,
-    updatedTypeDefinitionHydrated: value.updatedTypeDefinitionHydrated,
-    vaultConfigHydrated: value.vaultConfigHydrated,
-  }
+  return workspacePersistenceProofFromValues(workspacePersistenceProofKeys.map((key) => value[key]))
 }
 
 function isWorkspacePersistenceProofShape(value: unknown): value is NativeWorkspacePersistenceProof {
@@ -157,6 +137,22 @@ function isWorkspacePersistenceProofShape(value: unknown): value is NativeWorksp
 
   const candidate = value as Record<keyof NativeWorkspacePersistenceProof, unknown>
   return workspacePersistenceProofKeys.every((key) => typeof candidate[key] === 'boolean')
+}
+
+function isWorkspacePersistenceProofValueArray(value: unknown): value is boolean[] {
+  return Array.isArray(value)
+    && value.length === workspacePersistenceProofKeys.length
+    && value.every((entry) => typeof entry === 'boolean')
+}
+
+function workspacePersistenceProofValues(proof: NativeWorkspacePersistenceProof): boolean[] {
+  return workspacePersistenceProofKeys.map((key) => proof[key])
+}
+
+function workspacePersistenceProofFromValues(values: boolean[]): NativeWorkspacePersistenceProof {
+  return Object.fromEntries(
+    workspacePersistenceProofKeys.map((key, index) => [key, values[index]]),
+  ) as NativeWorkspacePersistenceProof
 }
 
 const workspacePersistenceProofKeys = [
@@ -170,6 +166,8 @@ const workspacePersistenceProofKeys = [
   'noteStateMetadataHydrated',
   'persistedToNativeRepository',
   'propertyDisplayModesHydrated',
+  'propertyValuesHydrated',
+  'relationshipEditHydrated',
   'relationshipSourceRefHydrated',
   'relationshipMovedRefHydrated',
   'relationshipTargetHydrated',

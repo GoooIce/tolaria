@@ -22,6 +22,8 @@ const movedNotePath = 'Research/Seed.md'
 const metadataNotePath = 'Metadata/Chrome State.md'
 const oldTypeName = 'Retired Proof'
 const oldViewName = 'Old Native Proof'
+const propertyRelationshipNotePath = 'Properties/Relationship Proof.md'
+const propertyRelationshipUrl = 'https://tolaria.local/mobile'
 const relationshipSourcePath = 'Relationships/Source.md'
 const relationshipTargetPath = 'Relationships/native-related-target.md'
 const reorderedTypeAlphaName = 'Order Alpha'
@@ -107,6 +109,10 @@ async function logWorkspacePersistenceProof(
   const movedNote = snapshot.allNotes?.find((note) => note.path === movedNotePath)
     ?? snapshot.notes.find((note) => note.path === movedNotePath)
   const movedContent = movedNote ? await baseRepository.readNoteContent(movedNote, request) : null
+  const propertyRelationshipNote = noteByPath(snapshot, propertyRelationshipNotePath)
+  const propertyRelationshipContent = propertyRelationshipNote
+    ? await baseRepository.readNoteContent(propertyRelationshipNote, request)
+    : null
   const renamedAssignedNote = noteByPath(snapshot, renamedTypeAssignedNotePath)
   const renamedAssignedContent = renamedAssignedNote
     ? await baseRepository.readNoteContent(renamedAssignedNote, request)
@@ -127,6 +133,7 @@ async function logWorkspacePersistenceProof(
   console.info(nativeWorkspacePersistenceLogLine(workspacePersistenceProof(snapshot, {
     metadataContent,
     movedContent,
+    propertyRelationshipContent,
     relationshipSourceContent,
     renamedAssignedContent,
     restoredNoteContent,
@@ -155,6 +162,7 @@ function workspacePersistenceProbeWrites(seedSnapshot: MobileWorkspaceSnapshot) 
   return [
     ...workspacePersistenceNoteAndRelationshipWrites(seedSnapshot),
     ...workspacePersistenceMetadataWrites(seedSnapshot),
+    ...workspacePersistencePropertyAndRelationshipWrites(seedSnapshot),
     ...workspacePersistenceRestorationWrites(seedSnapshot),
     ...workspacePersistenceViewWrites(seedSnapshot),
     workspacePersistenceConfigWrite(),
@@ -193,6 +201,23 @@ function workspacePersistenceNoteAndRelationshipWrites(seedSnapshot: MobileWorks
       sourceNoteId: relationshipSourcePath,
       targetTitle: 'Native Related Target',
       type: 'createRelationshipTarget',
+    },
+  ])
+}
+
+function workspacePersistencePropertyAndRelationshipWrites(seedSnapshot: MobileWorkspaceSnapshot) {
+  return workspacePersistenceEditWrites(seedSnapshot, [
+    { key: 'Priority', noteId: propertyRelationshipNotePath, type: 'updateProperty', value: 5 },
+    { key: 'Published', noteId: propertyRelationshipNotePath, type: 'updateProperty', value: true },
+    { key: 'Website', noteId: propertyRelationshipNotePath, type: 'updateProperty', value: propertyRelationshipUrl },
+    { key: 'tags', noteId: propertyRelationshipNotePath, type: 'updateProperty', value: ['Mobile', 'QA'] },
+    { key: 'related_to', noteId: propertyRelationshipNotePath, ref: '[[Writing/Seed]]', type: 'removeRelationship' },
+    {
+      key: 'belongs_to',
+      noteId: propertyRelationshipNotePath,
+      targetRef: '[[Metadata/Chrome State]]',
+      targetTitle: 'Chrome State',
+      type: 'addRelationship',
     },
   ])
 }
@@ -415,6 +440,11 @@ function seedWorkspaceNoteWrites() {
       path: relationshipSourcePath,
     },
     {
+      content: propertyRelationshipNoteContent(),
+      kind: 'createNote' as const,
+      path: propertyRelationshipNotePath,
+    },
+    {
       content: renamedTypeAssignedNoteContent(),
       kind: 'createNote' as const,
       path: renamedTypeAssignedNotePath,
@@ -487,6 +517,7 @@ function workspacePersistenceProof(
   content: {
     metadataContent: string | null
     movedContent: string | null
+    propertyRelationshipContent: string | null
     relationshipSourceContent: string | null
     renamedAssignedContent: string | null
     restoredNoteContent: string | null
@@ -503,6 +534,8 @@ function workspacePersistenceProof(
     noteStateMetadataHydrated: noteStateMetadataHydrated(snapshot, content.metadataContent),
     persistedToNativeRepository: snapshot.source?.kind === 'localVault',
     propertyDisplayModesHydrated: propertyDisplayModesHydrated(snapshot),
+    propertyValuesHydrated: propertyValuesHydrated(snapshot, content.propertyRelationshipContent),
+    relationshipEditHydrated: relationshipEditHydrated(snapshot, content.propertyRelationshipContent),
     relationshipMovedRefHydrated: relationshipMovedRefHydrated(content.relationshipSourceContent),
     relationshipSourceRefHydrated: relationshipSourceRefHydrated(content.relationshipSourceContent),
     relationshipTargetHydrated: snapshotContainsNotePath(snapshot, relationshipTargetPath),
@@ -656,6 +689,34 @@ function vaultConfigHydrated(snapshot: MobileWorkspaceSnapshot) {
 function propertyDisplayModesHydrated(snapshot: MobileWorkspaceSnapshot) {
   return snapshot.vaultConfig?.propertyDisplayModes?.Priority === 'number'
     && snapshot.vaultConfig.propertyDisplayModes.Website === 'url'
+}
+
+function propertyValuesHydrated(snapshot: MobileWorkspaceSnapshot, content: string | null) {
+  const note = noteByPath(snapshot, propertyRelationshipNotePath)
+  return [
+    notePropertyValue(note, 'Priority') === 5,
+    notePropertyValue(note, 'Published') === true,
+    notePropertyValue(note, 'Website') === propertyRelationshipUrl,
+    joinedProperties(note?.tags) === 'Mobile|QA',
+    textContainsAll(content, ['Priority: 5', 'Published: true', 'Website:', propertyRelationshipUrl]),
+  ].every(Boolean)
+}
+
+function relationshipEditHydrated(snapshot: MobileWorkspaceSnapshot, content: string | null) {
+  const note = noteByPath(snapshot, propertyRelationshipNotePath)
+  return relationshipRefs(note, 'belongs_to').includes('[[Metadata/Chrome State]]')
+    && textContainsAll(content, ['belongs_to:', '[[Metadata/Chrome State]]'])
+    && content?.includes('[[Writing/Seed]]') === false
+}
+
+function notePropertyValue(note: ReturnType<typeof noteByPath>, key: string) {
+  return note?.properties?.find((property) => property.key === key)?.value
+}
+
+function relationshipRefs(note: ReturnType<typeof noteByPath>, key: string) {
+  return note?.relationships.find((relationship) => relationship.key === key)?.values
+    .map((value) => value.ref)
+    .filter((ref): ref is string => typeof ref === 'string') ?? []
 }
 
 function joinedProperties(properties: string[] | undefined) {
@@ -846,6 +907,21 @@ function relationshipSourceContent() {
     '# Relationship Source',
     '',
     'Create a relationship target from this note.',
+    '',
+  ].join('\n')
+}
+
+function propertyRelationshipNoteContent() {
+  return [
+    '---',
+    'type: Essay',
+    'status: Draft',
+    'Related to:',
+    '  - "[[Writing/Seed]]"',
+    '---',
+    '# Relationship Proof',
+    '',
+    'Property and relationship persistence seed.',
     '',
   ].join('\n')
 }

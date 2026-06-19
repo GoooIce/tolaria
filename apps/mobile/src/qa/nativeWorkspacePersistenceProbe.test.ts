@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   assertNativeWorkspacePersistenceProofs,
   nativeWorkspacePersistenceLogLine,
+  nativeWorkspacePersistenceLogPrefix,
   parseNativeWorkspacePersistenceProofs,
   type NativeWorkspacePersistenceProof,
 } from './nativeWorkspacePersistenceProbe'
@@ -26,6 +27,19 @@ describe('native workspace persistence probe', () => {
     ])
   })
 
+  it('keeps native proof log lines compact for simulator log capture', () => {
+    const line = nativeWorkspacePersistenceLogLine(passingWorkspaceProof())
+
+    expect(line.length).toBeLessThan(512)
+  })
+
+  it('parses legacy object-shaped proof lines', () => {
+    const proof = { ...passingWorkspaceProof(), savedViewHydrated: false }
+    const line = `${nativeWorkspacePersistenceLogPrefix} ${JSON.stringify(proof)}`
+
+    expect(parseNativeWorkspacePersistenceProofs(line)).toEqual([proof])
+  })
+
   it('reports incomplete Type rename persistence proofs', () => {
     expectProofFailures({
       renamedTypeAssignedNoteHydrated: false,
@@ -44,10 +58,12 @@ describe('native workspace persistence probe', () => {
 
   it('reports incomplete relationship target persistence proofs', () => {
     expectProofFailures({
+      relationshipEditHydrated: false,
       relationshipMovedRefHydrated: false,
       relationshipSourceRefHydrated: false,
       relationshipTargetHydrated: false,
     }, [
+      'workspace.persistence.relationshipEdit',
       'workspace.persistence.relationshipTarget',
       'workspace.persistence.relationshipSourceRef',
       'workspace.persistence.relationshipMovedRef',
@@ -67,9 +83,11 @@ describe('native workspace persistence probe', () => {
   it('reports incomplete vault config persistence proofs', () => {
     expectProofFailures({
       propertyDisplayModesHydrated: false,
+      propertyValuesHydrated: false,
       vaultConfigHydrated: false,
     }, [
       'workspace.persistence.propertyDisplayModes',
+      'workspace.persistence.propertyValues',
       'workspace.persistence.vaultConfig',
     ])
   })
@@ -135,6 +153,8 @@ function passingWorkspaceProof(): NativeWorkspacePersistenceProof {
     noteStateMetadataHydrated: true,
     persistedToNativeRepository: true,
     propertyDisplayModesHydrated: true,
+    propertyValuesHydrated: true,
+    relationshipEditHydrated: true,
     relationshipMovedRefHydrated: true,
     relationshipSourceRefHydrated: true,
     relationshipTargetHydrated: true,
