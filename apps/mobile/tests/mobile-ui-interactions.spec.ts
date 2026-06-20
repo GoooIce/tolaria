@@ -81,6 +81,22 @@ test.describe('mobile UI lab interactions', () => {
     await expect(page.getByTestId('editor-source-action')).toHaveAttribute('aria-label', 'Return to the editor')
   })
 
+  test('navigates editor headings from the table of contents sheet', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'tablet-landscape', 'Table of contents scrolling is exercised in the full-width tablet layout.')
+
+    await page.goto('/')
+    await createNote(page, 'TOC Navigation Draft', 'toc-navigation-draft.md')
+    await replaceSelectedNoteMarkdown(page, tableOfContentsNavigationMarkdown())
+
+    await expect(editorScrollTop(page)).resolves.toBe(0)
+    await page.getByTestId('editor-more-action').click()
+    await page.getByTestId('workspace-action-table-of-contents').click()
+    await expect(page.getByTestId('table-of-contents-row-toc-heading-0')).toContainText('Target Section')
+    await page.getByTestId('table-of-contents-row-toc-heading-0').click()
+    await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
+    await expect.poll(() => editorScrollTop(page)).toBeGreaterThan(120)
+  })
+
   test('derives tablet metadata from raw frontmatter edits', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'tablet-landscape', 'Raw frontmatter parity uses the full-width tablet layout.')
 
@@ -889,6 +905,39 @@ async function editMarkdownWithWikilink(page: PageLike) {
   await page.getByTestId('note-row-mobile-qa-draft.md').click()
   await expect(page.getByTestId('editor-title')).toHaveText('Mobile QA Draft Revised')
   await expect(page.getByText('Draft body referencing').first()).toBeVisible()
+}
+
+async function replaceSelectedNoteMarkdown(page: PageLike, markdown: string) {
+  await page.getByTestId('editor-edit-action').click()
+  await expect(page.getByTestId('editor-markdown-input')).toBeVisible()
+  await page.getByTestId('editor-markdown-input').fill(markdown)
+  await page.getByTestId('editor-edit-action').click()
+  await expect(page.getByTestId('editor-markdown-input')).toBeHidden()
+}
+
+function tableOfContentsNavigationMarkdown() {
+  const leadIn = Array.from({ length: 7 }, (_item, index) => (
+    `Paragraph ${index + 1} keeps the mounted editor preview tall enough for outline navigation proof. `
+    + 'The target heading must stay within the rendered block budget while still sitting below the initial viewport. '
+    + 'This line intentionally wraps across several visual rows in the tablet editor.'
+  ))
+
+  return [
+    '# TOC Navigation Draft',
+    '',
+    ...leadIn.flatMap((line) => [line, '']),
+    '## Target Section',
+    '',
+    'The table of contents should scroll to this section.',
+    '',
+    '### Nested Target',
+    '',
+    'Nested content stays reachable through the same outline model.',
+  ].join('\n')
+}
+
+async function editorScrollTop(page: PageLike) {
+  return page.getByTestId('editor-scroll').evaluate((element) => element.scrollTop)
 }
 
 async function editRawFrontmatterContract(page: PageLike) {

@@ -1,5 +1,5 @@
 import { CheckSquare, Square } from 'phosphor-react-native'
-import { StyleSheet, type TextStyle, View } from 'react-native'
+import { StyleSheet, type LayoutChangeEvent, type TextStyle, View } from 'react-native'
 import { Text } from '../ui/text'
 import {
   desktopEditorParity,
@@ -8,14 +8,17 @@ import { mobileColors, mobileRadius, mobileSpace } from '../../ui/tokens'
 import type {
   MobileEditorBlock,
   MobileEditorInline,
+  MobileEditorHeadingLevel,
   MobileEditorListItem,
   MobileEditorOrderedListItem,
   MobileEditorTaskItem,
 } from '../../workspace/mobileWorkspaceModel'
+import { mobileTableOfContentsHeadingTargetId } from '../../workspace/mobileTableOfContents'
 
 type MobileEditorBlocksProps = {
   blocks: MobileEditorBlock[]
   fallbackBullets: string[]
+  onTableOfContentsTargetLayout?: (targetId: string, event: LayoutChangeEvent) => void
   onOpenLink?: (href: string) => void
   onNavigateWikilink: (target: string) => void
 }
@@ -45,6 +48,7 @@ const bulletSymbols = ['•', '◦', '▪'] as const
 export function MobileEditorBlocks({
   blocks,
   fallbackBullets,
+  onTableOfContentsTargetLayout,
   onOpenLink,
   onNavigateWikilink,
 }: MobileEditorBlocksProps) {
@@ -52,18 +56,50 @@ export function MobileEditorBlocks({
     return <FallbackBullets bullets={fallbackBullets} />
   }
 
+  const tableOfContentsTargetIds = tableOfContentsTargetIdsForBlocks(blocks)
+
   return (
     <>
-      {blocks.map((block, index) => (
-        <EditorBlock
-          block={block}
-          key={`${block.kind}-${index}`}
-          onOpenLink={onOpenLink}
-          onNavigateWikilink={onNavigateWikilink}
-        />
-      ))}
+      {blocks.map((block, index) => {
+        return (
+          <EditorBlock
+            block={block}
+            key={`${block.kind}-${index}`}
+            tableOfContentsTargetId={tableOfContentsTargetIds[index]}
+            onTableOfContentsTargetLayout={onTableOfContentsTargetLayout}
+            onOpenLink={onOpenLink}
+            onNavigateWikilink={onNavigateWikilink}
+          />
+        )
+      })}
     </>
   )
+}
+
+function tableOfContentsTargetIdsForBlocks(blocks: MobileEditorBlock[]): Array<string | undefined> {
+  const targetIds: Array<string | undefined> = []
+  let headingIndex = 0
+
+  for (const block of blocks) {
+    const targetId = tableOfContentsTargetIdForBlock(block, headingIndex)
+    targetIds.push(targetId)
+    if (targetId) headingIndex += 1
+  }
+
+  return targetIds
+}
+
+function tableOfContentsTargetIdForBlock(
+  block: MobileEditorBlock,
+  headingIndex: number,
+): string | undefined {
+  if (block.kind !== 'heading' || !tableOfContentsLevelVisible(block.level)) return undefined
+
+  return mobileTableOfContentsHeadingTargetId(headingIndex)
+}
+
+function tableOfContentsLevelVisible(level: MobileEditorHeadingLevel): boolean {
+  return level >= 1 && level <= 3
 }
 
 function FallbackBullets({ bullets }: { bullets: string[] }) {
@@ -81,15 +117,27 @@ function FallbackBullets({ bullets }: { bullets: string[] }) {
 
 function EditorBlock({
   block,
+  tableOfContentsTargetId,
+  onTableOfContentsTargetLayout,
   onOpenLink,
   onNavigateWikilink,
 }: {
   block: MobileEditorBlock
+  tableOfContentsTargetId?: string
+  onTableOfContentsTargetLayout?: (targetId: string, event: LayoutChangeEvent) => void
   onOpenLink?: (href: string) => void
   onNavigateWikilink: (target: string) => void
 }) {
   if (block.kind === 'paragraph') return <EditorParagraph block={block} onOpenLink={onOpenLink} onNavigateWikilink={onNavigateWikilink} />
-  if (block.kind === 'heading') return <EditorHeading block={block} />
+  if (block.kind === 'heading') {
+    return (
+      <EditorHeading
+        block={block}
+        tableOfContentsTargetId={tableOfContentsTargetId}
+        onTableOfContentsTargetLayout={onTableOfContentsTargetLayout}
+      />
+    )
+  }
   if (block.kind === 'bullets') return <EditorList items={block.items} variant="bullet" onOpenLink={onOpenLink} onNavigateWikilink={onNavigateWikilink} />
   if (block.kind === 'orderedList') return <EditorList items={block.items} variant="ordered" onOpenLink={onOpenLink} onNavigateWikilink={onNavigateWikilink} />
   if (block.kind === 'tasks') return <EditorList items={block.items} variant="task" onOpenLink={onOpenLink} onNavigateWikilink={onNavigateWikilink} />
@@ -119,9 +167,21 @@ function EditorParagraph({
   )
 }
 
-function EditorHeading({ block }: { block: Extract<MobileEditorBlock, { kind: 'heading' }> }) {
+function EditorHeading({
+  block,
+  tableOfContentsTargetId,
+  onTableOfContentsTargetLayout,
+}: {
+  block: Extract<MobileEditorBlock, { kind: 'heading' }>
+  tableOfContentsTargetId?: string
+  onTableOfContentsTargetLayout?: (targetId: string, event: LayoutChangeEvent) => void
+}) {
   return (
-    <Text style={headingStylesForLevel(block.level)} testID={`editor-heading-${block.level}`}>
+    <Text
+      onLayout={tableOfContentsTargetId ? (event) => onTableOfContentsTargetLayout?.(tableOfContentsTargetId, event) : undefined}
+      style={headingStylesForLevel(block.level)}
+      testID={`editor-heading-${block.level}`}
+    >
       {block.text}
     </Text>
   )

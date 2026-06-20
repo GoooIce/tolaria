@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Dimensions, Platform, StyleSheet, useWindowDimensions, View } from 'react-native'
 import { MobileCommandPalette } from '../components/workspace/MobileCommandPalette'
 import { MobileNoteListPanel } from '../components/workspace/MobileNoteListPanel'
@@ -17,6 +17,10 @@ import { useHorizontalSwipe } from '../ui/useHorizontalSwipe'
 import { useMobileEditorCommandRegistry, type RegisterMobileEditorCommands } from '../workspace/mobileEditorCommands'
 import { mobileNoteIdForWikilinkTarget } from '../workspace/mobileWikilinks'
 import { buildMobileCommandPaletteCommands } from '../workspace/mobileCommandPalette'
+import {
+  mobileTableOfContentsHeadingTargetId,
+  type MobileTableOfContentsTarget,
+} from '../workspace/mobileTableOfContents'
 import { TabletEditorPanel } from './TabletEditorPanel'
 import { tabletScreenModeForWindow } from './tabletWorkspaceScreenMode'
 import type { TabletPanel, TabletWorkspaceChromeProps } from './tabletWorkspaceTypes'
@@ -28,10 +32,12 @@ export function TabletWorkspace({
   initialEditorEditingMode = 'wysiwyg',
   layoutProbe = false,
   onOpenNativeVault,
+  onTableOfContentsScrollProof,
   repository = fixtureReadOnlyWorkspaceRepository,
   repositoryRequest,
   sourceSelectionProbe = false,
   snapshot,
+  tableOfContentsProbe = false,
   wysiwygAutocompleteProbe = false,
   wysiwygFormatCommandProbe = false,
   wysiwygInputTransformProbe = false,
@@ -44,10 +50,12 @@ export function TabletWorkspace({
   initialEditorEditingMode?: TabletWorkspaceChromeProps['initialEditorEditingMode']
   layoutProbe?: boolean
   onOpenNativeVault?: () => void
+  onTableOfContentsScrollProof?: TabletWorkspaceChromeProps['onTableOfContentsScrollProof']
   repository?: ReadOnlyWorkspaceRepository
   repositoryRequest?: ReadOnlyWorkspaceRequest
   sourceSelectionProbe?: boolean
   snapshot: MobileWorkspaceSnapshot
+  tableOfContentsProbe?: boolean
   wysiwygAutocompleteProbe?: boolean
   wysiwygFormatCommandProbe?: boolean
   wysiwygInputTransformProbe?: boolean
@@ -68,7 +76,9 @@ export function TabletWorkspace({
         initialEditorEditingMode={initialEditorEditingMode}
         layoutProbe={layoutProbe}
         onOpenNativeVault={onOpenNativeVault}
+        onTableOfContentsScrollProof={onTableOfContentsScrollProof}
         sourceSelectionProbe={sourceSelectionProbe}
+        tableOfContentsProbe={tableOfContentsProbe}
         wysiwygAutocompleteProbe={wysiwygAutocompleteProbe}
         wysiwygFormatCommandProbe={wysiwygFormatCommandProbe}
         wysiwygInputTransformProbe={wysiwygInputTransformProbe}
@@ -100,6 +110,7 @@ function useTabletScreenMode() {
 function TabletWorkspaceChrome(props: TabletWorkspaceChromeProps) {
   const { compactTablet, defaultPropertiesVisible, onOpenNativeVault, onSelectNote, snapshot } = props
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
+  const [tableOfContentsTarget, setTableOfContentsTarget] = useState<TabletTableOfContentsTargetRequest | null>(null)
   const editorCommandRegistry = useMobileEditorCommandRegistry()
   const gestures = useTabletPanelGestures(compactTablet, defaultPropertiesVisible)
   const suggestionNotes = snapshot.allNotes ?? snapshot.notes
@@ -119,6 +130,25 @@ function TabletWorkspaceChrome(props: TabletWorkspaceChromeProps) {
     const noteId = mobileNoteIdForWikilinkTarget(suggestionNotes, target)
     if (noteId) onSelectNote(noteId)
   }, [onSelectNote, suggestionNotes])
+  const handleSelectTableOfContentsTarget = useCallback((target: MobileTableOfContentsTarget) => {
+    setTableOfContentsTarget((current) => ({
+      ...target,
+      requestId: (current?.requestId ?? 0) + 1,
+    }))
+  }, [])
+  useEffect(() => {
+    if (!props.tableOfContentsProbe || tableOfContentsTarget) return
+
+    const timeout = setTimeout(() => {
+      handleSelectTableOfContentsTarget({
+        id: mobileTableOfContentsHeadingTargetId(0),
+        level: 2,
+        title: 'Target Section',
+      })
+    }, 600)
+
+    return () => clearTimeout(timeout)
+  }, [handleSelectTableOfContentsTarget, props.tableOfContentsProbe, tableOfContentsTarget])
 
   return (
     <View style={styles.shell}>
@@ -127,16 +157,22 @@ function TabletWorkspaceChrome(props: TabletWorkspaceChromeProps) {
       <TabletEditorPanelHost
         {...props}
         suggestionNotes={suggestionNotes}
+        tableOfContentsTarget={tableOfContentsTarget}
         onRegisterEditorCommands={editorCommandRegistry.register}
         onNavigateWikilink={handleNavigateWikilink}
       />
       <TabletPropertiesPanelHost {...props} gestures={gestures} />
-      <WorkspaceActionSheetHost {...props} suggestionNotes={suggestionNotes} />
+      <WorkspaceActionSheetHost
+        {...props}
+        suggestionNotes={suggestionNotes}
+        onSelectTableOfContentsTarget={handleSelectTableOfContentsTarget}
+      />
       {commandPaletteOpen ? <MobileCommandPalette commands={commandPaletteCommands} onClose={closeCommandPalette} /> : null}
     </View>
   )
 }
 
+type TabletTableOfContentsTargetRequest = MobileTableOfContentsTarget & { requestId: number }
 type TabletPanelGestures = ReturnType<typeof useTabletPanelGestures>
 type TabletPanelHostProps = TabletWorkspaceChromeProps & { gestures: TabletPanelGestures }
 type TabletSidebarHostProps = TabletPanelHostProps & { onOpenCommandPalette: () => void }
@@ -252,6 +288,7 @@ type TabletEditorPanelHostProps = Pick<
   | 'initialEditorEditingMode'
   | 'layoutProbe'
   | 'onOpenMoreActions'
+  | 'onTableOfContentsScrollProof'
   | 'onToggleFavorite'
   | 'onUpdateNoteContent'
   | 'selectedNote'
@@ -268,6 +305,7 @@ type TabletEditorPanelHostProps = Pick<
   onNavigateWikilink: (target: string) => void
   onRegisterEditorCommands?: RegisterMobileEditorCommands
   suggestionNotes: MobileNote[]
+  tableOfContentsTarget: TabletTableOfContentsTargetRequest | null
 }
 
 function TabletEditorPanelHost({
@@ -280,11 +318,13 @@ function TabletEditorPanelHost({
   onNavigateWikilink,
   onOpenMoreActions,
   onRegisterEditorCommands,
+  onTableOfContentsScrollProof,
   onToggleFavorite,
   onUpdateNoteContent,
   selectedNote,
   sourceSelectionProbe,
   suggestionNotes,
+  tableOfContentsTarget,
   vaultRootUri,
   wysiwygAutocompleteProbe,
   wysiwygFormatCommandProbe,
@@ -307,9 +347,11 @@ function TabletEditorPanelHost({
       onNavigateWikilink={onNavigateWikilink}
       onOpenMoreActions={onOpenMoreActions}
       onRegisterEditorCommands={onRegisterEditorCommands}
+      onTableOfContentsScrollProof={onTableOfContentsScrollProof}
       onToggleFavorite={onToggleFavorite}
       onUpdateContent={onUpdateNoteContent}
       sourceSelectionProbe={sourceSelectionProbe}
+      tableOfContentsTarget={tableOfContentsTarget}
       vaultRootUri={vaultRootUri}
       wysiwygAutocompleteProbe={wysiwygAutocompleteProbe}
       wysiwygFormatCommandProbe={wysiwygFormatCommandProbe}
@@ -363,7 +405,10 @@ function TabletPropertiesPanelHost({
   )
 }
 
-type ActionSheetHostProps = TabletWorkspaceChromeProps & { suggestionNotes: MobileNote[] }
+type ActionSheetHostProps = TabletWorkspaceChromeProps & {
+  onSelectTableOfContentsTarget?: (target: MobileTableOfContentsTarget) => void
+  suggestionNotes: MobileNote[]
+}
 
 export function WorkspaceActionSheetHost(props: ActionSheetHostProps) {
   const { openAction } = props
@@ -515,6 +560,7 @@ function actionSheetHandlers(props: ActionSheetHostProps) {
     onOpenRenameNoteFile: props.onOpenRenameNoteFile,
     onOpenSetNoteIcon: props.onOpenSetNoteIcon,
     onOpenTableOfContents: props.onOpenTableOfContents,
+    onSelectTableOfContentsTarget: props.onSelectTableOfContentsTarget,
     onPrimaryAllNotesShowImagesChange: props.onPrimaryAllNotesShowImagesChange,
     onPrimaryAllNotesShowPdfsChange: props.onPrimaryAllNotesShowPdfsChange,
     onPrimaryAllNotesShowUnsupportedChange: props.onPrimaryAllNotesShowUnsupportedChange,

@@ -51,6 +51,7 @@ import { MobileViewDisplayPropertiesPicker } from './MobileViewDisplayProperties
 import { MobileViewFilterBuilder } from './MobileViewFilterBuilder'
 import { MobileEditorFindSheet } from './MobileEditorFindSheet'
 import { MobileTableOfContentsSheet } from './MobileTableOfContentsSheet'
+import type { MobileTableOfContentsTarget } from '../../workspace/mobileTableOfContents'
 import { MoreActionsContent } from './MobileWorkspaceMoreActionsContent'
 import { MobileFavoriteActions, MobileSavedViewActions, MobileTypeSectionActions } from './MobileWorkspaceMoveActions'
 import { MobileWorkspaceSuggestionList } from './MobileWorkspaceSuggestionList'
@@ -148,6 +149,7 @@ export type MobileWorkspaceActionSheetProps = {
   onOpenRenameNoteFile: () => void
   onOpenSetNoteIcon: () => void
   onOpenTableOfContents: () => void
+  onSelectTableOfContentsTarget?: (target: MobileTableOfContentsTarget) => void
   onPrimaryAllNotesShowImagesChange: (value: boolean) => void
   onPrimaryAllNotesShowPdfsChange: (value: boolean) => void
   onPrimaryAllNotesShowUnsupportedChange: (value: boolean) => void
@@ -319,7 +321,15 @@ const actionContentByAction: Record<MobileWorkspaceAction, (props: MobileWorkspa
   replaceInNote: (props) => <MobileEditorFindSheet editorBlocks={props.editorBlocks} editorBullets={props.editorBullets} note={props.selectedNote} replace onClose={props.onClose} onUpdateContent={props.onUpdateNoteContent} />,
   search: (props) => <SearchContent {...props} />,
   setNoteIcon: (props) => <SingleTextFieldContent config={singleTextFieldConfig(props)} />,
-  tableOfContents: (props) => <MobileTableOfContentsSheet blocks={props.editorBlocks} bullets={props.editorBullets} note={props.selectedNote} onClose={props.onClose} />,
+  tableOfContents: (props) => (
+    <MobileTableOfContentsSheet
+      blocks={props.editorBlocks}
+      bullets={props.editorBullets}
+      note={props.selectedNote}
+      onClose={props.onClose}
+      onSelectTarget={props.onSelectTableOfContentsTarget}
+    />
+  ),
 }
 
 function SearchContent({

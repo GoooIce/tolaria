@@ -47,6 +47,7 @@
     "mobile:qa:ios-phone-workspace-persistence": "node apps/mobile/scripts/assert-ios-workspace-persistence.mjs --phone --open-url 'exp://127.0.0.1:8081/--/?layoutProbe=1&phoneState=editor' --wait 6500",
     "mobile:qa:ios-source-selection": "node apps/mobile/scripts/assert-ios-source-selection.mjs --open-url 'exp://127.0.0.1:8081/--/?layoutProbe=1&editorMode=source' --wait 4500",
     "mobile:qa:ios-phone-source-selection": "node apps/mobile/scripts/assert-ios-source-selection.mjs --phone --open-url 'exp://127.0.0.1:8081/--/?layoutProbe=1&editorMode=source&phoneState=editor' --wait 4500",
+    "mobile:qa:ios-table-of-contents": "node apps/mobile/scripts/assert-ios-table-of-contents.mjs --open-url 'exp://127.0.0.1:8081/--/?layoutProbe=1' --wait 5500",
     "mobile:qa:screenshots": "pnpm mobile:export:web && playwright test --config apps/mobile/playwright.config.ts",
     "mobile:start": "pnpm --filter @tolaria/mobile start",
     "mobile:ios": "pnpm --filter @tolaria/mobile ios",

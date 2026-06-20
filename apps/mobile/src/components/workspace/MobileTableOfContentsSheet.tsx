@@ -9,6 +9,7 @@ import {
   buildMobileTableOfContents,
   type MobileTableOfContentsItem,
   type MobileTableOfContentsLevel,
+  type MobileTableOfContentsTarget,
 } from '../../workspace/mobileTableOfContents'
 import type { MobileEditorBlock, MobileNote } from '../../workspace/mobileWorkspaceModel'
 
@@ -17,6 +18,7 @@ type MobileTableOfContentsSheetProps = {
   bullets: string[]
   note: MobileNote | null
   onClose: () => void
+  onSelectTarget?: (target: MobileTableOfContentsTarget) => void
 }
 
 export function MobileTableOfContentsSheet({
@@ -24,6 +26,7 @@ export function MobileTableOfContentsSheet({
   bullets,
   note,
   onClose,
+  onSelectTarget,
 }: MobileTableOfContentsSheetProps) {
   if (!note) {
     return (
@@ -46,7 +49,7 @@ export function MobileTableOfContentsSheet({
         <ListBullets color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />
         <Text style={styles.headerText}>{mobileText('tableOfContents.navLabel')}</Text>
       </View>
-      <MobileTocNode depth={0} item={toc} onPress={onClose} />
+      <MobileTocNode depth={0} item={toc} onPress={onClose} onSelectTarget={onSelectTarget} />
     </ScrollView>
   )
 }
@@ -55,16 +58,18 @@ function MobileTocNode({
   depth,
   item,
   onPress,
+  onSelectTarget,
 }: {
   depth: number
   item: MobileTableOfContentsItem
   onPress: () => void
+  onSelectTarget?: (target: MobileTableOfContentsTarget) => void
 }) {
   return (
     <>
-      <MobileTocRow depth={depth} item={item} onPress={onPress} />
+      <MobileTocRow depth={depth} item={item} onPress={onPress} onSelectTarget={onSelectTarget} />
       {item.children.map((child) => (
-        <MobileTocNode key={child.id} depth={depth + 1} item={child} onPress={onPress} />
+        <MobileTocNode key={child.id} depth={depth + 1} item={child} onPress={onPress} onSelectTarget={onSelectTarget} />
       ))}
     </>
   )
@@ -74,11 +79,18 @@ function MobileTocRow({
   depth,
   item,
   onPress,
+  onSelectTarget,
 }: {
   depth: number
   item: MobileTableOfContentsItem
   onPress: () => void
+  onSelectTarget?: (target: MobileTableOfContentsTarget) => void
 }) {
+  const selectTarget = () => {
+    onSelectTarget?.(item)
+    onPress()
+  }
+
   return (
     <Pressable
       accessibilityLabel={item.title}
@@ -89,7 +101,7 @@ function MobileTocRow({
         pressed ? styles.rowPressed : null,
       ]}
       testID={`table-of-contents-row-${item.id}`}
-      onPress={onPress}
+      onPress={selectTarget}
     >
       <View style={styles.iconSlot}>{tocIcon(item.level)}</View>
       <Text numberOfLines={1} style={styles.rowText}>{item.title}</Text>

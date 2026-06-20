@@ -29,6 +29,7 @@ import type {
   SidebarLabel,
 } from './tabletWorkspaceNavigation'
 import type { EditorEditingMode } from './TabletEditorPanel'
+import type { NativeTableOfContentsProof } from '../qa/nativeTableOfContentsProbe'
 
 export type TabletPanel = 'noteList' | 'properties' | 'sidebar'
 export type TabletReadOnlyForm = {
@@ -178,6 +179,7 @@ export type TabletWorkspaceChromeProps = {
   onOpenSetNoteIcon: () => void
   onOpenSearch: () => void
   onOpenTableOfContents: () => void
+  onTableOfContentsScrollProof?: (proof: NativeTableOfContentsProof) => void
   onNoteListFilterChange: (filter: MobileNoteListFilter) => void
   onPrimaryAllNotesShowImagesChange: (value: boolean) => void
   onPrimaryAllNotesShowPdfsChange: (value: boolean) => void
@@ -250,6 +252,7 @@ export type TabletWorkspaceChromeProps = {
   selectedNote: MobileNote | null
   selectedNoteId: string | null
   sourceSelectionProbe?: boolean
+  tableOfContentsProbe?: boolean
   snapshot: MobileWorkspaceSnapshot
   vaultRootUri: string | null
   wysiwygAutocompleteProbe?: boolean

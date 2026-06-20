@@ -6,8 +6,15 @@ import {
   PencilSimple,
   Star,
 } from 'phosphor-react-native'
-import { ScrollView, StyleSheet, View } from 'react-native'
-import { useCallback, useState } from 'react'
+import {
+  ScrollView,
+  StyleSheet,
+  View,
+  type LayoutChangeEvent,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+} from 'react-native'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { MobileEditorBlocks } from '../components/workspace/MobileEditorBlocks'
 import { MobileMarkdownSourceEditor } from '../components/workspace/MobileMarkdownSourceEditor'
 import { MobileNoteIcon, MobileTypeIcon } from '../components/workspace/MobileWorkspaceIcons'
@@ -22,6 +29,14 @@ import { mobileColors, mobileSpace, mobileType } from '../ui/tokens'
 import { MobileLayoutProbeReadout } from '../qa/MobileLayoutProbeReadout'
 import { useMobileLayoutProbe, type MobileLayoutProbe } from '../qa/mobileLayoutProbe'
 import type { MobileEditorBlock, MobileNote } from '../workspace/mobileWorkspaceModel'
+import {
+  mobileTableOfContentsTitleTargetId,
+  type MobileTableOfContentsTarget,
+} from '../workspace/mobileTableOfContents'
+import {
+  nativeTableOfContentsScrollProof,
+  type NativeTableOfContentsProof,
+} from '../qa/nativeTableOfContentsProbe'
 import {
   useMobileAttachmentImporter,
   type MobileAttachmentImporter,
@@ -45,9 +60,11 @@ type TabletEditorPanelProps = {
   onNavigateWikilink: (target: string) => void
   onOpenMoreActions: () => void
   onRegisterEditorCommands?: RegisterMobileEditorCommands
+  onTableOfContentsScrollProof?: (proof: NativeTableOfContentsProof) => void
   onToggleFavorite: () => void
   onUpdateContent: (noteId: string, content: string) => void
   sourceSelectionProbe?: boolean
+  tableOfContentsTarget?: MobileTableOfContentsTarget | null
   vaultRootUri?: string | null
   wysiwygAutocompleteProbe?: boolean
   wysiwygFormatCommandProbe?: boolean
@@ -74,6 +91,8 @@ type EditorPanelBodyProps = {
   contentProps: EditorContentProps
   fileMode: EditorFileMode
   note: MobileNote
+  onScroll: (event: NativeSyntheticEvent<NativeScrollEvent>) => void
+  onScrollViewRef: (node: ScrollView | null) => void
 }
 
 type EditorContentProps = {
@@ -91,6 +110,7 @@ type EditorContentProps = {
   onOpenLink: MobileAttachmentLinkOpener
   onRegisterEditorCommands?: RegisterMobileEditorCommands
   onUpdateContent: (noteId: string, content: string) => void
+  onTableOfContentsTargetLayout: (targetId: string, event: LayoutChangeEvent) => void
   sourceSelectionProbe?: boolean
   vaultRootUri?: string | null
   wysiwygAutocompleteProbe?: boolean
@@ -100,6 +120,11 @@ type EditorContentProps = {
   wysiwygTableCommandMutationProbe?: boolean
   wysiwygWikilinkInsertProbe?: boolean
   wysiwygMutationProbe?: boolean
+}
+type TableOfContentsScroll = {
+  onScroll: (event: NativeSyntheticEvent<NativeScrollEvent>) => void
+  onTargetLayout: (targetId: string, event: LayoutChangeEvent) => void
+  setScrollViewNode: (node: ScrollView | null) => void
 }
 
 export type EditorEditingMode = 'source' | 'wysiwyg'
@@ -118,9 +143,11 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
     onNavigateWikilink,
     onOpenMoreActions,
     onRegisterEditorCommands,
+    onTableOfContentsScrollProof,
     onToggleFavorite,
     onUpdateContent,
     sourceSelectionProbe = false,
+    tableOfContentsTarget = null,
     vaultRootUri = null,
     wysiwygAutocompleteProbe = false,
     wysiwygFormatCommandProbe = false,
@@ -132,6 +159,10 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
   } = props
   const [editing, setEditing] = useState(initialEditing)
   const [editingMode, setEditingMode] = useState<EditorEditingMode>(initialEditingMode)
+  const { onScroll, onTargetLayout, setScrollViewNode } = useTableOfContentsScroll(
+    tableOfContentsTarget,
+    onTableOfContentsScrollProof,
+  )
   const importAttachment = useMobileAttachmentImporter(vaultRootUri)
   const openLink = useMobileAttachmentLinkOpener(vaultRootUri)
   const layoutProbe = useMobileLayoutProbe(layoutProbeEnabled)
@@ -171,6 +202,7 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
     onNavigateWikilink,
     onOpenLink: openLink,
     onRegisterEditorCommands,
+    onTableOfContentsTargetLayout: onTargetLayout,
     onUpdateContent,
     plainText,
     sourceSelectionProbe,
@@ -201,6 +233,8 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
         contentProps={contentProps}
         fileMode={fileMode}
         note={note}
+        onScroll={onScroll}
+        onScrollViewRef={setScrollViewNode}
       />
       {layoutProbeEnabled ? <MobileLayoutProbeReadout metrics={layoutProbe.metrics} testID="editor-layout-metrics" /> : null}
     </MobilePanel>
@@ -212,6 +246,8 @@ function EditorPanelBody({
   contentProps,
   fileMode,
   note,
+  onScroll,
+  onScrollViewRef,
 }: EditorPanelBodyProps) {
   if (fileMode === 'binary') {
     return (
@@ -230,10 +266,63 @@ function EditorPanelBody({
   }
 
   return (
-    <ScrollView contentContainerStyle={readModeContentStyle(note, compact)} testID="editor-scroll">
+    <ScrollView
+      contentContainerStyle={readModeContentStyle(note, compact)}
+      onScroll={onScroll}
+      ref={onScrollViewRef}
+      scrollEventThrottle={16}
+      testID="editor-scroll"
+    >
       <EditorContent {...contentProps} />
     </ScrollView>
   )
+}
+
+function useTableOfContentsScroll(
+  target: MobileTableOfContentsTarget | null,
+  onProof?: (proof: NativeTableOfContentsProof) => void,
+): TableOfContentsScroll {
+  const scrollViewRef = useRef<ScrollView | null>(null)
+  const scrollYRef = useRef(0)
+  const targetOffsetsRef = useRef<Record<string, number>>({})
+  const setScrollViewNode = useCallback((node: ScrollView | null) => {
+    scrollViewRef.current = node
+  }, [])
+  const onScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    scrollYRef.current = event.nativeEvent.contentOffset.y
+  }, [])
+  const onTargetLayout = useCallback((targetId: string, event: LayoutChangeEvent) => {
+    targetOffsetsRef.current[targetId] = event.nativeEvent.layout.y
+  }, [])
+
+  useEffect(() => {
+    if (!target) return
+
+    const y = targetOffsetsRef.current[target.id]
+    if (typeof y !== 'number') return
+
+    const beforeY = scrollYRef.current
+    const expectedY = Math.max(0, y - desktopEditorParity.contentPaddingVertical)
+    scrollViewRef.current?.scrollTo({
+      animated: true,
+      y: expectedY,
+    })
+
+    if (!onProof) return
+
+    const proofTimeout = setTimeout(() => {
+      onProof(nativeTableOfContentsScrollProof({
+        afterY: scrollYRef.current,
+        beforeY,
+        expectedY,
+        targetId: target.id,
+      }))
+    }, 900)
+
+    return () => clearTimeout(proofTimeout)
+  }, [onProof, target])
+
+  return { onScroll, onTargetLayout, setScrollViewNode }
 }
 
 function EditorToolbar({
@@ -360,6 +449,7 @@ function EditorContent({
   onNavigateWikilink,
   onOpenLink,
   onRegisterEditorCommands,
+  onTableOfContentsTargetLayout,
   onUpdateContent,
   sourceSelectionProbe = false,
   vaultRootUri = null,
@@ -417,13 +507,18 @@ function EditorContent({
   return (
     <>
       {shouldRenderEditorDocumentTitle(note) ? (
-        <View style={panelStyles.titleBlock} testID="editor-title-block">
+        <View
+          onLayout={(event) => onTableOfContentsTargetLayout(mobileTableOfContentsTitleTargetId, event)}
+          style={panelStyles.titleBlock}
+          testID="editor-title-block"
+        >
           <Text style={[panelStyles.title, compact ? panelStyles.titleCompact : null]} testID="editor-title">{note.title}</Text>
         </View>
       ) : null}
       <MobileEditorBlocks
         blocks={blocks}
         fallbackBullets={bullets}
+        onTableOfContentsTargetLayout={onTableOfContentsTargetLayout}
         onOpenLink={onOpenLink}
         onNavigateWikilink={onNavigateWikilink}
       />

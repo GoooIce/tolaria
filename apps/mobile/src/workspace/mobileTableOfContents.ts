@@ -9,6 +9,7 @@ export type MobileTableOfContentsItem = {
   level: MobileTableOfContentsLevel
   title: string
 }
+export type MobileTableOfContentsTarget = Pick<MobileTableOfContentsItem, 'id' | 'level' | 'title'>
 
 type HeadingTitle = string
 type MarkdownLine = string
@@ -25,6 +26,12 @@ type MobileTocInput = {
   untitledLabel: HeadingTitle
 }
 
+export const mobileTableOfContentsTitleTargetId = 'toc-title'
+
+export function mobileTableOfContentsHeadingTargetId(index: number): string {
+  return `toc-heading-${index}`
+}
+
 export function buildMobileTableOfContents({
   blocks,
   bullets,
@@ -39,21 +46,23 @@ export function buildMobileTableOfContents({
   })
   const root: MobileTableOfContentsItem = {
     children: [],
-    id: 'toc-title',
+    id: mobileTableOfContentsTitleTargetId,
     level: 1,
     title,
   }
   const stack: MobileTableOfContentsItem[] = [root]
+  let visibleHeadingIndex = 0
 
   headings.forEach((heading, index) => {
     if (shouldSkipDuplicateTitleHeading({ heading, index, title })) return
 
     const item: MobileTableOfContentsItem = {
       children: [],
-      id: `toc-heading-${index}`,
+      id: mobileTableOfContentsHeadingTargetId(visibleHeadingIndex),
       level: heading.level,
       title: heading.title,
     }
+    visibleHeadingIndex += 1
     appendMobileTocHeading(stack, item)
   })
 

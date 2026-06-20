@@ -47,8 +47,20 @@ import {
   nativeWorkspacePersistenceProbeRepository,
   nativeWorkspacePersistenceProbeRequest,
 } from '../qa/nativeWorkspacePersistenceProbeRepository'
+import {
+  nativeTableOfContentsLogLine,
+  nativeTableOfContentsProbeContent,
+  nativeTableOfContentsProbeEnabled,
+  nativeTableOfContentsProbeTitle,
+  type NativeTableOfContentsProof,
+} from '../qa/nativeTableOfContentsProbe'
 import { setMobileLayoutMetricSinkUrl } from '../qa/mobileLayoutProbe'
 import type { MobileNote, MobileWorkspaceSnapshot } from '../workspace/mobileWorkspaceModel'
+import {
+  localVaultEditorBlocks,
+  localVaultEditorBullets,
+  localVaultSnippet,
+} from '../workspace/localVaultMarkdown'
 
 export function MobileUiLab() {
   const { width } = useWindowDimensions()
@@ -82,10 +94,13 @@ export function MobileUiLab() {
   const wysiwygTableCommandMutationProbe = nativeWysiwygTableCommandMutationProbeEnabled(searchParams)
   const wysiwygWikilinkInsertProbe = nativeWysiwygWikilinkInsertProbeEnabled(searchParams)
   const wysiwygMutationProbe = nativeWysiwygMutationProbeEnabled(searchParams) || wysiwygPersistenceProbe
+  const tableOfContentsProbe = nativeTableOfContentsProbeEnabled(searchParams)
   const baseSnapshot = repository.readSnapshot(repositoryRequest)
-  const snapshot = wysiwygMutationProbe && !wysiwygPersistenceProbe
-    ? snapshotWithWysiwygMutationProbeContent(baseSnapshot)
-    : baseSnapshot
+  const snapshot = mobileSnapshotForProbes(baseSnapshot, {
+    tableOfContentsProbe,
+    wysiwygMutationProbe,
+    wysiwygPersistenceProbe,
+  })
   const workspaceKey = mobileWorkspaceKey({
     initialEditorEditing,
     initialEditorEditingMode,
@@ -95,6 +110,7 @@ export function MobileUiLab() {
     snapshot,
     source,
     sourceSelectionProbe,
+    tableOfContentsProbe,
     workspacePersistenceProbe,
     wysiwygAutocompleteProbe,
     wysiwygFormatCommandProbe,
@@ -109,6 +125,9 @@ export function MobileUiLab() {
     const selection = await pickNativeWorkspaceDirectory(repositoryRequest.vaultRootUri)
     if (selection) setNativeWorkspace(selection)
   }, [repositoryRequest.vaultRootUri])
+  const handleTableOfContentsScrollProof = useCallback((proof: NativeTableOfContentsProof) => {
+    console.info(nativeTableOfContentsLogLine(proof))
+  }, [])
 
   useLayoutEffect(() => {
     setMobileLayoutMetricSinkUrl(metricSinkUrl)
@@ -127,6 +146,8 @@ export function MobileUiLab() {
         repositoryRequest={repositoryRequest}
         sourceSelectionProbe={sourceSelectionProbe}
         snapshot={snapshot}
+        tableOfContentsProbe={tableOfContentsProbe}
+        onTableOfContentsScrollProof={tableOfContentsProbe ? handleTableOfContentsScrollProof : undefined}
         wysiwygAutocompleteProbe={wysiwygAutocompleteProbe}
         wysiwygFormatCommandProbe={wysiwygFormatCommandProbe}
         wysiwygInputTransformProbe={wysiwygInputTransformProbe}
@@ -241,6 +262,52 @@ function layoutProbeEnabled(searchParams: URLSearchParams) {
   return searchParams.get('layoutProbe') === '1' || envFlagEnabled('EXPO_PUBLIC_TOLARIA_LAYOUT_PROBE')
 }
 
+function mobileSnapshotForProbes(
+  snapshot: MobileWorkspaceSnapshot,
+  {
+    tableOfContentsProbe,
+    wysiwygMutationProbe,
+    wysiwygPersistenceProbe,
+  }: {
+    tableOfContentsProbe: boolean
+    wysiwygMutationProbe: boolean
+    wysiwygPersistenceProbe: boolean
+  },
+) {
+  if (tableOfContentsProbe) return snapshotWithTableOfContentsProbeContent(snapshot)
+  if (wysiwygMutationProbe && !wysiwygPersistenceProbe) return snapshotWithWysiwygMutationProbeContent(snapshot)
+
+  return snapshot
+}
+
+function snapshotWithTableOfContentsProbeContent(snapshot: MobileWorkspaceSnapshot): MobileWorkspaceSnapshot {
+  const selectedNoteId = snapshot.selectedNoteId ?? snapshot.notes[0]?.id
+  if (!selectedNoteId) return snapshot
+
+  const rawContent = nativeTableOfContentsProbeContent()
+  const editorBlocks = localVaultEditorBlocks(rawContent)
+  const editorBullets = localVaultEditorBullets(editorBlocks)
+  const seedSelectedNote = (note: MobileNote) => note.id === selectedNoteId
+    ? {
+        ...note,
+        editorBlocks,
+        editorBullets,
+        rawContent,
+        snippet: localVaultSnippet(rawContent),
+        title: nativeTableOfContentsProbeTitle(),
+      }
+    : note
+
+  return {
+    ...snapshot,
+    allNotes: snapshot.allNotes?.map(seedSelectedNote),
+    editorBlocks,
+    editorBullets,
+    notes: snapshot.notes.map(seedSelectedNote),
+    selectedNoteId,
+  }
+}
+
 function snapshotWithWysiwygMutationProbeContent(snapshot: MobileWorkspaceSnapshot): MobileWorkspaceSnapshot {
   const selectedNoteId = snapshot.selectedNoteId ?? snapshot.notes[0]?.id
   if (!selectedNoteId) return snapshot
@@ -270,6 +337,7 @@ function mobileWorkspaceKey({
   snapshot,
   source,
   sourceSelectionProbe,
+  tableOfContentsProbe,
   workspacePersistenceProbe,
   wysiwygAutocompleteProbe,
   wysiwygFormatCommandProbe,
@@ -288,6 +356,7 @@ function mobileWorkspaceKey({
   snapshot: ReturnType<typeof readOnlyWorkspaceRepository.readSnapshot>
   source: ReturnType<typeof currentSnapshotSource>
   sourceSelectionProbe: boolean
+  tableOfContentsProbe: boolean
   workspacePersistenceProbe: boolean
   wysiwygAutocompleteProbe: boolean
   wysiwygFormatCommandProbe: boolean
@@ -307,6 +376,7 @@ function mobileWorkspaceKey({
     flagKey(initialEditorEditing, 'raw-editor', 'read-editor'),
     initialEditorEditingMode,
     flagKey(sourceSelectionProbe, 'source-selection-probe', 'no-source-selection-probe'),
+    flagKey(tableOfContentsProbe, 'table-of-contents-probe', 'no-table-of-contents-probe'),
     flagKey(workspacePersistenceProbe, 'workspace-persistence-probe', 'no-workspace-persistence-probe'),
     flagKey(wysiwygAutocompleteProbe, 'wysiwyg-autocomplete-probe', 'no-wysiwyg-autocomplete-probe'),
     flagKey(wysiwygFormatCommandProbe, 'wysiwyg-format-command-probe', 'no-wysiwyg-format-command-probe'),

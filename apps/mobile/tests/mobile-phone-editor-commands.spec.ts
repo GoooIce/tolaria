@@ -147,7 +147,7 @@ async function openPhoneTableOfContents(page: Page) {
   await page.getByTestId('workspace-action-table-of-contents').click()
   await expect(page.getByTestId('table-of-contents-panel')).toBeVisible()
   await expect(page.getByTestId('table-of-contents-row-toc-title')).toContainText('Phone Editor Commands')
-  await expect(page.getByTestId('table-of-contents-row-toc-heading-1')).toContainText('Section title')
+  await expect(page.getByTestId('table-of-contents-row-toc-heading-0')).toContainText('Section title')
   await page.getByTestId('workspace-action-sheet-toolbar').getByRole('button', { name: 'Cancel' }).click()
   await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
 }

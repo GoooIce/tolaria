@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { buildMobileTableOfContents } from './mobileTableOfContents'
+import {
+  buildMobileTableOfContents,
+  mobileTableOfContentsHeadingTargetId,
+  mobileTableOfContentsTitleTargetId,
+} from './mobileTableOfContents'
 import type { MobileNote } from './mobileWorkspaceModel'
 
 describe('mobile table of contents', () => {
@@ -46,6 +50,12 @@ describe('mobile table of contents', () => {
       level: 1,
       title: 'Workflow Orchestration Essay',
     })
+    expect(toc.id).toBe(mobileTableOfContentsTitleTargetId)
+    expect(toc.children.map((item) => item.id)).toEqual([
+      mobileTableOfContentsHeadingTargetId(0),
+      mobileTableOfContentsHeadingTargetId(2),
+    ])
+    expect(toc.children[0]?.children[0]?.id).toBe(mobileTableOfContentsHeadingTargetId(1))
   })
 
   it('uses editable mobile editor blocks when raw markdown is unavailable', () => {

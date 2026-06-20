@@ -19,6 +19,7 @@ import { useHorizontalSwipe } from '../ui/useHorizontalSwipe'
 import { useMobileEditorCommandRegistry, type RegisterMobileEditorCommands } from '../workspace/mobileEditorCommands'
 import { mobileNoteIdForWikilinkTarget } from '../workspace/mobileWikilinks'
 import type { MobileNote, MobileWorkspaceSnapshot } from '../workspace/mobileWorkspaceModel'
+import type { MobileTableOfContentsTarget } from '../workspace/mobileTableOfContents'
 import {
   fixtureReadOnlyWorkspaceRepository,
   type ReadOnlyWorkspaceRepository,
@@ -81,6 +82,7 @@ export function PhoneWorkspace({
   const { width } = useWindowDimensions()
   const dragPreview = usePhoneDragPreview(phoneState, width)
   const editorCommandRegistry = useMobileEditorCommandRegistry()
+  const [tableOfContentsTarget, setTableOfContentsTarget] = useState<PhoneTableOfContentsTargetRequest | null>(null)
   const phoneLayoutProbe = useMobileLayoutProbe(layoutProbe)
   const openList = useCallback(() => setPhoneState('list'), [setPhoneState])
   const openSidebar = useCallback(() => setPhoneState('sidebar'), [setPhoneState])
@@ -108,6 +110,13 @@ export function PhoneWorkspace({
     controller.onCreateRelationshipTarget()
     setPhoneState('editor')
   }, [controller, setPhoneState])
+  const selectTableOfContentsTarget = useCallback((target: MobileTableOfContentsTarget) => {
+    setTableOfContentsTarget((current) => ({
+      ...target,
+      requestId: (current?.requestId ?? 0) + 1,
+    }))
+    setPhoneState('editor')
+  }, [setPhoneState])
   const transitionSwipeHandlers = usePhoneSwipeHandlers({
     openEditor,
     openList,
@@ -153,6 +162,7 @@ export function PhoneWorkspace({
           onRegisterEditorCommands={editorCommandRegistry.register}
           sourceSelectionProbe={sourceSelectionProbe}
           suggestionNotes={suggestionNotes}
+          tableOfContentsTarget={tableOfContentsTarget}
           wysiwygAutocompleteProbe={wysiwygAutocompleteProbe}
           wysiwygFormatCommandProbe={wysiwygFormatCommandProbe}
           wysiwygInputTransformProbe={wysiwygInputTransformProbe}
@@ -171,12 +181,15 @@ export function PhoneWorkspace({
         suggestionNotes={suggestionNotes}
         onCreateRelationshipTarget={createRelationshipTargetAndOpenEditor}
         onEnterNeighborhood={openNeighborhoodList}
+        onSelectTableOfContentsTarget={selectTableOfContentsTarget}
       />
       <MobileSyncStatusBar sync={controller.snapshot.sync} onOpenLocalVault={onOpenNativeVault} />
       {commandPalette.element}
     </View>
   )
 }
+
+type PhoneTableOfContentsTargetRequest = MobileTableOfContentsTarget & { requestId: number }
 
 function usePhoneCommandPalette({
   controller,
@@ -369,6 +382,7 @@ function phoneWorkspaceDragPreview({
       phoneSwipePreview={dragPreview}
       sourceSelectionProbe={false}
       suggestionNotes={suggestionNotes}
+      tableOfContentsTarget={null}
       wysiwygAutocompleteProbe={false}
       wysiwygFormatCommandProbe={false}
       wysiwygInputTransformProbe={false}
@@ -396,6 +410,7 @@ type PhoneWorkspaceStateViewProps = {
   onRegisterEditorCommands?: RegisterMobileEditorCommands
   sourceSelectionProbe: boolean
   suggestionNotes: MobileNote[]
+  tableOfContentsTarget: PhoneTableOfContentsTargetRequest | null
   wysiwygAutocompleteProbe: boolean
   wysiwygFormatCommandProbe: boolean
   wysiwygInputTransformProbe: boolean
@@ -562,6 +577,7 @@ function PhoneEditorScreen({
   phoneSwipePreview,
   sourceSelectionProbe,
   suggestionNotes,
+  tableOfContentsTarget,
   wysiwygAutocompleteProbe,
   wysiwygFormatCommandProbe,
   wysiwygInputTransformProbe,
@@ -594,6 +610,7 @@ function PhoneEditorScreen({
         onNavigateWikilink={handleNavigateWikilink}
         onRegisterEditorCommands={onRegisterEditorCommands}
         sourceSelectionProbe={sourceSelectionProbe}
+        tableOfContentsTarget={tableOfContentsTarget}
         wysiwygAutocompleteProbe={wysiwygAutocompleteProbe}
         wysiwygFormatCommandProbe={wysiwygFormatCommandProbe}
         wysiwygInputTransformProbe={wysiwygInputTransformProbe}
@@ -640,6 +657,7 @@ function PhoneEditorBody({
   onNavigateWikilink,
   onRegisterEditorCommands,
   sourceSelectionProbe,
+  tableOfContentsTarget,
   wysiwygAutocompleteProbe,
   wysiwygFormatCommandProbe,
   wysiwygInputTransformProbe,
@@ -656,6 +674,7 @@ function PhoneEditorBody({
   onNavigateWikilink: (target: string) => void
   onRegisterEditorCommands?: RegisterMobileEditorCommands
   sourceSelectionProbe: boolean
+  tableOfContentsTarget: PhoneTableOfContentsTargetRequest | null
   wysiwygAutocompleteProbe: boolean
   wysiwygFormatCommandProbe: boolean
   wysiwygInputTransformProbe: boolean
@@ -680,6 +699,7 @@ function PhoneEditorBody({
       onToggleFavorite={controller.onToggleFavorite}
       onUpdateContent={controller.onUpdateNoteContent}
       sourceSelectionProbe={sourceSelectionProbe}
+      tableOfContentsTarget={tableOfContentsTarget}
       vaultRootUri={controller.vaultRootUri}
       wysiwygAutocompleteProbe={wysiwygAutocompleteProbe}
       wysiwygFormatCommandProbe={wysiwygFormatCommandProbe}
