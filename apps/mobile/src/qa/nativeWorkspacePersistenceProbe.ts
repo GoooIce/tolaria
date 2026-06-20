@@ -16,6 +16,7 @@ export type NativeWorkspacePersistenceProof = {
   noteStateMetadataHydrated: boolean
   persistedToNativeRepository: boolean
   propertyDisplayModesHydrated: boolean
+  propertyDeletionHydrated: boolean
   propertyValuesHydrated: boolean
   relationshipEditHydrated: boolean
   relationshipSourceRefHydrated: boolean
@@ -87,6 +88,7 @@ export function assertNativeWorkspacePersistenceProofs(
     proofFailure(latest.noteChromeMetadataHydrated, 'workspace.persistence.noteChromeMetadata', 'Note icon and width metadata rehydrate from native frontmatter writes'),
     proofFailure(latest.noteStateMetadataHydrated, 'workspace.persistence.noteStateMetadata', 'Note archive, organized, and favorite metadata rehydrate from native frontmatter writes'),
     proofFailure(latest.propertyDisplayModesHydrated, 'workspace.persistence.propertyDisplayModes', 'Property display modes rehydrate from native vault-scoped config storage'),
+    proofFailure(latest.propertyDeletionHydrated, 'workspace.persistence.propertyDeletion', 'Deleted scalar properties are removed from native frontmatter writes'),
     proofFailure(latest.propertyValuesHydrated, 'workspace.persistence.propertyValues', 'Typed property values rehydrate from native frontmatter writes'),
     proofFailure(latest.relationshipEditHydrated, 'workspace.persistence.relationshipEdit', 'Relationship add/remove edits rehydrate from native frontmatter writes'),
     proofFailure(latest.relationshipTargetHydrated, 'workspace.persistence.relationshipTarget', 'Relationship target creation rehydrates the reducer-created target note'),
@@ -184,6 +186,7 @@ const workspacePersistenceProofKeys = [
   'noteStateMetadataHydrated',
   'persistedToNativeRepository',
   'propertyDisplayModesHydrated',
+  'propertyDeletionHydrated',
   'propertyValuesHydrated',
   'relationshipEditHydrated',
   'relationshipSourceRefHydrated',

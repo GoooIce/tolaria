@@ -221,6 +221,7 @@ function workspacePersistencePropertyAndRelationshipWrites(seedSnapshot: MobileW
     { key: 'Published', noteId: propertyRelationshipNotePath, type: 'updateProperty', value: true },
     { key: 'Website', noteId: propertyRelationshipNotePath, type: 'updateProperty', value: propertyRelationshipUrl },
     { key: 'tags', noteId: propertyRelationshipNotePath, type: 'updateProperty', value: ['Mobile', 'QA'] },
+    { key: 'Obsolete', noteId: propertyRelationshipNotePath, type: 'deleteProperty' },
     { key: 'related_to', noteId: propertyRelationshipNotePath, ref: '[[Writing/Seed]]', type: 'removeRelationship' },
     {
       key: 'belongs_to',
@@ -577,6 +578,7 @@ function workspacePersistenceProof(
     noteChromeMetadataHydrated: noteChromeMetadataHydrated(snapshot, content.metadataContent),
     noteStateMetadataHydrated: noteStateMetadataHydrated(snapshot, content.metadataContent),
     persistedToNativeRepository: snapshot.source?.kind === 'localVault',
+    propertyDeletionHydrated: propertyDeletionHydrated(snapshot, content.propertyRelationshipContent),
     propertyDisplayModesHydrated: propertyDisplayModesHydrated(snapshot),
     propertyValuesHydrated: propertyValuesHydrated(snapshot, content.propertyRelationshipContent),
     relationshipEditHydrated: relationshipEditHydrated(snapshot, content.propertyRelationshipContent),
@@ -759,6 +761,12 @@ function propertyValuesHydrated(snapshot: MobileWorkspaceSnapshot, content: stri
     joinedProperties(note?.tags) === 'Mobile|QA',
     textContainsAll(content, ['Priority: 5', 'Published: true', 'Website:', propertyRelationshipUrl]),
   ].every(Boolean)
+}
+
+function propertyDeletionHydrated(snapshot: MobileWorkspaceSnapshot, content: string | null) {
+  const note = noteByPath(snapshot, propertyRelationshipNotePath)
+  return notePropertyValue(note, 'Obsolete') === undefined
+    && content?.includes('Obsolete:') === false
 }
 
 function relationshipEditHydrated(snapshot: MobileWorkspaceSnapshot, content: string | null) {
@@ -975,6 +983,7 @@ function propertyRelationshipNoteContent() {
     '---',
     'type: Essay',
     'status: Draft',
+    'Obsolete: remove me',
     'Related to:',
     '  - "[[Writing/Seed]]"',
     '---',
