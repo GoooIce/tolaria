@@ -1189,7 +1189,7 @@ function escapeMarkdownLinkLabel(text: LinkLabel): LinkLabel {
 
 function escapeMarkdownLinkDestination(href: UrlText): UrlText {
   if (/[\s<>]/u.test(href)) return `<${href.replace(/>/g, '%3E')}>`
-  return href.replace(/\\/g, '\\\\').replace(/\)/g, '\\)')
+  return href.replace(/\\/g, '\\\\').replace(/[()]/g, '\\$&')
 }
 
 function escapePlainInlineMarkdown(text: PlainText): PlainText {

@@ -542,6 +542,15 @@ Updated body.
     )
   })
 
+  it('serializes link destinations with parentheses as escaped desktop markdown destinations', () => {
+    const markdown = tiptapJsonToMobileMarkdown(linkDocument('https://cdn.example.com/Workflow%20Plan%20(1).pdf', 'spec'))
+
+    expect(markdown).toBe('[spec](https://cdn.example.com/Workflow%20Plan%20\\(1\\).pdf)')
+    expect(mobileMarkdownBodyToTentapHtml(`${markdown}\n`)).toBe(
+      '<p><a href="https://cdn.example.com/Workflow%20Plan%20(1).pdf">spec</a></p>',
+    )
+  })
+
   it('serializes native attachment link URIs back to portable markdown destinations', () => {
     expect(tiptapJsonToMobileMarkdown(
       linkDocument('file:///vault/root/attachments/project%20brief.pdf'),
