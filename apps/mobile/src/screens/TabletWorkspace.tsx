@@ -35,6 +35,7 @@ export function TabletWorkspace({
   wysiwygFormatCommandProbe = false,
   wysiwygInputTransformProbe = false,
   wysiwygMarkdownBlockProbe = false,
+  wysiwygTableCommandMutationProbe = false,
   wysiwygWikilinkInsertProbe = false,
   wysiwygMutationProbe = false,
 }: {
@@ -50,6 +51,7 @@ export function TabletWorkspace({
   wysiwygFormatCommandProbe?: boolean
   wysiwygInputTransformProbe?: boolean
   wysiwygMarkdownBlockProbe?: boolean
+  wysiwygTableCommandMutationProbe?: boolean
   wysiwygWikilinkInsertProbe?: boolean
   wysiwygMutationProbe?: boolean
 }) {
@@ -70,6 +72,7 @@ export function TabletWorkspace({
         wysiwygFormatCommandProbe={wysiwygFormatCommandProbe}
         wysiwygInputTransformProbe={wysiwygInputTransformProbe}
         wysiwygMarkdownBlockProbe={wysiwygMarkdownBlockProbe}
+        wysiwygTableCommandMutationProbe={wysiwygTableCommandMutationProbe}
         wysiwygWikilinkInsertProbe={wysiwygWikilinkInsertProbe}
         wysiwygMutationProbe={wysiwygMutationProbe}
         {...controller}
@@ -255,6 +258,7 @@ type TabletEditorPanelHostProps = Pick<
   | 'wysiwygFormatCommandProbe'
   | 'wysiwygInputTransformProbe'
   | 'wysiwygMarkdownBlockProbe'
+  | 'wysiwygTableCommandMutationProbe'
   | 'wysiwygWikilinkInsertProbe'
   | 'wysiwygMutationProbe'
 > & {
@@ -283,6 +287,7 @@ function TabletEditorPanelHost({
   wysiwygFormatCommandProbe,
   wysiwygInputTransformProbe,
   wysiwygMarkdownBlockProbe,
+  wysiwygTableCommandMutationProbe,
   wysiwygWikilinkInsertProbe,
   wysiwygMutationProbe,
 }: TabletEditorPanelHostProps) {
@@ -307,6 +312,7 @@ function TabletEditorPanelHost({
       wysiwygFormatCommandProbe={wysiwygFormatCommandProbe}
       wysiwygInputTransformProbe={wysiwygInputTransformProbe}
       wysiwygMarkdownBlockProbe={wysiwygMarkdownBlockProbe}
+      wysiwygTableCommandMutationProbe={wysiwygTableCommandMutationProbe}
       wysiwygWikilinkInsertProbe={wysiwygWikilinkInsertProbe}
       wysiwygMutationProbe={wysiwygMutationProbe}
     />

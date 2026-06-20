@@ -37,13 +37,22 @@ type MobileTableBridgeOptions = {
 type MobileTableBridgeActionType =
   | 'mobile-table-add-column-after'
   | 'mobile-table-add-row-after'
+  | 'mobile-table-add-row-column-after-first-body-cell'
   | 'mobile-table-delete-column'
   | 'mobile-table-delete-row'
 type MobileTableBridgeEditorInstance = {
   addColumnAfter: () => void
   addRowAfter: () => void
+  addRowAndColumnAfterFirstBodyCell: () => void
   deleteColumn: () => void
   deleteRow: () => void
+}
+type ProseMirrorNodeLike = {
+  child: (index: number) => ProseMirrorNodeLike
+  childCount: number
+  descendants: (callback: (node: ProseMirrorNodeLike, position: number) => boolean | void) => void
+  nodeSize: number
+  type: { name: string }
 }
 type MobileTableBridgeEditorState = {
   canAddColumnAfter: boolean
@@ -77,6 +86,7 @@ function mobileTableBridge({
     extendEditorInstance: (sendBridgeMessage) => ({
       addColumnAfter: () => sendBridgeMessage({ type: 'mobile-table-add-column-after' }),
       addRowAfter: () => sendBridgeMessage({ type: 'mobile-table-add-row-after' }),
+      addRowAndColumnAfterFirstBodyCell: () => sendBridgeMessage({ type: 'mobile-table-add-row-column-after-first-body-cell' }),
       deleteColumn: () => sendBridgeMessage({ type: 'mobile-table-delete-column' }),
       deleteRow: () => sendBridgeMessage({ type: 'mobile-table-delete-row' }),
     }),
@@ -120,8 +130,59 @@ function handleMobileTableBridgeMessage(editor: Editor, message: unknown): boole
 function runMobileTableBridgeAction(editor: Editor, action: MobileTableBridgeActionType): void {
   if (action === 'mobile-table-add-column-after') editor.chain().focus().addColumnAfter().run()
   if (action === 'mobile-table-add-row-after') editor.chain().focus().addRowAfter().run()
+  if (action === 'mobile-table-add-row-column-after-first-body-cell') addRowAndColumnAfterFirstBodyCell(editor)
   if (action === 'mobile-table-delete-column') editor.chain().focus().deleteColumn().run()
   if (action === 'mobile-table-delete-row') editor.chain().focus().deleteRow().run()
+}
+
+function addRowAndColumnAfterFirstBodyCell(editor: Editor): void {
+  const cellPosition = firstBodyTableCellPosition(editor.state.doc as ProseMirrorNodeLike)
+  if (cellPosition === null) return
+
+  editor.chain()
+    .focus()
+    .setCellSelection({ anchorCell: cellPosition, headCell: cellPosition })
+    .addColumnAfter()
+    .addRowAfter()
+    .run()
+}
+
+function firstBodyTableCellPosition(doc: ProseMirrorNodeLike): number | null {
+  let cellPosition: number | null = null
+  doc.descendants((node, position) => {
+    if (cellPosition !== null) return false
+    if (node.type.name !== 'table') return true
+
+    cellPosition = firstBodyCellPositionInTable(node, position)
+    return false
+  })
+
+  return cellPosition
+}
+
+function firstBodyCellPositionInTable(table: ProseMirrorNodeLike, tablePosition: number): number | null {
+  let rowPosition = tablePosition + 1
+  for (let index = 0; index < table.childCount; index += 1) {
+    const row = table.child(index)
+    if (!isHeaderRow(row)) return firstChildPosition(row, rowPosition)
+    rowPosition += row.nodeSize
+  }
+
+  return null
+}
+
+function firstChildPosition(node: ProseMirrorNodeLike, position: number): number | null {
+  return node.childCount > 0 ? position + 1 : null
+}
+
+function isHeaderRow(row: ProseMirrorNodeLike): boolean {
+  if (row.childCount === 0) return false
+
+  for (let index = 0; index < row.childCount; index += 1) {
+    if (row.child(index).type.name !== 'tableHeader') return false
+  }
+
+  return true
 }
 
 function mobileTableBridgeAction(message: unknown): MobileTableBridgeActionType | null {
@@ -134,6 +195,7 @@ function mobileTableBridgeAction(message: unknown): MobileTableBridgeActionType 
 function isMobileTableBridgeActionType(value: unknown): value is MobileTableBridgeActionType {
   return value === 'mobile-table-add-column-after'
     || value === 'mobile-table-add-row-after'
+    || value === 'mobile-table-add-row-column-after-first-body-cell'
     || value === 'mobile-table-delete-column'
     || value === 'mobile-table-delete-row'
 }

@@ -70,6 +70,7 @@ function fakeEditor(): FakeEditor {
   return {
     addColumnAfter: vi.fn(),
     addRowAfter: vi.fn(),
+    addRowAndColumnAfterFirstBodyCell: vi.fn(),
     deleteColumn: vi.fn(),
     deleteRow: vi.fn(),
     toggleBlockquote: vi.fn(),

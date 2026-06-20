@@ -7,6 +7,7 @@ type MobileWysiwygMarkdownEditorProps = MobileMarkdownSourceEditorProps & {
   wysiwygFormatCommandProbe?: boolean
   wysiwygInputTransformProbe?: boolean
   wysiwygMarkdownBlockProbe?: boolean
+  wysiwygTableCommandMutationProbe?: boolean
   wysiwygWikilinkInsertProbe?: boolean
   wysiwygMutationProbe?: boolean
   vaultRootUri?: string | null
@@ -18,6 +19,7 @@ export function MobileWysiwygMarkdownEditor({
   wysiwygFormatCommandProbe,
   wysiwygInputTransformProbe,
   wysiwygMarkdownBlockProbe,
+  wysiwygTableCommandMutationProbe,
   wysiwygWikilinkInsertProbe,
   wysiwygMutationProbe,
   vaultRootUri,
@@ -28,6 +30,7 @@ export function MobileWysiwygMarkdownEditor({
   void wysiwygFormatCommandProbe
   void wysiwygInputTransformProbe
   void wysiwygMarkdownBlockProbe
+  void wysiwygTableCommandMutationProbe
   void wysiwygWikilinkInsertProbe
   void wysiwygMutationProbe
   void vaultRootUri

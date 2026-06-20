@@ -34,6 +34,9 @@ import {
   nativeWysiwygMarkdownBlockProbeEnabled,
 } from '../qa/nativeWysiwygMarkdownBlockProbe'
 import {
+  nativeWysiwygTableCommandMutationProbeEnabled,
+} from '../qa/nativeWysiwygTableCommandMutationProbe'
+import {
   nativeWysiwygPersistenceProbeRepository,
   nativeWysiwygPersistenceProbeRequest,
 } from '../qa/nativeWysiwygPersistenceProbeRepository'
@@ -76,6 +79,7 @@ export function MobileUiLab() {
   const wysiwygFormatCommandProbe = nativeWysiwygFormatCommandProbeEnabled(searchParams)
   const wysiwygInputTransformProbe = nativeWysiwygInputTransformProbeEnabled(searchParams)
   const wysiwygMarkdownBlockProbe = nativeWysiwygMarkdownBlockProbeEnabled(searchParams)
+  const wysiwygTableCommandMutationProbe = nativeWysiwygTableCommandMutationProbeEnabled(searchParams)
   const wysiwygWikilinkInsertProbe = nativeWysiwygWikilinkInsertProbeEnabled(searchParams)
   const wysiwygMutationProbe = nativeWysiwygMutationProbeEnabled(searchParams) || wysiwygPersistenceProbe
   const baseSnapshot = repository.readSnapshot(repositoryRequest)
@@ -96,6 +100,7 @@ export function MobileUiLab() {
     wysiwygFormatCommandProbe,
     wysiwygInputTransformProbe,
     wysiwygMarkdownBlockProbe,
+    wysiwygTableCommandMutationProbe,
     wysiwygWikilinkInsertProbe,
     wysiwygMutationProbe,
     wysiwygPersistenceProbe,
@@ -126,6 +131,7 @@ export function MobileUiLab() {
         wysiwygFormatCommandProbe={wysiwygFormatCommandProbe}
         wysiwygInputTransformProbe={wysiwygInputTransformProbe}
         wysiwygMarkdownBlockProbe={wysiwygMarkdownBlockProbe}
+        wysiwygTableCommandMutationProbe={wysiwygTableCommandMutationProbe}
         wysiwygWikilinkInsertProbe={wysiwygWikilinkInsertProbe}
         wysiwygMutationProbe={wysiwygMutationProbe}
       />
@@ -148,6 +154,7 @@ export function MobileUiLab() {
       wysiwygFormatCommandProbe={wysiwygFormatCommandProbe}
       wysiwygInputTransformProbe={wysiwygInputTransformProbe}
       wysiwygMarkdownBlockProbe={wysiwygMarkdownBlockProbe}
+      wysiwygTableCommandMutationProbe={wysiwygTableCommandMutationProbe}
       wysiwygWikilinkInsertProbe={wysiwygWikilinkInsertProbe}
       wysiwygMutationProbe={wysiwygMutationProbe}
     />
@@ -268,6 +275,7 @@ function mobileWorkspaceKey({
   wysiwygFormatCommandProbe,
   wysiwygInputTransformProbe,
   wysiwygMarkdownBlockProbe,
+  wysiwygTableCommandMutationProbe,
   wysiwygWikilinkInsertProbe,
   wysiwygMutationProbe,
   wysiwygPersistenceProbe,
@@ -285,6 +293,7 @@ function mobileWorkspaceKey({
   wysiwygFormatCommandProbe: boolean
   wysiwygInputTransformProbe: boolean
   wysiwygMarkdownBlockProbe: boolean
+  wysiwygTableCommandMutationProbe: boolean
   wysiwygWikilinkInsertProbe: boolean
   wysiwygMutationProbe: boolean
   wysiwygPersistenceProbe: boolean
@@ -303,6 +312,7 @@ function mobileWorkspaceKey({
     flagKey(wysiwygFormatCommandProbe, 'wysiwyg-format-command-probe', 'no-wysiwyg-format-command-probe'),
     flagKey(wysiwygInputTransformProbe, 'wysiwyg-input-transform-probe', 'no-wysiwyg-input-transform-probe'),
     flagKey(wysiwygMarkdownBlockProbe, 'wysiwyg-markdown-block-probe', 'no-wysiwyg-markdown-block-probe'),
+    flagKey(wysiwygTableCommandMutationProbe, 'wysiwyg-table-command-mutation-probe', 'no-wysiwyg-table-command-mutation-probe'),
     flagKey(wysiwygWikilinkInsertProbe, 'wysiwyg-wikilink-insert-probe', 'no-wysiwyg-wikilink-insert-probe'),
     flagKey(wysiwygMutationProbe, 'wysiwyg-mutation-probe', 'no-wysiwyg-mutation-probe'),
     flagKey(wysiwygPersistenceProbe, 'wysiwyg-persistence-probe', 'no-wysiwyg-persistence-probe'),

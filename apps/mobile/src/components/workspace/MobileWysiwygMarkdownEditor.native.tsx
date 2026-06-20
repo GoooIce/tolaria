@@ -45,16 +45,6 @@ import {
   type NativeWysiwygWikilinkPayload,
 } from './MobileWysiwygWikilinkBridgeModel'
 import {
-  nativeWysiwygMutationLogLine,
-  nativeWysiwygMutationProbeContent,
-  nativeWysiwygMutationProof,
-} from '../../qa/nativeWysiwygMutationProbe'
-import {
-  nativeWysiwygFormatCommandLogLine,
-  nativeWysiwygFormatCommandProbeActions,
-  nativeWysiwygFormatCommandProof,
-} from '../../qa/nativeWysiwygFormatCommandProbe'
-import {
   nativeWysiwygAutocompleteLogLine,
   nativeWysiwygAutocompleteProbeSteps,
   nativeWysiwygAutocompleteProof,
@@ -78,6 +68,15 @@ import {
   nativeWysiwygMarkdownBlockStructuredTable,
   publishNativeWysiwygMarkdownBlockProof,
 } from '../../qa/nativeWysiwygMarkdownBlockProbe'
+import { useNativeWysiwygFormatCommandProbe } from './MobileWysiwygFormatCommandProbe.native'
+import {
+  publishNativeWysiwygMutationProof,
+  useNativeWysiwygMutationProbe,
+} from './MobileWysiwygMutationProbe.native'
+import {
+  publishNativeWysiwygTableCommandMutationProof,
+  useNativeWysiwygTableCommandMutationProbe,
+} from './MobileWysiwygTableCommandMutationProbe.native'
 
 type MobileWysiwygMarkdownEditorProps = {
   blocks: MobileEditorBlock[]
@@ -94,6 +93,7 @@ type MobileWysiwygMarkdownEditorProps = {
   wysiwygFormatCommandProbe?: boolean
   wysiwygInputTransformProbe?: boolean
   wysiwygMarkdownBlockProbe?: boolean
+  wysiwygTableCommandMutationProbe?: boolean
   wysiwygWikilinkInsertProbe?: boolean
   wysiwygMutationProbe?: boolean
 }
@@ -162,6 +162,7 @@ type NativeTentapEditorRefs = {
   markdownBlockProofReadyRef: MutableRefObject<boolean>
   markdownBlockRenderProofRef: MutableRefObject<boolean>
   saveTimerRef: MutableRefObject<TimerHandle | null>
+  tableCommandMutationProofReadyRef: MutableRefObject<boolean>
 }
 type NativeWysiwygInlineAutocompleteHandler = (match: NativeWysiwygInlineAutocomplete | null) => void
 type NativeWysiwygPickerState = {
@@ -210,6 +211,7 @@ export function MobileWysiwygMarkdownEditor({
   wysiwygFormatCommandProbe = false,
   wysiwygInputTransformProbe = false,
   wysiwygMarkdownBlockProbe = false,
+  wysiwygTableCommandMutationProbe = false,
   wysiwygWikilinkInsertProbe = false,
   wysiwygMutationProbe = false,
 }: MobileWysiwygMarkdownEditorProps) {
@@ -240,6 +242,7 @@ export function MobileWysiwygMarkdownEditor({
     wysiwygFormatCommandProbe,
     wysiwygInputTransformProbe,
     wysiwygMarkdownBlockProbe,
+    wysiwygTableCommandMutationProbe,
     wysiwygWikilinkInsertProbe,
     wysiwygMutationProbe,
   })
@@ -389,6 +392,7 @@ function useNativeTentapEditorBridge({
   wysiwygFormatCommandProbe = false,
   wysiwygInputTransformProbe = false,
   wysiwygMarkdownBlockProbe = false,
+  wysiwygTableCommandMutationProbe = false,
   wysiwygWikilinkInsertProbe = false,
   wysiwygMutationProbe = false,
 }: NativeTentapEditorBridgeOptions) {
@@ -407,6 +411,7 @@ function useNativeTentapEditorBridge({
     noteId: note.id,
     onUpdateContent,
     refs,
+    tableCommandMutationProbeEnabled: wysiwygTableCommandMutationProbe,
     vaultRootUri,
     wikilinkInsertProbeEnabled: wysiwygWikilinkInsertProbe,
   })
@@ -465,6 +470,11 @@ function useNativeTentapEditorBridge({
     refs,
     warning: '[mobile-editor] Failed to run native WYSIWYG wikilink insert probe:',
   })
+  useNativeWysiwygTableCommandMutationProbe({
+    enabled: wysiwygTableCommandMutationProbe,
+    flushEditorDocument,
+    refs,
+  })
   useNativeWysiwygMutationProbe({ enabled: wysiwygMutationProbe, flushEditorDocument, refs, vaultRootUri })
   useFlushOnUnmount(refs, flushEditorDocument)
 
@@ -482,6 +492,7 @@ function useNativeTentapEditorRefs(initialDocumentContent: string): NativeTentap
   const markdownBlockProofReadyRef = useRef(false)
   const markdownBlockRenderProofRef = useRef(false)
   const saveTimerRef = useRef<TimerHandle | null>(null)
+  const tableCommandMutationProofReadyRef = useRef(false)
 
   return useMemo(() => ({
     acceptsEditorChangesRef,
@@ -494,6 +505,7 @@ function useNativeTentapEditorRefs(initialDocumentContent: string): NativeTentap
     markdownBlockProofReadyRef,
     markdownBlockRenderProofRef,
     saveTimerRef,
+    tableCommandMutationProofReadyRef,
   }), [
     acceptsEditorChangesRef,
     contentRef,
@@ -505,6 +517,7 @@ function useNativeTentapEditorRefs(initialDocumentContent: string): NativeTentap
     markdownBlockProofReadyRef,
     markdownBlockRenderProofRef,
     saveTimerRef,
+    tableCommandMutationProofReadyRef,
   ])
 }
 
@@ -515,6 +528,7 @@ function useFlushEditorDocument({
   noteId,
   onUpdateContent,
   refs,
+  tableCommandMutationProbeEnabled,
   vaultRootUri,
   wikilinkInsertProbeEnabled,
 }: {
@@ -524,6 +538,7 @@ function useFlushEditorDocument({
   noteId: string
   onUpdateContent: (noteId: string, content: string) => void
   refs: NativeTentapEditorRefs
+  tableCommandMutationProbeEnabled: boolean
   vaultRootUri?: string | null
   wikilinkInsertProbeEnabled: boolean
 }) {
@@ -535,6 +550,7 @@ function useFlushEditorDocument({
       noteId,
       onUpdateContent,
       refs,
+      tableCommandMutationProbeEnabled,
       vaultRootUri,
       wikilinkInsertProbeEnabled,
     })
@@ -545,6 +561,7 @@ function useFlushEditorDocument({
     noteId,
     onUpdateContent,
     refs,
+    tableCommandMutationProbeEnabled,
     vaultRootUri,
     wikilinkInsertProbeEnabled,
   ])
@@ -557,6 +574,7 @@ function flushEditorDocumentFromBridge({
   noteId,
   onUpdateContent,
   refs,
+  tableCommandMutationProbeEnabled,
   vaultRootUri,
   wikilinkInsertProbeEnabled,
 }: {
@@ -566,6 +584,7 @@ function flushEditorDocumentFromBridge({
   noteId: string
   onUpdateContent: (noteId: string, content: string) => void
   refs: NativeTentapEditorRefs
+  tableCommandMutationProbeEnabled: boolean
   vaultRootUri?: string | null
   wikilinkInsertProbeEnabled: boolean
 }) {
@@ -581,6 +600,7 @@ function flushEditorDocumentFromBridge({
       noteId,
       onUpdateContent,
       refs,
+      tableCommandMutationProbeEnabled,
       vaultRootUri,
       wikilinkInsertProbeEnabled,
     }))
@@ -597,6 +617,7 @@ function writeEditorJsonToMarkdown({
   noteId,
   onUpdateContent,
   refs,
+  tableCommandMutationProbeEnabled,
   vaultRootUri,
   wikilinkInsertProbeEnabled,
 }: {
@@ -607,6 +628,7 @@ function writeEditorJsonToMarkdown({
   noteId: string
   onUpdateContent: (noteId: string, content: string) => void
   refs: NativeTentapEditorRefs
+  tableCommandMutationProbeEnabled: boolean
   vaultRootUri?: string | null
   wikilinkInsertProbeEnabled: boolean
 }) {
@@ -618,7 +640,8 @@ function writeEditorJsonToMarkdown({
     vaultRootUri,
   })
   refs.firstEditorSerializationRef.current = false
-  if (!nextContent.skipped && nextContent.content !== refs.contentRef.current) {
+  const contentChanged = !nextContent.skipped && nextContent.content !== refs.contentRef.current
+  if (contentChanged) {
     onUpdateContent(noteId, nextContent.content)
     if (shouldPublishMarkdownBlockProof(markdownBlockProbeEnabled, refs)) {
       publishNativeWysiwygMarkdownBlockProof({
@@ -632,6 +655,9 @@ function writeEditorJsonToMarkdown({
     if (mutationProbeEnabled) publishNativeWysiwygMutationProof(noteId, nextContent.content)
     if (wikilinkInsertProbeEnabled) publishNativeWysiwygWikilinkInsertProof(noteId, nextContent.content)
   }
+  if (!nextContent.skipped && shouldPublishTableCommandMutationProof(tableCommandMutationProbeEnabled, refs)) {
+    publishNativeWysiwygTableCommandMutationProof({ content: nextContent.content, json, noteId })
+  }
 }
 
 function shouldPublishMarkdownBlockProof(
@@ -643,34 +669,13 @@ function shouldPublishMarkdownBlockProof(
   return Platform.OS !== 'web'
 }
 
-function useNativeWysiwygMutationProbe({
-  enabled,
-  flushEditorDocument,
-  refs,
-  vaultRootUri,
-}: {
-  enabled: boolean
-  flushEditorDocument: () => void
-  refs: NativeTentapEditorRefs
-  vaultRootUri?: string | null
-}) {
-  useEffect(() => {
-    if (!enabled) return undefined
-
-    const contentTimer = setTimeout(() => {
-      const editor = refs.editorRef.current
-      if (!isContentSettableEditorBridge(editor)) return
-
-      refs.hasAcceptedEditorChangeRef.current = true
-      editor.setContent(nativeWysiwygMutationProbeContent(vaultRootUri))
-      refs.saveTimerRef.current = setTimeout(flushEditorDocument, 500)
-    }, 1500)
-
-    return () => {
-      clearTimeout(contentTimer)
-      if (refs.saveTimerRef.current) clearTimeout(refs.saveTimerRef.current)
-    }
-  }, [enabled, flushEditorDocument, refs, vaultRootUri])
+function shouldPublishTableCommandMutationProof(
+  tableCommandMutationProbeEnabled: boolean,
+  refs: NativeTentapEditorRefs,
+): boolean {
+  if (!tableCommandMutationProbeEnabled) return false
+  if (!refs.tableCommandMutationProofReadyRef.current) return false
+  return Platform.OS !== 'web'
 }
 
 function useNativeWysiwygAutocompleteProbe({
@@ -849,51 +854,6 @@ function settleNativeWysiwygEditorContent(): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve, 60)
   })
-}
-
-function useNativeWysiwygFormatCommandProbe({
-  enabled,
-  refs,
-}: {
-  enabled: boolean
-  refs: NativeTentapEditorRefs
-}) {
-  const hasRunProbeRef = useRef(false)
-
-  useEffect(() => {
-    if (!enabled) {
-      hasRunProbeRef.current = false
-      return undefined
-    }
-    if (hasRunProbeRef.current) return undefined
-
-    let probeTimer: TimerHandle | null = null
-    const runProbe = () => {
-      if (!refs.acceptsEditorChangesRef.current) {
-        probeTimer = setTimeout(runProbe, 250)
-        return
-      }
-
-      const editor = refs.editorRef.current
-      hasRunProbeRef.current = true
-      for (const action of nativeWysiwygFormatCommandProbeActions) {
-        if (editor) applyNativeWysiwygFormat(editor as NativeWysiwygCommandBridge, action)
-        console.info(nativeWysiwygFormatCommandLogLine(nativeWysiwygFormatCommandProof({ action, editor })))
-      }
-    }
-
-    probeTimer = setTimeout(runProbe, 500)
-
-    return () => {
-      if (probeTimer) clearTimeout(probeTimer)
-    }
-  }, [enabled, refs])
-}
-
-function publishNativeWysiwygMutationProof(noteId: string, content: string): void {
-  if (Platform.OS === 'web') return
-
-  console.info(nativeWysiwygMutationLogLine(nativeWysiwygMutationProof({ content, noteId })))
 }
 
 function publishNativeWysiwygWikilinkInsertProof(noteId: string, content: string): void {
@@ -1258,6 +1218,7 @@ function useResetEditorChangeGate({
     hasAcceptedEditorChangeRef,
     markdownBlockProofReadyRef,
     markdownBlockRenderProofRef,
+    tableCommandMutationProofReadyRef,
   } = refs
 
   useEffect(() => {
@@ -1266,6 +1227,7 @@ function useResetEditorChangeGate({
     hasAcceptedEditorChangeRef.current = false
     markdownBlockProofReadyRef.current = false
     markdownBlockRenderProofRef.current = false
+    tableCommandMutationProofReadyRef.current = false
   }, [
     acceptsEditorChangesRef,
     firstEditorSerializationRef,
@@ -1274,6 +1236,7 @@ function useResetEditorChangeGate({
     markdownBlockProofReadyRef,
     markdownBlockRenderProofRef,
     noteId,
+    tableCommandMutationProofReadyRef,
   ])
 }
 

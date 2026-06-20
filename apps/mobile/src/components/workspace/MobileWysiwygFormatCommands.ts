@@ -8,6 +8,7 @@ import {
 export type NativeWysiwygCommandBridge = {
   addColumnAfter?: () => void
   addRowAfter?: () => void
+  addRowAndColumnAfterFirstBodyCell?: () => void
   deleteColumn?: () => void
   deleteRow?: () => void
   toggleBlockquote?: () => void
