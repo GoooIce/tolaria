@@ -117,6 +117,16 @@ Updated body.
     expect(html).toBe('<p><a href="attachments/project brief.pdf">project brief.pdf</a></p>')
   })
 
+  it('hydrates markdown links whose URLs contain balanced or escaped parentheses', () => {
+    const html = mobileMarkdownBodyToTentapHtml(
+      'Read [the spec](https://cdn.example.com/Workflow%20Plan%20(1).pdf) and [the copy](https://cdn.example.com/Workflow%20Plan%20\\(2\\).pdf).\n',
+    )
+
+    expect(html).toBe(
+      '<p>Read <a href="https://cdn.example.com/Workflow%20Plan%20(1).pdf">the spec</a> and <a href="https://cdn.example.com/Workflow%20Plan%20(2).pdf">the copy</a>.</p>',
+    )
+  })
+
   it('hydrates markdown autolinks as editable TenTap links', () => {
     const html = mobileMarkdownBodyToTentapHtml(
       'Location: <https://example.com/room?id=42> and <luca@example.com>\n',

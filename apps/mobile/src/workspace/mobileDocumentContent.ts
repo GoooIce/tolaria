@@ -702,14 +702,11 @@ function inlineMathHtml(latex: PlainText): HtmlSnippet {
 }
 
 function linkifyInlineMarkdown(markdown: MarkdownLine): string {
-  return markdown
+  return linkifyMarkdownLinks(markdown
     .replace(/\[\[([^\]|]+)\|([^\]]+)]]/g, (_match, target: WikilinkTarget, display: LinkLabel) => (
       wikilinkHtml(target, display)
     ))
-    .replace(/\[\[([^\]]+)]]/g, (_match, target: WikilinkTarget) => wikilinkHtml(target, target))
-    .replace(/\[([^\]]+)]\(([^)]+)\)/g, (_match, label: LinkLabel, href: UrlText) => (
-      `<a href="${escapeAttribute(markdownLinkHref(href))}">${label}</a>`
-    ))
+    .replace(/\[\[([^\]]+)]]/g, (_match, target: WikilinkTarget) => wikilinkHtml(target, target)))
     .replace(/&lt;((?:https?|mailto):(?:(?!&gt;)\S)+)&gt;/g, (_match, href: UrlText) => (
       externalAutolinkHtml(href, href)
     ))
@@ -717,6 +714,99 @@ function linkifyInlineMarkdown(markdown: MarkdownLine): string {
       _match,
       email: LinkLabel,
     ) => emailAutolinkHtml(email))
+}
+
+function linkifyMarkdownLinks(markdown: MarkdownLine): string {
+  let html = ''
+  let cursor = 0
+
+  while (cursor < markdown.length) {
+    const link = nextMarkdownLink(markdown, cursor)
+    if (!link) return `${html}${markdown.slice(cursor)}`
+
+    html += markdown.slice(cursor, link.start)
+    html += `<a href="${escapeAttribute(markdownLinkHref(link.href))}">${link.label}</a>`
+    cursor = link.end
+  }
+
+  return html
+}
+
+function nextMarkdownLink(
+  markdown: MarkdownLine,
+  startIndex: number,
+): { end: number; href: UrlText; label: LinkLabel; start: number } | null {
+  let searchIndex = startIndex
+
+  while (searchIndex < markdown.length) {
+    const labelStart = markdown.indexOf('[', searchIndex)
+    if (labelStart === -1) return null
+    const labelEnd = markdown.indexOf(']', labelStart + 1)
+    if (labelEnd === -1) return null
+    const destinationStart = labelEnd + 2
+    if (markdown[labelEnd + 1] !== '(') {
+      searchIndex = labelEnd + 1
+      continue
+    }
+
+    const destination = readMarkdownLinkDestination(markdown, destinationStart)
+    if (destination) {
+      return {
+        end: destination.end + 1,
+        href: destination.href,
+        label: markdown.slice(labelStart + 1, labelEnd),
+        start: labelStart,
+      }
+    }
+    searchIndex = destinationStart
+  }
+
+  return null
+}
+
+function readMarkdownLinkDestination(
+  markdown: MarkdownLine,
+  startIndex: number,
+): { end: number; href: UrlText } | null {
+  return markdown.startsWith('&lt;', startIndex)
+    ? readAngledMarkdownLinkDestination(markdown, startIndex)
+    : readBareMarkdownLinkDestination(markdown, startIndex)
+}
+
+function readAngledMarkdownLinkDestination(
+  markdown: MarkdownLine,
+  startIndex: number,
+): { end: number; href: UrlText } | null {
+  const closeIndex = markdown.indexOf('&gt;', startIndex + 4)
+  if (closeIndex === -1 || markdown[closeIndex + 4] !== ')') return null
+
+  return {
+    end: closeIndex + 4,
+    href: markdown.slice(startIndex, closeIndex + 4),
+  }
+}
+
+function readBareMarkdownLinkDestination(
+  markdown: MarkdownLine,
+  startIndex: number,
+): { end: number; href: UrlText } | null {
+  let depth = 0
+  let index = startIndex
+
+  while (index < markdown.length) {
+    const char = markdown[index] ?? ''
+    if (/\s/u.test(char)) return null
+    if (char === '(') depth += 1
+    if (char === ')') {
+      if (depth === 0) break
+      depth -= 1
+    }
+    index += 1
+  }
+
+  return index > startIndex && markdown[index] === ')'
+    ? { end: index, href: markdown.slice(startIndex, index) }
+    : null
 }
 
 function markdownLinkHref(href: UrlText): UrlText {
