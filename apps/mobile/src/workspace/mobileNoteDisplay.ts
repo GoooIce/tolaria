@@ -1,5 +1,6 @@
 import { mobilePropertyDisplay } from './mobilePropertyDisplay'
 import type { MobileNote, MobilePropertyDisplayMode, MobilePropertyValue, MobileTone, MobileTypeDefinitions } from './mobileWorkspaceModel'
+import { relationshipLookupKeys } from '../../../../src/utils/relationshipKeys'
 
 export type MobileTagTone = 'blue' | 'green' | 'orange' | 'purple' | 'red'
 type DisplayPropertyKey = string
@@ -83,20 +84,10 @@ function isTypePropertyKey(normalizedKey: NormalizedDisplayPropertyKey) {
 }
 
 function relationshipChips(note: MobileNote, normalizedKey: NormalizedDisplayPropertyKey): MobileNoteDisplayChip[] | null {
-  const relationship = note.relationships.find((candidate) => relationshipKeys(candidate).includes(normalizedKey))
+  const relationship = note.relationships.find((candidate) => relationshipLookupKeys(candidate).includes(normalizedKey))
   if (!relationship) return null
 
   return relationship.values.map((value) => ({ label: value.title, tone: chipTone(value.typeTone) }))
-}
-
-function relationshipKeys(relationship: MobileNote['relationships'][number]) {
-  return [
-    relationship.key,
-    relationship.label,
-    relationship.kind,
-    relationship.kind === 'belongsTo' ? 'belongs_to' : null,
-    relationship.kind === 'relatedTo' ? 'related_to' : null,
-  ].filter((value): value is string => Boolean(value)).map((value) => value.toLowerCase())
 }
 
 function propertyChips(

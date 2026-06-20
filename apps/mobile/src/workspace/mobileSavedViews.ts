@@ -14,6 +14,7 @@ import {
   statusSortRank,
   type SortDirection,
 } from '../../../../src/utils/noteSort'
+import { relationshipLookupKeys } from '../../../../src/utils/relationshipKeys'
 import { createViewFilename } from '../../../../src/utils/viewFilename'
 import {
   evaluateViewEntries,
@@ -333,7 +334,7 @@ function mobileNoteViewProperties(note: MobileNote): Record<string, ViewFilterPr
 function mobileNoteViewRelationships(note: MobileNote): Record<string, string[]> {
   const relationships: Record<string, string[]> = {}
   for (const relationship of note.relationships) {
-    for (const key of relationshipKeys(relationship)) {
+    for (const key of relationshipLookupKeys(relationship)) {
       relationships[key] = relationship.values.map((value) => value.ref ?? value.title)
     }
   }
@@ -626,21 +627,6 @@ function groupKind(text: YamlText): FilterGroupKind | null {
 
 function isFilterGroup(node: MobileViewFilterNode): node is MobileViewFilterGroup {
   return 'all' in node || 'any' in node
-}
-
-function relationshipKeys(relationship: MobileNote['relationships'][number]) {
-  const explicitKeys = [relationship.key, relationship.label]
-    .filter((value): value is string => Boolean(value))
-    .map((value) => value.toLowerCase())
-
-  return explicitKeys.length > 0 ? explicitKeys : fallbackRelationshipKeys(relationship.kind)
-}
-
-function fallbackRelationshipKeys(kind: MobileNote['relationships'][number]['kind']) {
-  if (kind === 'belongsTo') return ['belongs_to']
-  if (kind === 'relatedTo') return ['related_to']
-  if (kind === 'has') return ['has']
-  return []
 }
 
 function fallbackViewName(filename: ViewFilename, index: ViewIndex) {

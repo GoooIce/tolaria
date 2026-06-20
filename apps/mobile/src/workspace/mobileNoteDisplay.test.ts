@@ -42,6 +42,32 @@ describe('mobile note display', () => {
       { label: 'High', tone: 'orange' },
     ])
   })
+
+  it('uses normalized desktop relationship keys for configured relationship chips', () => {
+    const candidate = note({
+      relationships: [
+        {
+          kind: 'belongsTo',
+          label: 'Belongs to',
+          values: [{ title: 'Roadmap', type: 'Project', typeTone: 'green' }],
+        },
+        {
+          key: 'has_part',
+          kind: 'has',
+          label: 'Has part',
+          values: [{ title: 'Milestone', type: 'Note', typeTone: 'purple' }],
+        },
+      ],
+    })
+
+    expect(mobileNoteRowChips(candidate, ['belongs_to'])).toEqual([
+      { label: 'Roadmap', tone: 'green' },
+    ])
+    expect(mobileNoteRowChips(candidate, ['has'])).toEqual([])
+    expect(mobileNoteRowChips(candidate, ['has_part'])).toEqual([
+      { label: 'Milestone', tone: 'purple' },
+    ])
+  })
 })
 
 function note(overrides: Partial<MobileNote>): MobileNote {

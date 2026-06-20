@@ -280,6 +280,16 @@ filters:
       value: Roadmap
 `,
     }, 1)
+    const belongsToView = parseMobileSavedViewFile({
+      relativePath: 'views/belongs-to-roadmap.yml',
+      content: `name: Belongs To Roadmap
+filters:
+  all:
+    - field: belongs_to
+      op: contains
+      value: Roadmap
+`,
+    }, 2)
     const notes = [
       note({
         id: 'canonical-has',
@@ -297,10 +307,19 @@ filters:
           values: [{ title: 'Roadmap', type: 'Note', typeTone: 'gray' }],
         }],
       }),
+      note({
+        id: 'label-only-belongs-to',
+        relationships: [{
+          kind: 'belongsTo',
+          label: 'Belongs to',
+          values: [{ title: 'Roadmap', type: 'Note', typeTone: 'gray' }],
+        }],
+      }),
     ]
 
     expect(evaluateMobileSavedView(hasView!, notes).map((candidate) => candidate.id)).toEqual(['canonical-has'])
     expect(evaluateMobileSavedView(customHasView!, notes).map((candidate) => candidate.id)).toEqual(['custom-has-part'])
+    expect(evaluateMobileSavedView(belongsToView!, notes).map((candidate) => candidate.id)).toEqual(['label-only-belongs-to'])
   })
 
   it('evaluates discoverable desktop built-in saved-view fields', () => {

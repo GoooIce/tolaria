@@ -3,6 +3,7 @@ import {
   isRelationshipKey,
   normalizeRelationshipKey,
   relationshipFrontmatterKey,
+  relationshipLookupKeys,
   relationshipKeyForKind,
   relationshipKindForKey,
 } from './relationshipKeys'
@@ -42,5 +43,12 @@ describe('relationship key helpers', () => {
     expect(relationshipFrontmatterKey({ kind: 'belongsTo' })).toBe('belongs_to')
     expect(relationshipFrontmatterKey({ kind: 'custom', label: 'Mentioned by' })).toBe('Mentioned by')
     expect(relationshipFrontmatterKey({ kind: 'custom' })).toBe('related_to')
+  })
+
+  it('builds normalized lookup keys without falling through explicit custom keys', () => {
+    expect(relationshipLookupKeys({ kind: 'belongsTo', label: 'Belongs to' })).toEqual(['belongs_to'])
+    expect(relationshipLookupKeys({ kind: 'relatedTo' })).toEqual(['related_to'])
+    expect(relationshipLookupKeys({ key: 'has_part', kind: 'has', label: 'Has part' })).toEqual(['has_part'])
+    expect(relationshipLookupKeys({ kind: 'custom' })).toEqual([])
   })
 })

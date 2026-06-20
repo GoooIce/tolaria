@@ -39,3 +39,19 @@ export function relationshipFrontmatterKey(
   if (relationship.key) return relationship.key
   return relationshipKeyForKind(relationship.kind) ?? relationship.label ?? fallback
 }
+
+export function relationshipLookupKeys(relationship: RelationshipKeyCarrier): string[] {
+  const explicitKeys = uniqueRelationshipKeys([
+    relationship.key,
+    relationship.label,
+  ])
+  if (explicitKeys.length > 0) return explicitKeys
+
+  return uniqueRelationshipKeys([relationshipKeyForKind(relationship.kind)])
+}
+
+function uniqueRelationshipKeys(keys: Array<string | null | undefined>): string[] {
+  return Array.from(new Set(keys
+    .filter((key): key is string => Boolean(key?.trim()))
+    .map(normalizeRelationshipKey)))
+}
