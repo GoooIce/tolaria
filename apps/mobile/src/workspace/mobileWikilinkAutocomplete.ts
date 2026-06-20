@@ -1,7 +1,6 @@
 import type { MobileNote } from './mobileWorkspaceModel'
-import { mobileNoteIdentityMatchesQuery, normalizedMobileSearchQuery } from './mobileNoteSearch'
+import { normalizedMobileSearchQuery, sortMobileNotesByIdentityMatch } from './mobileNoteSearch'
 import { mobileWikilinkTargetForNote } from './mobileWikilinks'
-import { bestSearchRank } from '../../../../src/utils/fuzzyMatch'
 
 type CursorOffset = number
 type MarkdownContent = string
@@ -62,10 +61,7 @@ export function mobileWikilinkAutocompleteSuggestions(
   const candidates = notes.filter((note) => !note.archived)
   if (query.length < MIN_WIKILINK_QUERY_LENGTH) return []
 
-  return finalizeMobileWikilinkSuggestions(rankMobileWikilinkSuggestions(
-    candidates.filter((note) => mobileWikilinkMatchesQuery(note, query)),
-    query,
-  ))
+  return finalizeMobileWikilinkSuggestions(sortMobileNotesByIdentityMatch(candidates, query))
 }
 
 export const mobileWikilinkAutocompleteTarget = mobileWikilinkTargetForNote
@@ -103,26 +99,7 @@ export function mobilePersonMentionAutocompleteSuggestions(
     .filter((note) => mobilePersonMentionMatchesQuery(note, normalizedQuery))
 
   return finalizeMobileWikilinkSuggestions(
-    rankMobileWikilinkSuggestions(matchingNotes, normalizedQuery),
-  )
-}
-
-function rankMobileWikilinkSuggestions(notes: MobileNote[], query: WikilinkQuery): MobileNote[] {
-  return notes
-    .map((note, index) => ({
-      index,
-      note,
-      rank: mobileWikilinkSuggestionRank(note, query),
-    }))
-    .sort((left, right) => left.rank - right.rank || left.index - right.index)
-    .map(({ note }) => note)
-}
-
-function mobileWikilinkSuggestionRank(note: MobileNote, query: WikilinkQuery): number {
-  return bestSearchRank(
-    normalizedMobileSearchQuery(query),
-    normalizedMobileSearchQuery(note.title),
-    (note.aliases ?? []).map(normalizedMobileSearchQuery),
+    sortMobileNotesByIdentityMatch(matchingNotes, normalizedQuery),
   )
 }
 
@@ -133,10 +110,6 @@ function finalizeMobileWikilinkSuggestions(notes: MobileNote[]): MobileNote[] {
 
 function prepareMobileWikilinkSuggestions(notes: MobileNote[]): MobileNote[] {
   return disambiguateMobileWikilinkTitles(deduplicateMobileWikilinksByPath(notes))
-}
-
-function mobileWikilinkMatchesQuery(note: MobileNote, query: WikilinkQuery): boolean {
-  return mobileNoteIdentityMatchesQuery(note, query)
 }
 
 function deduplicateMobileWikilinksByPath(notes: MobileNote[]): MobileNote[] {

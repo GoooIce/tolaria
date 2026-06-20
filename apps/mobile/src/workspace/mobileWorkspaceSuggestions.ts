@@ -1,6 +1,6 @@
 import type { MobileNote, MobileRelationship, MobileTypeDefinitions } from './mobileWorkspaceModel'
 import { mobileCommaListTextParts } from './mobileCommaListText'
-import { mobileNoteIdentityMatchesQuery, normalizedMobileSearchQuery } from './mobileNoteSearch'
+import { sortMobileNotesByIdentityMatch } from './mobileNoteSearch'
 import { mobilePropertyValueKindForKey, type MobilePropertyValueKind } from './mobilePropertyValues'
 import { mobileNoteForWikilinkTarget, parseMobileWikilink } from './mobileWikilinks'
 import {
@@ -102,10 +102,9 @@ export function mobileRelationshipTargetSuggestions(
   query: SuggestionQuery,
   options: RelationshipTargetSuggestionOptions = {},
 ): MobileNote[] {
-  const normalizedQuery = normalizedMobileSearchQuery(query)
+  const candidates = notes.filter((note) => isRelationshipTargetSuggestion(note, notes, options))
 
-  return notes
-    .filter((note) => isRelationshipTargetSuggestion(note, notes, normalizedQuery, options))
+  return sortMobileNotesByIdentityMatch(candidates, query)
     .slice(0, 6)
 }
 
@@ -241,13 +240,12 @@ function relationshipKeyCandidates(
 function isRelationshipTargetSuggestion(
   note: MobileNote,
   notes: MobileNote[],
-  normalizedQuery: string,
   options: RelationshipTargetSuggestionOptions,
 ): boolean {
   if (note.archived) return false
   if (note.id === options.selectedNote?.id) return false
   if (isExistingRelationshipTarget(note, notes, options)) return false
-  return !normalizedQuery || mobileNoteIdentityMatchesQuery(note, normalizedQuery)
+  return true
 }
 
 function isExistingRelationshipTarget(

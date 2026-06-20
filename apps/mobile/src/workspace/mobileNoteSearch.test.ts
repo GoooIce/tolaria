@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { mobileNoteDisplayLabels } from './mobileNoteDisplay'
-import { mobileNoteIdentityMatchesQuery, mobileNoteListMatchesQuery } from './mobileNoteSearch'
+import {
+  mobileNoteIdentityMatchesQuery,
+  mobileNoteIdentitySearchMatch,
+  mobileNoteListMatchesQuery,
+  sortMobileNotesByIdentityMatch,
+} from './mobileNoteSearch'
 import type { MobileNote } from './mobileWorkspaceModel'
 
 describe('mobile note search', () => {
@@ -20,6 +25,46 @@ describe('mobile note search', () => {
     expect(mobileNoteIdentityMatchesQuery(candidate, 'travel')).toBe(true)
     expect(mobileNoteIdentityMatchesQuery(candidate, 'journal')).toBe(true)
     expect(mobileNoteIdentityMatchesQuery(candidate, 'release cleanup')).toBe(false)
+  })
+
+  it('matches desktop-style fuzzy and slugified note identity forms', () => {
+    const candidate = note({
+      path: 'journal/cafe-notes.md',
+      title: 'Café Notes',
+    })
+
+    expect(mobileNoteIdentityMatchesQuery(candidate, 'Cafe Notes!')).toBe(true)
+    expect(mobileNoteIdentityMatchesQuery(candidate, 'cns')).toBe(true)
+    expect(mobileNoteIdentitySearchMatch(candidate, 'cns')).toMatchObject({
+      match: true,
+      rank: 4,
+    })
+  })
+
+  it('sorts note identity matches by desktop quick-open tiers', () => {
+    const candidates = [
+      note({ aliases: ['Refactoring'], id: 'ideas', path: 'ideas.md', title: 'Refactoring Ideas' }),
+      note({ id: 'manual', path: 'manual.md', title: 'Refactoring Manual' }),
+      note({ id: 'refactoring', path: 'refactoring.md', title: 'Refactoring' }),
+    ]
+
+    expect(sortMobileNotesByIdentityMatch(candidates, 'Refactoring').map((candidate) => candidate.id)).toEqual([
+      'refactoring',
+      'ideas',
+      'manual',
+    ])
+  })
+
+  it('sorts alias exact matches ahead of title prefix matches', () => {
+    const candidates = [
+      note({ id: 'reference', path: 'reference.md', title: 'Reference Manual' }),
+      note({ aliases: ['ref'], id: 'meeting', path: 'meeting.md', title: 'Meeting Notes' }),
+    ]
+
+    expect(sortMobileNotesByIdentityMatch(candidates, 'ref').map((candidate) => candidate.id)).toEqual([
+      'meeting',
+      'reference',
+    ])
   })
 
   it('uses configured note-list chip labels for displayed properties and relationships', () => {

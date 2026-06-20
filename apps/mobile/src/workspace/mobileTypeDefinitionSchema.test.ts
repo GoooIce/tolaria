@@ -72,12 +72,14 @@ describe('mobile type definition schema helpers', () => {
       ? { ...note, aliases: ['OSS Project'] }
       : note)
 
-    expect(typeSchemaRelationshipTargetSuggestions(notes, 'oss')).toEqual([
-      expect.objectContaining({
-        label: 'How I Run an Open Source Project',
-        value: '[[Tolaria/Mobile UI/How I Run an Open Source Project]]',
-      }),
-    ])
+    const ossSuggestions = typeSchemaRelationshipTargetSuggestions(notes, 'oss')
+    expect(ossSuggestions[0]).toEqual(expect.objectContaining({
+      label: 'How I Run an Open Source Project',
+      value: '[[Tolaria/Mobile UI/How I Run an Open Source Project]]',
+    }))
+    expect(ossSuggestions).toContainEqual(expect.objectContaining({
+      label: 'Workflow Orchestration Essay',
+    }))
     expect(typeSchemaRelationshipTargetSuggestions(notes, 'Tolaria/Mobile UI')).toContainEqual(expect.objectContaining({
       label: 'How I Run an Open Source Project',
     }))

@@ -175,7 +175,23 @@ describe('mobile workspace suggestions', () => {
     expect(mobileRelationshipTargetSuggestions(notes, 'weekly review').map((note) => note.id)).toEqual(['journal/cafe-notes.md'])
     expect(mobileRelationshipTargetSuggestions(notes, 'cafe-notes.md').map((note) => note.id)).toEqual(['journal/cafe-notes.md'])
     expect(mobileRelationshipTargetSuggestions(notes, 'travel').map((note) => note.id)).toEqual(['journal/cafe-notes.md'])
+    expect(mobileRelationshipTargetSuggestions(notes, 'cns').map((note) => note.id)).toEqual(['journal/cafe-notes.md'])
     expect(mobileRelationshipTargetSuggestions(notes, 'archived weekly')).toEqual([])
+  })
+
+  it('ranks relationship targets by desktop note identity tiers', () => {
+    const base = workspaceScenarioForId('default').notes[0]!
+    const notes = [
+      { ...base, aliases: ['Refactoring'], id: 'ideas', path: 'ideas.md', title: 'Refactoring Ideas' },
+      { ...base, aliases: [], id: 'manual', path: 'manual.md', title: 'Refactoring Manual' },
+      { ...base, aliases: [], id: 'refactoring', path: 'refactoring.md', title: 'Refactoring' },
+    ]
+
+    expect(mobileRelationshipTargetSuggestions(notes, 'Refactoring').map((note) => note.id)).toEqual([
+      'refactoring',
+      'ideas',
+      'manual',
+    ])
   })
 
   it('shows relationship target creation only when the title does not resolve to an existing note', () => {
