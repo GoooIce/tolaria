@@ -1,6 +1,14 @@
 import type { Directory, Paths } from 'expo-file-system'
 import { applyMobileWorkspaceEditWithWrites } from '../workspace/mobileWorkspaceEditing'
-import type { MobileNote, MobilePropertyDisplayMode, MobileSavedView, MobileTypeDefinition, MobileViewDefinition, MobileWorkspaceSnapshot } from '../workspace/mobileWorkspaceModel'
+import type {
+  MobileNote,
+  MobilePropertyDisplayMode,
+  MobileSavedView,
+  MobileTypeDefinition,
+  MobileViewDefinition,
+  MobileViewFilterGroup,
+  MobileWorkspaceSnapshot,
+} from '../workspace/mobileWorkspaceModel'
 import type { MobileTypeDefinitionPatch } from '../workspace/mobileTypeDefinitions'
 import type { ReadOnlyWorkspaceRepository, ReadOnlyWorkspaceRequest } from '../workspace/readOnlyWorkspaceRepository'
 import {
@@ -76,6 +84,23 @@ const updatedTypeName = 'Section Proof'
 const updatedTypeTemplate = '## Next\n\n- Keep desktop sections durable.'
 const updatedViewName = 'Updated Native Proof'
 const updatedViewSourceName = 'Update Native Proof'
+const updatedNativeProofViewFilters: MobileViewFilterGroup = {
+  all: [
+    {
+      any: [
+        { field: 'status', op: 'equals', regex: false, value: 'Active' },
+        {
+          all: [
+            { field: 'depends_on', op: 'contains', regex: false, value: 'Relationships/Source' },
+            { field: 'ReviewScore', op: 'equals', regex: false, value: 5 },
+          ],
+        },
+      ],
+    },
+    { field: 'title', op: 'contains', regex: true, value: '^Mobile\\s+Persistence' },
+    { field: 'Date', op: 'after', regex: false, value: '10 days ago' },
+  ],
+}
 const workspacePersistencePropertyDisplayModes = {
   Priority: 'number',
   Website: 'url',
@@ -366,7 +391,7 @@ function workspacePersistenceViewDeleteWrites(seedSnapshot: MobileWorkspaceSnaps
 function updatedNativeProofViewDefinition(): MobileViewDefinition {
   return {
     color: 'purple',
-    filters: { all: [{ field: 'status', op: 'equals', value: 'Active' }] },
+    filters: updatedNativeProofViewFilters,
     icon: 'folder',
     listPropertiesDisplay: ['status', 'Priority'],
     name: updatedViewName,
@@ -385,7 +410,7 @@ function mobilePersistenceViewDefinition(): MobileViewDefinition {
 }
 
 function workspacePersistenceConfigWrites(seedSnapshot: MobileWorkspaceSnapshot) {
-  return workspacePersistenceEditWrites(seedSnapshot, [
+  return workspacePersistenceEditWrites(workspacePersistenceConfigSnapshot(seedSnapshot), [
     { mode: 'wide', type: 'setDefaultNoteWidth' },
     { key: 'Priority', mode: workspacePersistencePropertyDisplayModes.Priority, type: 'updatePropertyDisplayMode' },
     { key: 'Website', mode: workspacePersistencePropertyDisplayModes.Website, type: 'updatePropertyDisplayMode' },
@@ -401,6 +426,21 @@ function workspacePersistenceConfigWrites(seedSnapshot: MobileWorkspaceSnapshot)
       type: 'updatePrimaryNoteListProperties',
     },
   ])
+}
+
+function workspacePersistenceConfigSnapshot(
+  seedSnapshot: MobileWorkspaceSnapshot,
+): MobileWorkspaceSnapshot {
+  return {
+    ...seedSnapshot,
+    vaultConfig: {
+      ...seedSnapshot.vaultConfig,
+      inbox: {
+        ...seedSnapshot.vaultConfig?.inbox,
+        explicitOrganization: true,
+      },
+    },
+  }
 }
 
 function workspacePersistenceTextFileWrites(seedSnapshot: MobileWorkspaceSnapshot) {
@@ -720,7 +760,7 @@ function updatedViewHydrated(snapshot: MobileWorkspaceSnapshot) {
     && view.definition.icon === 'folder'
     && view.definition.sort === 'property:Priority:asc'
     && joinedProperties(view.definition.listPropertiesDisplay) === 'status|Priority'
-    && updatedViewFilterHydrated(view.definition.filters, { field: 'status', value: 'Active' })
+    && JSON.stringify(view.definition.filters) === JSON.stringify(updatedNativeProofViewFilters)
 }
 
 function updatedViewFilterHydrated(
