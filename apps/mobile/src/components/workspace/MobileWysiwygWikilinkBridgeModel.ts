@@ -360,6 +360,8 @@ function inlineAutocompleteForContainer(
   position: number,
   contentStart: number,
 ): NativeWysiwygInlineAutocomplete | null {
+  if (positionInsideCodeMark(node.content ?? [], position, contentStart)) return null
+
   const projection = projectedInlineText(node.content ?? [], position, contentStart)
   const wikilinkMatch = activeMobileWikilinkQuery(projection.text, projection.cursor)
   if (wikilinkMatch) {
@@ -453,6 +455,40 @@ function projectedInlineText(
     positions,
     text,
   }
+}
+
+function positionInsideCodeMark(
+  nodes: TiptapJsonNode[],
+  position: number,
+  contentStart: number,
+): boolean {
+  let cursor = contentStart
+
+  for (const node of nodes) {
+    const nodeEnd = cursor + tiptapNodeSize(node)
+    if (positionTargetsCodeMarkedText(node, position, cursor, nodeEnd)) {
+      return true
+    }
+    cursor = nodeEnd
+  }
+
+  return false
+}
+
+function positionTargetsCodeMarkedText(
+  node: TiptapJsonNode,
+  position: number,
+  nodeStart: number,
+  nodeEnd: number,
+): boolean {
+  if (typeof node.text !== 'string') return false
+  if (!hasCodeMark(node)) return false
+
+  return position > nodeStart && position <= nodeEnd
+}
+
+function hasCodeMark(node: TiptapJsonNode): boolean {
+  return node.marks?.some((mark) => mark.type === 'code') ?? false
 }
 
 function appendWikilinkToFirstParagraph(

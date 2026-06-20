@@ -281,6 +281,17 @@ describe('native WYSIWYG wikilink bridge', () => {
     })
   })
 
+  it('suppresses native autocomplete inside desktop code editing contexts', () => {
+    expect(nativeWysiwygInlineAutocompleteAtSelection({
+      json: documentNode(codeBlockNode('code [[AI')),
+      selection: { from: 10, to: 10 },
+    })).toBeNull()
+    expect(nativeWysiwygInlineAutocompleteAtSelection({
+      json: documentNode(inlineCodeParagraphNode('code [[AI')),
+      selection: { from: 10, to: 10 },
+    })).toBeNull()
+  })
+
   it('replaces an active native emoji shortcode query with plain emoji text', () => {
     expect(insertedPlainTextMarkdown({
       selection: autocompleteRange('Ship :rock today', 11),
@@ -383,6 +394,21 @@ function headingNode(level: number, text: string): TiptapJsonNode {
 function paragraphNode(text: string): TiptapJsonNode {
   return {
     content: [{ text, type: 'text' }],
+    type: 'paragraph',
+  }
+}
+
+function codeBlockNode(text: string): TiptapJsonNode {
+  return {
+    attrs: { language: 'text' },
+    content: [{ text, type: 'text' }],
+    type: 'codeBlock',
+  }
+}
+
+function inlineCodeParagraphNode(text: string): TiptapJsonNode {
+  return {
+    content: [{ marks: [{ type: 'code' }], text, type: 'text' }],
     type: 'paragraph',
   }
 }

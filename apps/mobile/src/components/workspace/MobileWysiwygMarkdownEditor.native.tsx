@@ -728,7 +728,7 @@ function useNativeWysiwygAutocompleteProbe({
       detectTimer = setTimeout(() => {
         void detectNativeWysiwygInlineAutocomplete(editor)
           .then((match) => {
-            console.info(nativeWysiwygAutocompleteLogLine(nativeWysiwygAutocompleteProof(match)))
+            console.info(nativeWysiwygAutocompleteLogLine(nativeWysiwygAutocompleteProof(match, step.scenario)))
             nextStepTimer = setTimeout(() => runProbe(stepIndex + 1), 250)
           })
           .catch((error: unknown) => {
