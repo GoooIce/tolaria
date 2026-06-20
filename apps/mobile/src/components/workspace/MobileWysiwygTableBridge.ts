@@ -109,11 +109,19 @@ function handleMobileTableBridgeMessage(editor: Editor, message: unknown): boole
   const action = mobileTableBridgeAction(message)
   if (!action) return false
 
+  try {
+    runMobileTableBridgeAction(editor, action)
+  } catch (error) {
+    console.warn('[mobile-table] Failed to run table bridge action:', action, error)
+  }
+  return true
+}
+
+function runMobileTableBridgeAction(editor: Editor, action: MobileTableBridgeActionType): void {
   if (action === 'mobile-table-add-column-after') editor.chain().focus().addColumnAfter().run()
   if (action === 'mobile-table-add-row-after') editor.chain().focus().addRowAfter().run()
   if (action === 'mobile-table-delete-column') editor.chain().focus().deleteColumn().run()
   if (action === 'mobile-table-delete-row') editor.chain().focus().deleteRow().run()
-  return false
 }
 
 function mobileTableBridgeAction(message: unknown): MobileTableBridgeActionType | null {

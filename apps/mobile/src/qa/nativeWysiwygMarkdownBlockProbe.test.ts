@@ -6,6 +6,7 @@ import {
   nativeWysiwygMarkdownBlockProbeEnabled,
   nativeWysiwygMarkdownBlockProbePlainTextPayload,
   nativeWysiwygMarkdownBlockProbePayloads,
+  nativeWysiwygMarkdownBlockProbeTableGrowthJson,
   nativeWysiwygMarkdownBlockProof,
   nativeWysiwygMarkdownBlockStructuredCodeBlock,
   nativeWysiwygMarkdownBlockStructuredTable,
@@ -89,6 +90,10 @@ describe('native WYSIWYG markdown block probe', () => {
         message: 'Native WYSIWYG table insertion saves as desktop markdown table source lines',
       },
       {
+        id: 'editor.wysiwyg.markdownBlocks.tableGrowth',
+        message: 'Native WYSIWYG grown structured tables save as desktop markdown table source lines',
+      },
+      {
         id: 'editor.wysiwyg.markdownBlocks.tableStructured',
         message: 'Native WYSIWYG table insertion remains a structured TenTap table before save',
       },
@@ -127,6 +132,30 @@ describe('native WYSIWYG markdown block probe', () => {
     expect(detect(sourceBackedJson)).toBe(false)
   })
 
+  it('grows the inserted probe table while keeping it structured', () => {
+    const grownJson = nativeWysiwygMarkdownBlockProbeTableGrowthJson(documentNode({
+      content: [
+        tableRowNode('tableHeader', ['Column', 'Value']),
+        tableRowNode('tableCell', ['Item', 'Detail']),
+      ],
+      type: 'table',
+    }))
+
+    expect(nativeWysiwygMarkdownBlockStructuredTable(grownJson)).toBe(true)
+    expect(grownJson).toMatchObject(documentNode({
+      content: [
+        tableRowWithCellTypes('tableHeader', 3),
+        tableRowWithCellTypes('tableCell', 3),
+        tableRowWithCellTypes('tableCell', 3),
+      ],
+      type: 'table',
+    }))
+    expect(JSON.stringify(grownJson)).toContain('Column')
+    expect(JSON.stringify(grownJson)).toContain('Value')
+    expect(JSON.stringify(grownJson)).toContain('Item')
+    expect(JSON.stringify(grownJson)).toContain('Detail')
+  })
+
   it('detects the native QA query flag', () => {
     expect(nativeWysiwygMarkdownBlockProbeEnabled(new globalThis.URLSearchParams('wysiwygMarkdownBlockProbe=1'))).toBe(true)
     expect(nativeWysiwygMarkdownBlockProbeEnabled(new globalThis.URLSearchParams('wysiwygMarkdownBlockProbe=0'))).toBe(false)
@@ -150,6 +179,7 @@ function expectPassingMarkdownBlockProof(
     mathBlockRendered: true,
     mermaidSaved: true,
     plainTextSaved: true,
+    tableGrowthSaved: true,
     tableSaved: true,
     tableStructured: true,
     whiteboardSaved: true,
@@ -163,6 +193,13 @@ function tableRowNode(cellType: 'tableCell' | 'tableHeader', cells: string[]) {
       content: [{ content: [{ text, type: 'text' }], type: 'paragraph' }],
       type: cellType,
     })),
+    type: 'tableRow',
+  }
+}
+
+function tableRowWithCellTypes(cellType: 'tableCell' | 'tableHeader', count: number) {
+  return {
+    content: Array.from({ length: count }, () => ({ type: cellType })),
     type: 'tableRow',
   }
 }
@@ -210,9 +247,10 @@ function markdownBlockProofContent({
     '    edit["Switch to the raw editor to edit"]',
     '```',
     '',
-    '| Column | Value |',
-    '| --- | --- |',
-    '| Item | Detail |',
+    '| Column |  | Value |',
+    '| --- | --- | --- |',
+    '| Item |  | Detail |',
+    '|  |  |  |',
     '',
     '```tldraw id="board-1" height="520"',
     '{}',

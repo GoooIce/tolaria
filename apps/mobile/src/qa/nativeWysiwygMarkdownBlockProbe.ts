@@ -18,6 +18,7 @@ export type NativeWysiwygMarkdownBlockProof = {
   mermaidSaved: boolean
   noteId: NoteId
   plainTextSaved: boolean
+  tableGrowthSaved: boolean
   tableSaved: boolean
   tableStructured: boolean
   whiteboardSaved: boolean
@@ -59,11 +60,6 @@ const expectedMermaid = [
   '    edit["Switch to the raw editor to edit"]',
   '```',
 ].join('\n')
-const expectedTable = [
-  '| Column | Value |',
-  '| --- | --- |',
-  '| Item | Detail |',
-].join('\n')
 const expectedWhiteboardFence = /```tldraw id="[^"]+" height="520"\n\{\}\n```/u
 
 const proofFieldTypes = {
@@ -76,6 +72,7 @@ const proofFieldTypes = {
   mermaidSaved: 'boolean',
   noteId: 'string',
   plainTextSaved: 'boolean',
+  tableGrowthSaved: 'boolean',
   tableSaved: 'boolean',
   tableStructured: 'boolean',
   whiteboardSaved: 'boolean',
@@ -117,7 +114,8 @@ export function nativeWysiwygMarkdownBlockProof({
     mermaidSaved: normalizedContent.includes(expectedMermaid),
     noteId,
     plainTextSaved: normalizedContent.includes(expectedPlainText),
-    tableSaved: normalizedContent.includes(expectedTable),
+    tableGrowthSaved: hasTableWithAddedRowAndColumn(normalizedContent),
+    tableSaved: hasInsertedTable(normalizedContent),
     tableStructured,
     whiteboardSaved: expectedWhiteboardFence.test(normalizedContent),
   }
@@ -195,6 +193,11 @@ export function assertNativeWysiwygMarkdownBlockProofs(
       'Native WYSIWYG table insertion saves as desktop markdown table source lines',
     ),
     proofFailure(
+      latest.tableGrowthSaved,
+      'editor.wysiwyg.markdownBlocks.tableGrowth',
+      'Native WYSIWYG grown structured tables save as desktop markdown table source lines',
+    ),
+    proofFailure(
       latest.tableStructured,
       'editor.wysiwyg.markdownBlocks.tableStructured',
       'Native WYSIWYG table insertion remains a structured TenTap table before save',
@@ -225,6 +228,13 @@ export function nativeWysiwygMarkdownBlockStructuredTable(json: unknown): boolea
   return hasTableNode(json)
 }
 
+export function nativeWysiwygMarkdownBlockProbeTableGrowthJson(json: unknown): unknown {
+  if (!isTiptapJsonNode(json)) return json
+
+  const state = { grew: false }
+  return growFirstProbeTable(json, state)
+}
+
 function parseProofLine(line: ProbeLine): NativeWysiwygMarkdownBlockProof | null {
   const prefixIndex = line.indexOf(nativeWysiwygMarkdownBlockLogPrefix)
   if (prefixIndex === -1) return null
@@ -251,6 +261,7 @@ function parsedProof(value: unknown): NativeWysiwygMarkdownBlockProof | null {
     mermaidSaved: value.mermaidSaved,
     noteId: value.noteId,
     plainTextSaved: value.plainTextSaved,
+    tableGrowthSaved: value.tableGrowthSaved,
     tableSaved: value.tableSaved,
     tableStructured: value.tableStructured,
     whiteboardSaved: value.whiteboardSaved,
@@ -265,6 +276,151 @@ function isNativeWysiwygMarkdownBlockProof(
   value: Record<string, unknown>,
 ): value is ProofFieldMap {
   return proofFields.every((field) => typeof value[field] === proofFieldTypes[field])
+}
+
+function growFirstProbeTable(
+  node: TiptapJsonNode,
+  state: { grew: boolean },
+): TiptapJsonNode {
+  if (!state.grew && isProbeTableNode(node)) {
+    state.grew = true
+    return tableNodeWithAddedRowAndColumn(node)
+  }
+
+  if (!Array.isArray(node.content)) return cloneTiptapJsonNode(node)
+
+  return cloneTiptapJsonNodeWithContent(
+    node,
+    node.content.map((child) => growFirstProbeTable(child, state)),
+  )
+}
+
+function tableNodeWithAddedRowAndColumn(table: TiptapJsonNode): TiptapJsonNode {
+  const rows = tiptapChildNodes(table)
+  const columnCount = Math.max(0, ...rows.map((row) => tiptapChildNodes(row).length)) + 1
+  const grownRows = rows.map((row) => tableRowWithAddedCell(row, columnCount))
+
+  grownRows.push(blankTableRow(columnCount))
+  return cloneTiptapJsonNodeWithContent(table, grownRows)
+}
+
+function tableRowWithAddedCell(row: TiptapJsonNode, columnCount: number): TiptapJsonNode {
+  const cells = tiptapChildNodes(row)
+  const [firstCell, ...remainingCells] = cells
+  const cellType = tableCellType(firstCell) ?? 'tableCell'
+  const grownCells = [
+    ...(firstCell ? [cloneTiptapJsonNode(firstCell)] : []),
+    blankTableCell(cellType),
+    ...remainingCells.map(cloneTiptapJsonNode),
+  ]
+
+  while (grownCells.length < columnCount) {
+    grownCells.push(blankTableCell(cellType))
+  }
+
+  return cloneTiptapJsonNodeWithContent(row, grownCells)
+}
+
+function blankTableRow(columnCount: number): TiptapJsonNode {
+  return {
+    content: Array.from({ length: columnCount }, () => blankTableCell('tableCell')),
+    type: 'tableRow',
+  }
+}
+
+function blankTableCell(type: 'tableCell' | 'tableHeader'): TiptapJsonNode {
+  return {
+    content: [{ type: 'paragraph' }],
+    type,
+  }
+}
+
+function tableCellType(node: TiptapJsonNode | undefined): 'tableCell' | 'tableHeader' | null {
+  if (node?.type === 'tableCell' || node?.type === 'tableHeader') return node.type
+  return null
+}
+
+function cloneTiptapJsonNode(node: TiptapJsonNode): TiptapJsonNode {
+  const content = Array.isArray(node.content) ? node.content.map(cloneTiptapJsonNode) : undefined
+  return cloneTiptapJsonNodeWithContent(node, content)
+}
+
+function cloneTiptapJsonNodeWithContent(
+  node: TiptapJsonNode,
+  content: TiptapJsonNode[] | undefined,
+): TiptapJsonNode {
+  const nextNode: TiptapJsonNode = {
+    ...node,
+    ...(node.attrs ? { attrs: { ...node.attrs } } : {}),
+  }
+
+  if (content) nextNode.content = content
+  return nextNode
+}
+
+function hasTableWithAddedRowAndColumn(markdown: MarkdownContent): boolean {
+  return markdownTables(markdown).some((table) => tableHasAddedRowAndColumn(table))
+}
+
+function hasInsertedTable(markdown: MarkdownContent): boolean {
+  return markdownTables(markdown).some((table) => tableHasProbeValues(table))
+}
+
+function tableHasProbeValues(table: string[][]): boolean {
+  const [header, , ...bodyRows] = table
+  if (!header?.includes('Column') || !header.includes('Value')) return false
+
+  return bodyRows.some((row) => row.includes('Item') && row.includes('Detail'))
+}
+
+function tableHasAddedRowAndColumn(table: string[][]): boolean {
+  const [header, , ...bodyRows] = table
+  if (!header || bodyRows.length < 2) return false
+  if (header.length < 3 || !tableHasProbeValues(table)) return false
+
+  return bodyRows.some((row) => row.length >= 3 && row.includes('Item') && row.includes('Detail'))
+}
+
+function markdownTables(markdown: MarkdownContent): string[][][] {
+  const lines = markdown.split('\n')
+  const tables: string[][][] = []
+  let index = 0
+
+  while (index < lines.length) {
+    const current = lines[index] ?? ''
+    const next = lines[index + 1] ?? ''
+    if (!isMarkdownTableRow(current) || !isMarkdownTableDivider(next)) {
+      index += 1
+      continue
+    }
+
+    const table: string[][] = [markdownTableCells(current), markdownTableCells(next)]
+    index += 2
+    while (index < lines.length && isMarkdownTableRow(lines[index] ?? '')) {
+      table.push(markdownTableCells(lines[index] ?? ''))
+      index += 1
+    }
+    tables.push(table)
+  }
+
+  return tables
+}
+
+function isMarkdownTableRow(line: string): boolean {
+  return /^\s*\|.*\|\s*$/u.test(line)
+}
+
+function isMarkdownTableDivider(line: string): boolean {
+  return /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/u.test(line)
+}
+
+function markdownTableCells(line: string): string[] {
+  return line
+    .trim()
+    .replace(/^\|/u, '')
+    .replace(/\|$/u, '')
+    .split('|')
+    .map((cell) => cell.trim())
 }
 
 function hasCodeBlockNode(value: unknown): boolean {

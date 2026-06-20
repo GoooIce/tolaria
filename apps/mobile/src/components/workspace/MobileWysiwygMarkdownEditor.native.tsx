@@ -73,6 +73,7 @@ import {
 import {
   nativeWysiwygMarkdownBlockProbePayloads,
   nativeWysiwygMarkdownBlockProbePlainTextPayload,
+  nativeWysiwygMarkdownBlockProbeTableGrowthJson,
   nativeWysiwygMarkdownBlockStructuredCodeBlock,
   nativeWysiwygMarkdownBlockStructuredTable,
   publishNativeWysiwygMarkdownBlockProof,
@@ -981,6 +982,7 @@ async function insertMarkdownBlocksIntoNativeEditor(
     if (!insertedJson) return false
     nextJson = insertedJson
   }
+  nextJson = nativeWysiwygMarkdownBlockProbeTableGrowthJson(nextJson)
   editor.setContent(nextJson)
   refs.markdownBlockRenderProofRef.current = await nativeWysiwygBlockMathRenderProof(editor)
   refs.markdownBlockProofReadyRef.current = true
