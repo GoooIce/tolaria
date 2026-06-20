@@ -196,6 +196,16 @@ if [ "$CURRENT_BRANCH" = "mobile-ui-foundation" ] && [ "${TOLARIA_MOBILE_FULL_GA
     echo "🖼️  Mobile screenshot QA..."
     pnpm mobile:qa:screenshots
     echo "  ✅ Mobile screenshot QA OK"
+
+    if [ "${TOLARIA_MOBILE_NATIVE_QA:-0}" = "1" ]; then
+      echo ""
+      echo "📱 Native iOS editing QA..."
+      pnpm mobile:qa:ios-editing
+      echo "  ✅ Native iOS editing QA OK"
+    else
+      echo ""
+      echo "⏭️  Native iOS editing QA skipped (set TOLARIA_MOBILE_NATIVE_QA=1 to run Expo/iOS simulator editing probes)"
+    fi
   else
     echo ""
     echo "⏭️  Mobile checks skipped (no apps/mobile or workspace package changes)"
