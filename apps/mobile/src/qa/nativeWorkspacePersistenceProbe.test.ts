@@ -87,10 +87,16 @@ describe('native workspace persistence probe', () => {
   })
 
   it('reports incomplete note metadata persistence proofs', () => {
-    expectProofFailures({
-      noteChromeMetadataHydrated: false,
-      noteStateMetadataHydrated: false,
-    }, [
+    const proof = passingWorkspaceProof()
+    proof.changedNoteTypeHydrated = false
+    proof.noteChromeMetadataHydrated = false
+    proof.noteStateMetadataHydrated = false
+
+    const failureIds = assertNativeWorkspacePersistenceProofs([proof])
+      .map((failure) => failure.id)
+
+    expect(failureIds).toEqual([
+      'workspace.persistence.changeNoteType',
       'workspace.persistence.noteChromeMetadata',
       'workspace.persistence.noteStateMetadata',
     ])
@@ -170,6 +176,7 @@ function expectProofFailures(
 function passingWorkspaceProof(): NativeWorkspacePersistenceProof {
   return {
     bulkEditHydrated: true,
+    changedNoteTypeHydrated: true,
     createdNoteHydrated: true,
     deletedNoteRemoved: true,
     deletedTypeDefinitionRemoved: true,

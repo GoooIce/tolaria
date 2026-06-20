@@ -254,6 +254,7 @@ function workspacePersistenceMetadataWrites(seedSnapshot: MobileWorkspaceSnapsho
   if (!note) return []
 
   return workspacePersistenceEditWrites(seedSnapshot, [
+    { noteId: note.id, type: 'changeNoteType', value: 'Procedure' },
     { key: '_icon', noteId: note.id, type: 'updateProperty', value: 'star' },
     { key: '_width', noteId: note.id, type: 'updateProperty', value: 'wide' },
     { archived: true, noteId: note.id, type: 'setArchived' },
@@ -567,6 +568,7 @@ function workspacePersistenceProof(
 ): NativeWorkspacePersistenceProof {
   return {
     ...nativeWorkspaceNotePathProof(snapshot, content.notePathContent),
+    changedNoteTypeHydrated: changedNoteTypeHydrated(snapshot, content.metadataContent),
     createdNoteHydrated: snapshotContainsNotePath(snapshot, createdNotePath),
     deletedTypeDefinitionRemoved: !typeDefinitionExists(snapshot, oldTypeName),
     deletedViewRemoved: !viewExists(snapshot, oldViewName),
@@ -807,6 +809,11 @@ function noteChromeMetadataHydrated(snapshot: MobileWorkspaceSnapshot, content: 
   const note = noteByPath(snapshot, metadataNotePath)
   return noteMatches(note, { icon: 'star', noteWidth: 'wide' })
     && textContainsAll(content, ['_icon: star', '_width: wide'])
+}
+
+function changedNoteTypeHydrated(snapshot: MobileWorkspaceSnapshot, content: string | null) {
+  return noteByPath(snapshot, metadataNotePath)?.type === 'Procedure'
+    && content?.includes('type: Procedure') === true
 }
 
 function noteStateMetadataHydrated(snapshot: MobileWorkspaceSnapshot, content: string | null) {
