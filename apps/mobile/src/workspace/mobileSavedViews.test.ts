@@ -152,7 +152,7 @@ filters:
       note({ id: 'missing-null-fields', title: 'Mobile\nQA' }),
       note({ id: 'empty-priority', properties: [{ key: 'priority', label: 'Priority', value: '' }], title: 'Mobile\nQA' }),
       note({ id: 'literal-backslash', title: String.raw`Mobile\nQA` }),
-    ]).map((candidate) => candidate.id)).toEqual(['missing-null-fields'])
+    ]).map((candidate) => candidate.id)).toEqual(['missing-null-fields', 'empty-priority'])
   })
 
   it('sorts saved views with desktop custom-property sort strings', () => {

@@ -7,7 +7,6 @@ import type {
   MobileViewFilterNode,
   MobileViewFilterOp,
 } from './mobileWorkspaceModel'
-import { parseDateFilterInput } from '../../../../src/utils/filterDates'
 import {
   compareSortableValues,
   isBuiltInSortOption,
@@ -15,9 +14,12 @@ import {
   statusSortRank,
   type SortDirection,
 } from '../../../../src/utils/noteSort'
-import { compileSafeUserRegex } from '../../../../src/utils/safeRegex'
 import { createViewFilename } from '../../../../src/utils/viewFilename'
-import { evaluateArrayFieldCondition } from '../../../../src/utils/viewFilterArrayFields'
+import {
+  evaluateViewEntries,
+  type ViewFilterEntry,
+  type ViewFilterPropertyValue,
+} from '../../../../src/utils/viewFilterEvaluation'
 import {
   canMoveView,
   moveView,
@@ -41,15 +43,10 @@ type FilterParseResult = {
 }
 
 type FieldKey = string
-type MobileArrayFieldKind = 'property' | 'relationship'
-type ResolvedMobileField =
-  | { arrayKind: MobileArrayFieldKind; kind: 'array'; values: string[] }
-  | { kind: 'scalar'; value: string | number | boolean | null }
 type FilterGroupKind = 'all' | 'any'
-type BuiltInFieldResolver = (note: MobileNote) => ResolvedMobileField
 type IndentLevel = number
 type LineIndex = number
-type MobileTextValues = string[]
+type MobileViewEntry = ViewFilterEntry & { mobileNote: MobileNote }
 type SortField = { key: FieldKey; kind: 'builtIn' | 'property' }
 type SortFieldValue = string | number | boolean | string[] | null
 type SortValue = string | null
@@ -72,19 +69,6 @@ const supportedFilterOps = new Set<MobileViewFilterOp>([
   'before',
   'after',
 ])
-const regexFilterOps = new Set<MobileViewFilterOp>(['contains', 'equals', 'not_contains', 'not_equals'])
-
-const builtInFieldResolvers: Record<string, BuiltInFieldResolver> = {
-  archived: (note) => scalarField(note.archived === true),
-  body: (note) => scalarField(note.snippet),
-  favorite: (note) => scalarField(note.favorite),
-  filename: (note) => scalarField(note.path?.split('/').at(-1) ?? note.id),
-  isa: (note) => scalarField(note.type),
-  status: (note) => scalarField(note.status),
-  tags: (note) => arrayField(note.tags, 'property'),
-  title: (note) => scalarField(note.title),
-  type: (note) => scalarField(note.type),
-}
 const doubleQuote = '"'
 const singleQuote = '\''
 const doubleQuotedScalarEscapes: Record<string, string> = {
@@ -148,7 +132,8 @@ export function mobileSavedViewOrderUpdates(views: MobileSavedView[]): MobileSav
 }
 
 export function evaluateMobileSavedView(view: MobileSavedView, notes: MobileNote[]): MobileNote[] {
-  const matchingNotes = notes.filter((note) => !note.archived && evaluateFilterGroup(view.definition.filters, note))
+  const matchingNotes = evaluateViewEntries(view.definition, notes.map(mobileNoteToViewEntry))
+    .map((entry) => entry.mobileNote)
   return sortMobileNotesBySort(matchingNotes, view.definition.sort)
 }
 
@@ -317,165 +302,47 @@ function normalizedFilterOp(value: unknown): MobileViewFilterOp {
   return supportedFilterOps.has(value as MobileViewFilterOp) ? value as MobileViewFilterOp : 'equals'
 }
 
-function evaluateFilterGroup(
-  group: MobileViewFilterGroup,
-  note: MobileNote,
-): boolean {
-  if ('any' in group) return evaluateAnyFilterNodes(group.any, note)
-  return evaluateAllFilterNodes(group.all, note)
-}
-
-function evaluateAnyFilterNodes(
-  nodes: MobileViewFilterNode[],
-  note: MobileNote,
-): boolean {
-  for (const node of nodes) {
-    if (evaluateFilterNode(node, note)) return true
+function mobileNoteToViewEntry(note: MobileNote): MobileViewEntry {
+  const path = note.path ?? note.id
+  const relationships = mobileNoteViewRelationships(note)
+  return {
+    archived: note.archived === true,
+    createdAt: note.createdAt ?? null,
+    favorite: note.favorite,
+    filename: path.split('/').at(-1) ?? path,
+    isA: note.type || null,
+    modifiedAt: note.modifiedAt ?? null,
+    path,
+    properties: mobileNoteViewProperties(note),
+    relationships,
+    snippet: note.snippet,
+    status: note.status || null,
+    title: note.title,
+    mobileNote: note,
   }
-  return false
 }
 
-function evaluateAllFilterNodes(
-  nodes: MobileViewFilterNode[],
-  note: MobileNote,
-): boolean {
-  for (const node of nodes) {
-    if (!evaluateFilterNode(node, note)) return false
+function mobileNoteViewProperties(note: MobileNote): Record<string, ViewFilterPropertyValue> {
+  const properties = Object.fromEntries(
+    (note.properties ?? []).map((property) => [property.key, property.value]),
+  ) as Record<string, ViewFilterPropertyValue>
+  if (!hasCaseInsensitiveKey(properties, 'tags')) properties.tags = note.tags
+  return properties
+}
+
+function mobileNoteViewRelationships(note: MobileNote): Record<string, string[]> {
+  const relationships: Record<string, string[]> = {}
+  for (const relationship of note.relationships) {
+    for (const key of relationshipKeys(relationship)) {
+      relationships[key] = relationship.values.map((value) => value.ref ?? value.title)
+    }
   }
-  return true
+  return relationships
 }
 
-function evaluateFilterNode(
-  node: MobileViewFilterNode,
-  note: MobileNote,
-): boolean {
-  if (isFilterGroup(node)) return evaluateFilterGroup(node, note)
-  return evaluateCondition(node, note)
-}
-
-function evaluateCondition(
-  condition: MobileViewFilterCondition,
-  note: MobileNote,
-): boolean {
-  const field = resolveNoteField(note, condition.field)
-  const emptyResult = emptyConditionResult(condition.op, field)
-  if (emptyResult !== null) return emptyResult
-
-  const regex = conditionRegex(condition)
-  if (usesRegex(condition) && !regex) return false
-
-  if (field.kind === 'array') return evaluateArrayCondition(condition, field, regex)
-  return evaluateScalarCondition(condition, field.value, regex)
-}
-
-function evaluateArrayCondition(
-  condition: MobileViewFilterCondition,
-  field: Extract<ResolvedMobileField, { kind: 'array' }>,
-  regex: RegExp | null,
-) {
-  return evaluateArrayFieldCondition({
-    arrayKind: field.arrayKind,
-    cond: condition,
-    condVal: textValue(condition.value),
-    regex,
-    values: field.values,
-  })
-}
-
-function textMatchResult(op: MobileViewFilterOp, matched: boolean): boolean {
-  if (op === 'contains' || op === 'equals') return matched
-  if (op === 'not_contains' || op === 'not_equals') return !matched
-  return false
-}
-
-function conditionRegex(condition: MobileViewFilterCondition): RegExp | null {
-  if (!usesRegex(condition)) return null
-
-  const compiled = compileSafeUserRegex(textValue(condition.value), 'i')
-  return compiled.ok ? compiled.pattern : null
-}
-
-function usesRegex(condition: MobileViewFilterCondition): boolean {
-  return condition.regex === true && regexFilterOps.has(condition.op)
-}
-
-function evaluateScalarCondition(
-  condition: MobileViewFilterCondition,
-  value: string | number | boolean | null,
-  regex: RegExp | null,
-) {
-  const dateResult = dateConditionResult(condition, value)
-  if (dateResult !== null) return dateResult
-
-  if (regex) return textMatchResult(condition.op, regex.test(textValue(value)))
-
-  return scalarTextConditionResult(condition, value)
-}
-
-function scalarTextConditionResult(
-  condition: MobileViewFilterCondition,
-  value: string | number | boolean | null,
-) {
-  const comparisonResult = scalarTextComparisonResult(condition.op, value, condition.value)
-  if (comparisonResult !== null) return comparisonResult
-
-  const setResult = scalarSetConditionResult(condition, value)
-  if (setResult !== null) return setResult
-  return false
-}
-
-function scalarTextComparisonResult(op: MobileViewFilterOp, value: unknown, target: unknown): boolean | null {
-  if (op === 'equals') return scalarEquals(value, target)
-  if (op === 'not_equals') return !scalarEquals(value, target)
-  if (op === 'contains') return scalarContains(value, target)
-  if (op === 'not_contains') return !scalarContains(value, target)
-  return null
-}
-
-function scalarEquals(value: unknown, target: unknown): boolean {
-  const text = nullableText(value)
-  const targetText = nullableText(target)
-  if (text === null || targetText === null) return text === targetText
-  return normalizedText(text) === normalizedText(targetText)
-}
-
-function scalarContains(value: unknown, target: unknown): boolean {
-  const text = nullableText(value)
-  const targetText = nullableText(target)
-  if (text === null || targetText === null) return false
-  return normalizedText(text).includes(normalizedText(targetText))
-}
-
-function scalarSetConditionResult(condition: MobileViewFilterCondition, value: unknown): boolean | null {
-  const text = nullableText(value)
-  if (condition.op === 'any_of') return text === null ? false : conditionValues(condition.value).includes(normalizedText(text))
-  if (condition.op === 'none_of') return text === null ? true : !conditionValues(condition.value).includes(normalizedText(text))
-  return null
-}
-
-function resolveNoteField(
-  note: MobileNote,
-  field: FieldKey,
-): ResolvedMobileField {
-  const lower = field.toLowerCase()
-  return builtInFieldResolvers[lower]?.(note)
-    ?? resolveRelationshipField(note, lower)
-    ?? resolvePropertyField(note, lower)
-    ?? scalarField(null)
-}
-
-function resolveRelationshipField(note: MobileNote, lowerField: FieldKey): ResolvedMobileField | null {
-  const relationship = note.relationships.find((candidate) => relationshipKeys(candidate).includes(lowerField))
-  if (!relationship) return null
-
-  return arrayField(relationship.values.map((value) => value.ref ?? value.title), 'relationship')
-}
-
-function resolvePropertyField(note: MobileNote, lowerField: FieldKey): ResolvedMobileField | null {
-  const property = note.properties?.find((candidate) => candidate.key.toLowerCase() === lowerField)
-  if (!property) return null
-
-  return Array.isArray(property.value) ? arrayField(property.value, 'property') : scalarField(property.value)
+function hasCaseInsensitiveKey(record: Record<string, unknown>, key: string): boolean {
+  const lowerKey = key.toLowerCase()
+  return Object.keys(record).some((candidate) => candidate.toLowerCase() === lowerKey)
 }
 
 export function sortMobileNotesBySort(notes: MobileNote[], sort: SortValue): MobileNote[] {
@@ -552,51 +419,6 @@ function compareMissingValues(left: SortFieldValue, right: SortFieldValue) {
 
 function comparePresentFieldValue(left: SortFieldValue, right: SortFieldValue) {
   return compareSortableValues(left, right)
-}
-
-function emptyConditionResult(op: MobileViewFilterOp, field: ResolvedMobileField): boolean | null {
-  if (op !== 'is_empty' && op !== 'is_not_empty') return null
-
-  const empty = field.kind === 'array'
-    ? field.values.length === 0
-    : field.value === null || field.value === '' || field.value === false
-
-  return op === 'is_empty' ? empty : !empty
-}
-
-function dateConditionResult(
-  condition: MobileViewFilterCondition,
-  value: string | number | boolean | null,
-): boolean | null {
-  const left = dateTimestamp(value)
-  const right = dateTimestamp(condition.value)
-  if (left === null || right === null) return null
-
-  if (condition.op === 'equals') return isSameLocalDay(left, right)
-  if (condition.op === 'not_equals') return !isSameLocalDay(left, right)
-  if (condition.op !== 'before' && condition.op !== 'after') return null
-
-  return condition.op === 'before' ? left < right : left > right
-}
-
-function dateTimestamp(value: unknown): number | null {
-  if (typeof value === 'number' && Number.isFinite(value)) return normalizedTimestamp(value)
-  if (typeof value !== 'string') return null
-
-  const parsed = parseDateFilterInput(value)
-  return parsed ? parsed.getTime() : null
-}
-
-function isSameLocalDay(leftTimestamp: number, rightTimestamp: number): boolean {
-  const left = new Date(leftTimestamp)
-  const right = new Date(rightTimestamp)
-  return left.getFullYear() === right.getFullYear()
-    && left.getMonth() === right.getMonth()
-    && left.getDate() === right.getDate()
-}
-
-function normalizedTimestamp(value: number): number {
-  return value > 10_000_000_000 ? value : value * 1000
 }
 
 function yamlLines(content: string): YamlLine[] {
@@ -819,32 +641,6 @@ function fallbackRelationshipKeys(kind: MobileNote['relationships'][number]['kin
   if (kind === 'relatedTo') return ['related_to']
   if (kind === 'has') return ['has']
   return []
-}
-
-function scalarField(value: string | number | boolean | null): ResolvedMobileField {
-  return { kind: 'scalar', value }
-}
-
-function arrayField(values: MobileTextValues, arrayKind: MobileArrayFieldKind): ResolvedMobileField {
-  return { arrayKind, kind: 'array', values }
-}
-
-function conditionValues(value: unknown): string[] {
-  return Array.isArray(value) ? value.map(normalizedText) : [normalizedText(value)]
-}
-
-function normalizedText(value: unknown) {
-  return textValue(value).toLowerCase()
-}
-
-function nullableText(value: unknown) {
-  if (value === null || value === undefined) return null
-  return String(value).trim()
-}
-
-function textValue(value: unknown) {
-  if (value === null || value === undefined) return ''
-  return String(value).trim()
 }
 
 function fallbackViewName(filename: ViewFilename, index: ViewIndex) {
