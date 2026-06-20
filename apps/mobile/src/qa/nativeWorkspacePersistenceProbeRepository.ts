@@ -185,7 +185,7 @@ function workspacePersistenceProbeWrites(seedSnapshot: MobileWorkspaceSnapshot) 
     ...nativeWorkspaceNotePathWrites(seedSnapshot),
     ...workspacePersistenceFolderWrites(),
     ...workspacePersistenceTypeMoveWrites(seedSnapshot),
-    ...workspacePersistenceTypeWrites(),
+    ...workspacePersistenceTypeWrites(seedSnapshot),
     ...workspacePersistenceTypeUpdateWrites(seedSnapshot),
     ...workspacePersistenceTypeRenameWrites(seedSnapshot),
   ]
@@ -409,18 +409,11 @@ function workspacePersistenceFolderWrites() {
   ]
 }
 
-function workspacePersistenceTypeWrites() {
-  return [
-    {
-      content: typeDefinitionContent(typeName, 'green'),
-      kind: 'createNote' as const,
-      path: `Types/${typeName}.md`,
-    },
-    {
-      kind: 'deleteNote' as const,
-      path: `Types/${oldTypeName}.md`,
-    },
-  ]
+function workspacePersistenceTypeWrites(seedSnapshot: MobileWorkspaceSnapshot) {
+  return workspacePersistenceEditWrites(seedSnapshot, [
+    { type: 'createTypeDefinition', typeName },
+    { type: 'deleteTypeDefinition', typeName: oldTypeName },
+  ])
 }
 
 function workspacePersistenceTypeUpdateWrites(seedSnapshot: MobileWorkspaceSnapshot) {
@@ -640,7 +633,7 @@ function workspacePersistenceProof(
     renamedTypeSchemaRefsHydrated: renamedTypeSchemaRefsHydrated(snapshot),
     savedViewHydrated: savedViewHydrated(snapshot),
     textFileContentHydrated: textFileContentHydrated(snapshot, content.textFileContent),
-    typeDefinitionHydrated: snapshot.typeDefinitions?.[typeName]?.tone === 'green',
+    typeDefinitionHydrated: typeDefinitionHydrated(snapshot),
     updatedViewHydrated: updatedViewHydrated(snapshot),
     updatedTypeDefinitionHydrated: updatedTypeDefinitionHydrated(snapshot),
     vaultConfigHydrated: vaultConfigHydrated(snapshot),
@@ -776,6 +769,15 @@ function restoredTypeDefinitionHydrated(snapshot: MobileWorkspaceSnapshot) {
     && definition.order === restoredTypeOrder
     && definition.tone === 'blue'
     && textContainsAll(definition.rawContent ?? null, [`# ${restoredTypeName}`, `_order: ${restoredTypeOrder}`])
+}
+
+function typeDefinitionHydrated(snapshot: MobileWorkspaceSnapshot) {
+  const definition = snapshot.typeDefinitions?.[typeName]
+  return definition?.path === 'proof-decision.md'
+    && textContainsAll(definition.rawContent ?? null, [
+      'type: Type',
+      `# ${typeName}`,
+    ])
 }
 
 function typeOrderHydrated(definition: MobileTypeDefinition | undefined): definition is MobileTypeDefinition & { order: number } {
