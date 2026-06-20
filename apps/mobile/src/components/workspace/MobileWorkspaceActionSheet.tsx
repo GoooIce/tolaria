@@ -204,9 +204,11 @@ export type MobileWorkspaceActionSheetProps = {
   typeRelationshipTargetOptions: MobileWorkspaceSuggestionItem[]
   typeSchemaProperties: MobileTypeSchemaProperty[]
   typeSchemaPropertyName: string
+  typeSchemaPropertyNameOptions: string[]
   typeSchemaPropertyValue: string
   typeSchemaRelationships: MobileTypeSchemaRelationship[]
   typeSchemaRelationshipName: string
+  typeSchemaRelationshipNameOptions: string[]
   typeSchemaRelationshipTarget: string
   typeSectionLabel: string
   typeRenameName: string
@@ -682,9 +684,11 @@ function TypeSectionContent(props: MobileWorkspaceActionSheetProps) {
         relationshipTargetOptions={props.typeRelationshipTargetOptions}
         schemaProperties={props.typeSchemaProperties}
         schemaPropertyName={props.typeSchemaPropertyName}
+        schemaPropertyNameOptions={props.typeSchemaPropertyNameOptions}
         schemaPropertyValue={props.typeSchemaPropertyValue}
         schemaRelationships={props.typeSchemaRelationships}
         schemaRelationshipName={props.typeSchemaRelationshipName}
+        schemaRelationshipNameOptions={props.typeSchemaRelationshipNameOptions}
         schemaRelationshipTarget={props.typeSchemaRelationshipTarget}
         sectionLabel={props.typeSectionLabel}
         sort={props.typeSort}

@@ -32,7 +32,6 @@ import {
   removeTypeSchemaPropertyAt,
   removeTypeSchemaRelationshipAt,
   typeSchemaPropertiesForForm,
-  typeSchemaRelationshipTargetSuggestions,
   typeSchemaRelationshipsForForm,
 } from '../workspace/mobileTypeDefinitionSchema'
 import {
@@ -79,6 +78,7 @@ import {
   addTypeSchemaRelationshipFormValue,
   typeSchemaSourceNote,
 } from './tabletWorkspaceTypeSchemaActions'
+import { typeSectionSuggestionOptions } from './tabletWorkspaceTypeSectionSuggestions'
 import { typeDefinitionSaveEdit } from './tabletWorkspaceTypeDefinitionSave'
 import { addPropertyFields, editPropertyFields, propertyEditFromForm } from './tabletWorkspacePropertyActions'
 import { createViewInitialFilters } from './tabletWorkspaceViewHelpers'
@@ -675,21 +675,12 @@ function typeSectionWorkspaceActions({
       typeDefinitions: workspaceSnapshot.typeDefinitions,
       typeName,
     }),
-    typePropertyOptions: mobileListPropertySuggestions(
-      editableTypePropertyNotes(readOnlyForm, workspaceSnapshot),
-      readOnlyForm.typePropertyQuery,
-      workspaceSnapshot.typeDefinitions,
-    ),
-    typeRelationshipTargetOptions: typeSchemaRelationshipTargetSuggestions(
+    ...typeSectionSuggestionOptions({
       notes,
-      readOnlyForm.typeSchemaRelationshipTarget,
+      readOnlyForm,
       sourceNote,
-    ),
-    typeSortPropertyOptions: mobileSortablePropertySuggestions(
-      editableTypePropertyNotes(readOnlyForm, workspaceSnapshot),
-      '',
-      workspaceSnapshot.typeDefinitions,
-    ),
+      workspaceSnapshot,
+    }),
   }
 }
 
@@ -1113,15 +1104,6 @@ function toggleTypeVisibility({
   })
 }
 
-function editableTypePropertyNotes(
-  form: TabletReadOnlyForm,
-  snapshot: MobileWorkspaceSnapshot,
-): MobileNote[] {
-  const normalizedType = normalizedLabel(form.typeName)
-  if (!normalizedType) return workspaceNotes(snapshot)
-  return workspaceNotes(snapshot).filter((note) => normalizedLabel(note.type) === normalizedType)
-}
-
 function editableViewPropertyNotes(
   form: TabletReadOnlyForm,
   snapshot: MobileWorkspaceSnapshot,
@@ -1161,10 +1143,6 @@ function typeNameForSidebarSelection(
     ?.items
     ?.find((item) => item.id === selectionId)
     ?.typeName ?? null
-}
-
-function normalizedLabel(value: string) {
-  return value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '')
 }
 
 function moveWorkspaceSidebarItem({

@@ -14,7 +14,10 @@ import {
   HOST_WORKSPACE_WRITE_FAILURE_GLOBAL_KEY,
 } from '../src/workspace/readOnlyWorkspaceRepository'
 import { MOBILE_PDF_EXPORT_ATTEMPTS_GLOBAL_KEY } from '../src/workspace/mobilePdfExport'
-import { createRenameAndDeleteTypeSection } from './mobile-type-section-flows'
+import {
+  createRenameAndDeleteTypeSection,
+  customizeProcedureTypeSection,
+} from './mobile-type-section-flows'
 
 const mobileClipboardAttemptsGlobalKey = '__TOLARIA_MOBILE_CLIPBOARD_ATTEMPTS__'
 
@@ -717,59 +720,6 @@ async function addNumericPropertyToNote(
   await page.getByTestId('workspace-action-sheet-addProperty').getByRole('button', { name: 'Save' }).click()
   await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
   await expect(page.getByTestId(`property-row-${propertyName.toLowerCase()}`)).toContainText(propertyValue)
-}
-
-async function customizeProcedureTypeSection(page: PageLike) {
-  await longPress(page, 'sidebar-item-procedures')
-  const sheet = page.getByTestId('workspace-action-sheet-editTypeSection')
-  await expect(sheet).toBeVisible()
-  await expect(page.getByTestId('workspace-type-section-type-name-input')).toHaveValue('Procedure')
-  await expect(page.getByTestId('workspace-type-section-label-input')).toHaveValue('Procedures')
-  await page.getByTestId('workspace-type-section-label-input').fill('Runbooks')
-  await page.getByTestId('workspace-move-type-up-action').click()
-  await page.getByTestId('workspace-type-icon-folder').click()
-  await page.getByTestId('workspace-type-tone-green').click()
-  await expect(page.getByTestId('workspace-type-selected-icon')).toContainText('folder')
-  await expect(page.getByTestId('workspace-type-selected-color')).toContainText('green')
-  await page.getByTestId('workspace-type-sort-custom-field-input').fill('Priority')
-  await page.getByTestId('workspace-type-sort-custom-desc').click()
-  await page.getByTestId('workspace-type-template-input').fill('## Checklist\n\nTemplate body from the Procedure type.')
-  await page.getByTestId('workspace-type-property-search-input').fill('bel')
-  await page.getByTestId('workspace-type-property-option-belongs-to').click()
-  await page.getByTestId('workspace-type-schema-property-name-input').scrollIntoViewIfNeeded()
-  await page.getByTestId('workspace-type-schema-property-name-input').fill('Priority')
-  await page.getByTestId('workspace-type-schema-property-value-input').fill('High')
-  await sheet.getByRole('button', { name: 'Add property' }).click()
-  await expect(page.getByTestId('workspace-type-schema-property-priority')).toContainText('High')
-  await page.getByTestId('workspace-type-schema-relationship-name-input').fill('belongs_to')
-  await page.getByTestId('workspace-type-schema-relationship-target-input').fill('Workflow Orchestration Essay')
-  await sheet.getByRole('button', { name: 'Add relationship' }).click()
-  await expect(page.getByTestId('workspace-type-schema-relationship-belongs-to')).toContainText('Workflow Orchestration Essay')
-  await sheet.getByRole('button', { name: 'Save' }).click()
-  await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
-  const runbooksSection = page.getByTestId('sidebar-item-procedures')
-  const essaysSection = page.getByTestId('sidebar-item-essays')
-  await expect(runbooksSection).toContainText('Runbooks')
-  await expect(await rowY(runbooksSection)).toBeLessThan(await rowY(essaysSection))
-
-  await longPress(page, 'sidebar-item-procedures')
-  await expect(page.getByTestId('workspace-type-selected-icon')).toContainText('folder')
-  await expect(page.getByTestId('workspace-type-selected-color')).toContainText('green')
-  await expect(page.getByTestId('workspace-type-sort-custom-field-input')).toHaveValue('Priority')
-  await page.getByTestId('workspace-action-sheet-toolbar').getByRole('button', { name: 'Cancel' }).click()
-  await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
-
-  await runbooksSection.click()
-  await expect(page.getByTestId('note-list-toolbar-title')).toHaveText('Runbooks')
-  await expect(page.getByTestId('note-row-open-source-project').getByText('Project Board')).toBeVisible()
-  await page.getByTestId('note-list-create-action').click()
-  await page.getByTestId('workspace-create-note-title-input').fill('Runbook From Type Defaults')
-  await page.getByTestId('workspace-action-sheet-createNote').getByRole('button', { exact: true, name: 'Create' }).click()
-  await expect(page.getByTestId('note-row-runbook-from-type-defaults.md')).toBeVisible()
-  await expect(page.getByTestId('property-row-priority')).toContainText('High')
-  await expect(page.getByTestId('relationship-row-workflow-orchestration-essay')).toBeVisible()
-  await expect(page.getByTestId('editor-heading-2')).toContainText('Checklist')
-  await expect(page.getByTestId('editor-paragraph')).toContainText('Template body from the Procedure type.')
 }
 
 async function longPress(page: PageLike, testId: string) {

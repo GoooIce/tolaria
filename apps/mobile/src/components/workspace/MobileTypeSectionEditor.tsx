@@ -25,9 +25,11 @@ type MobileTypeSectionEditorProps = {
   relationshipTargetOptions: MobileWorkspaceSuggestionItem[]
   schemaProperties: MobileTypeSchemaProperty[]
   schemaPropertyName: string
+  schemaPropertyNameOptions: string[]
   schemaPropertyValue: string
   schemaRelationships: MobileTypeSchemaRelationship[]
   schemaRelationshipName: string
+  schemaRelationshipNameOptions: string[]
   schemaRelationshipTarget: string
   sectionLabel: string
   sort: string
@@ -137,6 +139,12 @@ function TypeSchemaPropertiesEditor(props: MobileTypeSectionEditorProps) {
           value={props.schemaPropertyName}
           onChangeText={props.onSchemaPropertyNameChange}
         />
+        <MobileWorkspaceSuggestionList
+          labels={props.schemaPropertyNameOptions}
+          testID="workspace-type-schema-property-name-suggestions"
+          testIDPrefix="workspace-type-schema-property-name-suggestion"
+          onSelect={props.onSchemaPropertyNameChange}
+        />
         <MobileTextInput
           label={mobileText('inspector.properties.valuePlaceholder')}
           placeholder={mobileText('inspector.properties.valuePlaceholder')}
@@ -174,6 +182,12 @@ function TypeSchemaRelationshipsEditor(props: MobileTypeSectionEditorProps) {
           testID="workspace-type-schema-relationship-name-input"
           value={props.schemaRelationshipName}
           onChangeText={props.onSchemaRelationshipNameChange}
+        />
+        <MobileWorkspaceSuggestionList
+          labels={props.schemaRelationshipNameOptions}
+          testID="workspace-type-schema-relationship-name-suggestions"
+          testIDPrefix="workspace-type-schema-relationship-name-suggestion"
+          onSelect={props.onSchemaRelationshipNameChange}
         />
         <MobileTextInput
           label={mobileText('inspector.relationship.noteTitle')}

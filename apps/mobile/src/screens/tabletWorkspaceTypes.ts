@@ -259,6 +259,8 @@ export type TabletWorkspaceChromeProps = {
   wysiwygTableCommandMutationProbe?: boolean
   wysiwygWikilinkInsertProbe?: boolean
   typePropertyOptions: string[]
+  typeSchemaPropertyNameOptions: string[]
+  typeSchemaRelationshipNameOptions: string[]
   typeRelationshipTargetOptions: MobileWorkspaceSuggestionItem[]
   typeSortPropertyOptions: string[]
   primaryPropertyOptions: string[]
