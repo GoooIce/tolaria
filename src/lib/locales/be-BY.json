@@ -649,6 +649,7 @@
   "editor.sourceBlock.content": "Змест",
   "editor.sourceBlock.edit": "Рэдагаваць блок крыніцы",
   "editor.sourceBlock.language": "Мова",
+  "editor.sourceBlock.metadata": "Метададзеныя Fence",
   "editor.table.addColumn": "Дадаць слупок",
   "editor.table.addRow": "Дадаць радок",
   "editor.table.alignCenter": "Па цэнтры",

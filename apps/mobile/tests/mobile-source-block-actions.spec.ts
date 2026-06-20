@@ -30,11 +30,11 @@ async function writeSourceBlocks(page: Page) {
   await page.getByTestId('editor-markdown-input').fill([
     '# Source Block Note',
     '',
-    '```js',
+    '```js title="Old code" {1}',
     'console.log("old")',
     '```',
     '',
-    '```mermaid',
+    '```mermaid title="Old graph"',
     'flowchart LR',
     '  A --> B',
     '```',
@@ -50,7 +50,9 @@ async function writeSourceBlocks(page: Page) {
 async function editCodeBlock(page: Page) {
   await openSourceBlockEditor(page)
   await expect(page.getByTestId('workspace-source-block-language-input')).toHaveValue('js')
+  await expect(page.getByTestId('workspace-source-block-metadata-input')).toHaveValue('title="Old code" {1}')
   await page.getByTestId('workspace-source-block-language-input').fill('ts')
+  await page.getByTestId('workspace-source-block-metadata-input').fill('title="Typed code" {2}')
   await page.getByTestId('workspace-source-block-content-input').fill('const answer: number = 42')
   await saveSourceBlock(page)
 }
@@ -58,6 +60,8 @@ async function editCodeBlock(page: Page) {
 async function editMermaidBlock(page: Page) {
   await openSourceBlockEditor(page)
   await page.getByTestId('workspace-source-block-option-1').click()
+  await expect(page.getByTestId('workspace-source-block-metadata-input')).toHaveValue('title="Old graph"')
+  await page.getByTestId('workspace-source-block-metadata-input').fill('title="Updated graph"')
   await expect(page.getByTestId('workspace-source-block-content-input')).toHaveValue(/flowchart LR/u)
   await page.getByTestId('workspace-source-block-content-input').fill('flowchart TD\n  Start --> Done')
   await saveSourceBlock(page)
@@ -84,8 +88,8 @@ async function saveSourceBlock(page: Page) {
 
 async function assertSourceBlocks(page: Page) {
   await page.getByTestId('editor-source-action').click()
-  await expect(page.getByTestId('editor-markdown-input')).toHaveValue(/```ts\nconst answer: number = 42\n```/u)
-  await expect(page.getByTestId('editor-markdown-input')).toHaveValue(/```mermaid\nflowchart TD\n {2}Start --> Done\n```/u)
+  await expect(page.getByTestId('editor-markdown-input')).toHaveValue(/```ts title="Typed code" \{2\}\nconst answer: number = 42\n```/u)
+  await expect(page.getByTestId('editor-markdown-input')).toHaveValue(/```mermaid title="Updated graph"\nflowchart TD\n {2}Start --> Done\n```/u)
   await expect(page.getByTestId('editor-markdown-input')).toHaveValue(/\$\$\nE = mc\^2\n\$\$/u)
 }
 

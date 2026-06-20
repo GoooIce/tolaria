@@ -649,6 +649,7 @@
   "editor.sourceBlock.content": "Konten",
   "editor.sourceBlock.edit": "Edit blok sumber",
   "editor.sourceBlock.language": "Bahasa",
+  "editor.sourceBlock.metadata": "Metadata Fence",
   "editor.table.addColumn": "Tambahkan kolom",
   "editor.table.addRow": "Tambahkan baris",
   "editor.table.alignCenter": "Tengah",

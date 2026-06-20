@@ -91,7 +91,7 @@ describe('mobile markdown source block editing', () => {
     ].join('\n'))
   })
 
-  it('preserves desktop code-fence metadata when editing code content or language', () => {
+  it('updates desktop code-fence metadata when editing code content or language', () => {
     const markdown = [
       'Intro',
       '',
@@ -112,6 +112,7 @@ describe('mobile markdown source block editing', () => {
       markdown,
       update: {
         content: 'const next = true',
+        infoSuffix: 'title="Updated editor" {2}',
         key: 'line:2',
         kind: 'codeBlock',
         language: 'tsx',
@@ -122,7 +123,7 @@ describe('mobile markdown source block editing', () => {
     expect(result.markdown).toBe([
       'Intro',
       '',
-      '```tsx title="Mobile editor" {1,3}',
+      '```tsx title="Updated editor" {2}',
       'const next = true',
       '```',
       '',

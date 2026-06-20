@@ -13,6 +13,7 @@ export type MobileMarkdownEditableSourceBlock = {
 
 type MarkdownSourceBlockUpdate = {
   content: string
+  infoSuffix?: string
   key: string
   kind: MobileMarkdownEditableSourceBlockKind
   language: string
@@ -66,7 +67,7 @@ export function updateMobileMarkdownEditableSourceBlock({
   const nextSource = mobileMarkdownEditableSourceBlockSource({
     content: update.content,
     fence: block.fence,
-    infoSuffix: block.infoSuffix,
+    infoSuffix: update.infoSuffix ?? block.infoSuffix,
     kind: update.kind,
     language: update.language,
   })

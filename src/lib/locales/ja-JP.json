@@ -649,6 +649,7 @@
   "editor.sourceBlock.content": "コンテンツ",
   "editor.sourceBlock.edit": "ソースブロックを編集",
   "editor.sourceBlock.language": "言語",
+  "editor.sourceBlock.metadata": "Fenceメタデータ",
   "editor.table.addColumn": "列を追加",
   "editor.table.addRow": "行を追加",
   "editor.table.alignCenter": "中央",

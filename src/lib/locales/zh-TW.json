@@ -649,6 +649,7 @@
   "editor.sourceBlock.content": "內容",
   "editor.sourceBlock.edit": "編輯來源區塊",
   "editor.sourceBlock.language": "語言",
+  "editor.sourceBlock.metadata": "Fence 中繼資料",
   "editor.table.addColumn": "新增欄",
   "editor.table.addRow": "新增列",
   "editor.table.alignCenter": "置中",

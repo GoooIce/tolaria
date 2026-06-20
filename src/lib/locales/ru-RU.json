@@ -649,6 +649,7 @@
   "editor.sourceBlock.content": "Содержание",
   "editor.sourceBlock.edit": "Редактировать исходный блок",
   "editor.sourceBlock.language": "Язык",
+  "editor.sourceBlock.metadata": "Метаданные Fence",
   "editor.table.addColumn": "Добавить столбец",
   "editor.table.addRow": "Добавить строку",
   "editor.table.alignCenter": "По центру",

@@ -649,6 +649,7 @@
   "editor.sourceBlock.content": "Nội dung",
   "editor.sourceBlock.edit": "Chỉnh sửa khối nguồn",
   "editor.sourceBlock.language": "Ngôn ngữ",
+  "editor.sourceBlock.metadata": "Siêu dữ liệu Fence",
   "editor.table.addColumn": "Thêm cột",
   "editor.table.addRow": "Thêm hàng",
   "editor.table.alignCenter": "Căn giữa",

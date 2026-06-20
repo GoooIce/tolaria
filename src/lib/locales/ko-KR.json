@@ -649,6 +649,7 @@
   "editor.sourceBlock.content": "콘텐츠",
   "editor.sourceBlock.edit": "소스 블록 편집",
   "editor.sourceBlock.language": "언어",
+  "editor.sourceBlock.metadata": "Fence 메타데이터",
   "editor.table.addColumn": "열 추가",
   "editor.table.addRow": "행 추가",
   "editor.table.alignCenter": "가운데",

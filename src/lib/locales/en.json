@@ -649,6 +649,7 @@
   "editor.sourceBlock.content": "Content",
   "editor.sourceBlock.edit": "Edit source block",
   "editor.sourceBlock.language": "Language",
+  "editor.sourceBlock.metadata": "Fence metadata",
   "editor.table.addColumn": "Add column",
   "editor.table.addRow": "Add row",
   "editor.table.alignCenter": "Center",

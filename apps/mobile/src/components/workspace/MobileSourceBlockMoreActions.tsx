@@ -93,14 +93,17 @@ function MobileSourceBlockEditor({
   sourceContent: string
 }) {
   const [content, setContent] = useState(block.content)
+  const [infoSuffix, setInfoSuffix] = useState(block.infoSuffix)
   const [language, setLanguage] = useState(block.language)
   const languageEditable = block.kind === 'codeBlock'
+  const metadataEditable = block.kind !== 'mathBlock'
 
   const saveBlock = () => {
     const result = updateMobileMarkdownEditableSourceBlock({
       markdown: sourceContent,
       update: {
         content,
+        infoSuffix,
         key: block.key,
         kind: block.kind,
         language,
@@ -120,6 +123,14 @@ function MobileSourceBlockEditor({
           testID="workspace-source-block-language-input"
           value={language}
           onChangeText={setLanguage}
+        />
+      ) : null}
+      {metadataEditable ? (
+        <MobileTextInput
+          label={mobileText('editor.sourceBlock.metadata')}
+          testID="workspace-source-block-metadata-input"
+          value={infoSuffix}
+          onChangeText={setInfoSuffix}
         />
       ) : null}
       <MobileTextInput

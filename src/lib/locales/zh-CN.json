@@ -649,6 +649,7 @@
   "editor.sourceBlock.content": "内容",
   "editor.sourceBlock.edit": "编辑源代码块",
   "editor.sourceBlock.language": "语言",
+  "editor.sourceBlock.metadata": "Fence 元数据",
   "editor.table.addColumn": "添加列",
   "editor.table.addRow": "添加行",
   "editor.table.alignCenter": "居中",

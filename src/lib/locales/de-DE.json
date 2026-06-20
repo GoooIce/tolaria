@@ -649,6 +649,7 @@
   "editor.sourceBlock.content": "Inhalt",
   "editor.sourceBlock.edit": "Quellblock bearbeiten",
   "editor.sourceBlock.language": "Sprache",
+  "editor.sourceBlock.metadata": "Fence-Metadaten",
   "editor.table.addColumn": "Spalte hinzufügen",
   "editor.table.addRow": "Zeile hinzufügen",
   "editor.table.alignCenter": "Zentriert",

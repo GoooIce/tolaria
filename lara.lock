@@ -651,6 +651,7 @@ files:
     editor.sourceBlock.content: f15c1cae7882448b3fb0404682e17e61
     editor.sourceBlock.edit: cf9f2d3316dede262fd075b0c2d397a6
     editor.sourceBlock.language: 4994a8ffeba4ac3140beb89e8d41f174
+    editor.sourceBlock.metadata: 776ed5e62878361f66b3dcac0146b26a
     editor.table.addColumn: b61b8f498d489f2e2b916b887b7062bc
     editor.table.addRow: 19f6e26702652b72fdc06294ed1594ef
     editor.table.alignCenter: 4f1f6016fc9f3f2353c0cc7c67b292bd
