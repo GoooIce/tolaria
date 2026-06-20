@@ -1,12 +1,19 @@
 import type { MobileNote } from './mobileWorkspaceModel'
 import { normalizedMobileSearchQuery, sortMobileNotesByIdentityMatch } from './mobileNoteSearch'
 import { mobileWikilinkTargetForNote } from './mobileWikilinks'
+import {
+  deduplicateByPath,
+  disambiguateTitles,
+  MAX_RESULTS as MAX_WIKILINK_SUGGESTIONS,
+  MIN_QUERY_LENGTH as MIN_WIKILINK_QUERY_LENGTH,
+} from '../../../../src/utils/wikilinkSuggestions'
 
 type CursorOffset = number
 type MarkdownContent = string
 type WikilinkQuery = string
 type WikilinkTarget = string
 type PersonMentionQuery = string
+type MobileWikilinkSuggestionNote = MobileNote & { path: string }
 type InlineQueryOptions = {
   invalidQuery: (query: string) => boolean
   replacement: (target: WikilinkTarget, nextCharacter: string) => string
@@ -25,8 +32,6 @@ export type MobileWikilinkAutocompleteReplacement = {
   text: MarkdownContent
 }
 
-const MAX_WIKILINK_SUGGESTIONS = 10
-const MIN_WIKILINK_QUERY_LENGTH = 2
 const wikilinkQueryOptions: InlineQueryOptions = {
   invalidQuery: (query) => query.includes(']') || query.includes('\n'),
   replacement: (target) => `[[${target}]]`,
@@ -109,40 +114,15 @@ function finalizeMobileWikilinkSuggestions(notes: MobileNote[]): MobileNote[] {
 }
 
 function prepareMobileWikilinkSuggestions(notes: MobileNote[]): MobileNote[] {
-  return disambiguateMobileWikilinkTitles(deduplicateMobileWikilinksByPath(notes))
-}
-
-function deduplicateMobileWikilinksByPath(notes: MobileNote[]): MobileNote[] {
-  const seen = new Set<string>()
-  return notes.filter((note) => {
-    const path = mobileWikilinkIdentityPath(note)
-    if (seen.has(path)) return false
-    seen.add(path)
-    return true
-  })
-}
-
-function disambiguateMobileWikilinkTitles(notes: MobileNote[]): MobileNote[] {
-  const titleCounts = new Map<string, number>()
-  for (const note of notes) {
-    titleCounts.set(note.title, (titleCounts.get(note.title) ?? 0) + 1)
-  }
-
-  return notes.map((note) => {
-    if ((titleCounts.get(note.title) ?? 0) <= 1) return note
-
-    const parentFolder = mobileWikilinkParentFolder(note)
-    return parentFolder ? { ...note, title: `${note.title} (${parentFolder})` } : note
-  })
-}
-
-function mobileWikilinkParentFolder(note: MobileNote): string {
-  const parts = mobileWikilinkIdentityPath(note).split('/').filter(Boolean)
-  return parts.length >= 2 ? parts[parts.length - 2] : ''
+  return disambiguateTitles(deduplicateByPath(notes.map(toMobileWikilinkSuggestionNote)))
 }
 
 function mobileWikilinkIdentityPath(note: MobileNote): string {
   return note.path ?? note.id
+}
+
+function toMobileWikilinkSuggestionNote(note: MobileNote): MobileWikilinkSuggestionNote {
+  return { ...note, path: mobileWikilinkIdentityPath(note) }
 }
 
 function boundedTextCursor(text: MarkdownContent, cursor: CursorOffset): CursorOffset {
