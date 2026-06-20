@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { Pressable, StyleSheet, View } from 'react-native'
-import { Plus, X } from 'phosphor-react-native'
+import { Plus, WarningCircle, X } from 'phosphor-react-native'
 import { Text } from '../ui/text'
 import { mobileText } from '../../i18n/mobileText'
 import { MobileButton } from '../../ui/MobileButton'
@@ -19,6 +19,12 @@ import {
   mobileViewValueSuggestionItems,
 } from '../../workspace/mobileWorkspaceSuggestions'
 import { MobileWorkspaceSuggestionList } from './MobileWorkspaceSuggestionList'
+import {
+  mobileViewFilterDatePreviewLabel,
+  mobileViewFilterRegexIsInvalid,
+  mobileViewFilterRegexSupported,
+  mobileViewFilterValueInputKind,
+} from './MobileViewFilterValueModel'
 
 type FilterPath = string
 type FilterMode = 'all' | 'any'
@@ -28,7 +34,6 @@ type ConditionChange = (condition: MobileViewFilterCondition) => void
 const emptyPath = 'root'
 const defaultField = 'type'
 const noValueOps = new Set<MobileViewFilterOp>(['is_empty', 'is_not_empty'])
-const regexOps = new Set<MobileViewFilterOp>(['contains', 'equals', 'not_contains', 'not_equals'])
 const operators: MobileViewFilterOp[] = [
   'equals',
   'not_equals',
@@ -181,6 +186,9 @@ function FilterConditionEditor({
   const fieldSuggestions = mobileViewFieldSuggestions(notes, condition.field, typeDefinitions)
   const valueText = String(condition.value ?? '')
   const valueSuggestions = mobileViewValueSuggestionItems(notes, condition.field, valueText, typeDefinitions)
+  const valueInputKind = mobileViewFilterValueInputKind(condition.op)
+  const invalidRegex = mobileViewFilterRegexIsInvalid(condition)
+  const datePreviewLabel = valueInputKind === 'date' ? mobileViewFilterDatePreviewLabel(valueText) : null
 
   return (
     <View style={styles.condition} testID={`workspace-view-filter-row-${pathId}`}>
@@ -206,11 +214,15 @@ function FilterConditionEditor({
       {noValueOps.has(condition.op) ? null : (
         <>
           <MobileTextInput
+            keyboardType={valueInputKind === 'date' ? 'numbers-and-punctuation' : 'default'}
             label={mobileText('viewDialog.filter.valueLabel')}
+            placeholder={valueInputKind === 'date' ? 'YYYY-MM-DD' : undefined}
+            style={invalidRegex ? styles.invalidInput : null}
             testID={`workspace-view-filter-value-input-${pathId}`}
             value={valueText}
             onChangeText={(value) => onChange({ ...condition, value })}
           />
+          <FilterValueFeedback invalidRegex={invalidRegex} datePreviewLabel={datePreviewLabel} pathId={pathId} />
           <MobileWorkspaceSuggestionList
             items={valueSuggestions}
             testID={`workspace-view-filter-value-suggestions-${pathId}`}
@@ -232,7 +244,7 @@ function OperatorPicker({
   onChange: ConditionChange
   pathId: string
 }) {
-  const regexSupported = regexOps.has(condition.op)
+  const regexSupported = mobileViewFilterRegexSupported(condition.op)
   const regexEnabled = regexSupported && condition.regex === true
 
   return (
@@ -256,6 +268,35 @@ function OperatorPicker({
       ) : null}
     </View>
   )
+}
+
+function FilterValueFeedback({
+  datePreviewLabel,
+  invalidRegex,
+  pathId,
+}: {
+  datePreviewLabel: string | null
+  invalidRegex: boolean
+  pathId: string
+}) {
+  if (invalidRegex) {
+    return (
+      <View style={styles.feedbackRow} testID={`workspace-view-filter-regex-invalid-${pathId}`}>
+        <WarningCircle color={mobileColors.danger} size={13} />
+        <Text style={styles.invalidText}>{mobileText('editor.find.invalidRegex')}</Text>
+      </View>
+    )
+  }
+
+  if (datePreviewLabel) {
+    return (
+      <Text style={styles.valuePreview} testID={`workspace-view-filter-date-preview-${pathId}`}>
+        {datePreviewLabel}
+      </Text>
+    )
+  }
+
+  return null
 }
 
 function OperatorPill({
@@ -355,7 +396,7 @@ function nextMode(mode: FilterMode): FilterMode {
 }
 
 function nextRegex(operator: MobileViewFilterOp, enabled: boolean): true | undefined {
-  return regexOps.has(operator) && enabled ? true : undefined
+  return mobileViewFilterRegexSupported(operator) && enabled ? true : undefined
 }
 
 function isFilterGroup(node: MobileViewFilterNode): node is MobileViewFilterGroup {
@@ -421,6 +462,18 @@ const styles = StyleSheet.create({
     height: 24,
     width: 24,
   },
+  feedbackRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: mobileSpace.xs,
+  },
+  invalidInput: {
+    borderColor: mobileColors.danger,
+  },
+  invalidText: {
+    color: mobileColors.danger,
+    fontSize: mobileType.caption,
+  },
   label: {
     color: mobileColors.textMuted,
     fontSize: mobileType.caption,
@@ -469,5 +522,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: mobileSpace.xs,
+  },
+  valuePreview: {
+    color: mobileColors.textMuted,
+    fontSize: mobileType.caption,
+    paddingLeft: mobileSpace.xs,
   },
 })
