@@ -119,6 +119,7 @@ function mutationProofFailures(
   return [
     proofFailure(proof.frontmatterPreserved, 'editor.wysiwyg.persistence.mutation.frontmatter', 'Frontmatter boundary survives native WYSIWYG saves'),
     proofFailure(proof.attachmentLinkSaved, 'editor.wysiwyg.persistence.mutation.attachment', 'Native file attachment links serialize back to portable desktop markdown'),
+    proofFailure(proof.imageAttachmentSaved, 'editor.wysiwyg.persistence.mutation.imageAttachment', 'Native image attachments serialize back to portable desktop markdown images'),
     proofFailure(proof.typePreserved, 'editor.wysiwyg.persistence.mutation.type', 'Desktop type frontmatter survives native WYSIWYG saves'),
     proofFailure(proof.statusPreserved, 'editor.wysiwyg.persistence.mutation.status', 'Desktop status frontmatter survives native WYSIWYG saves'),
     proofFailure(proof.tagsPreserved, 'editor.wysiwyg.persistence.mutation.tags', 'Desktop tag frontmatter survives native WYSIWYG saves'),
@@ -133,5 +134,12 @@ function mutationProofFailures(
     proofFailure(proof.dividerSaved, 'editor.wysiwyg.persistence.mutation.divider', 'Unsupported divider content remains editable desktop markdown'),
     proofFailure(proof.tableLinesPreserved, 'editor.wysiwyg.persistence.mutation.table', 'Native WYSIWYG structured tables serialize to desktop markdown table lines'),
     proofFailure(proof.tableAlignmentSaved, 'editor.wysiwyg.persistence.mutation.tableAlignment', 'Native WYSIWYG structured tables preserve desktop markdown alignment dividers'),
+    proofFailure(proof.complexCodeFenceSourceSaved, 'editor.wysiwyg.persistence.mutation.source.complexCodeFence', 'Complex code-fence metadata stays as editable desktop markdown source'),
+    proofFailure(proof.detailsSourceSaved, 'editor.wysiwyg.persistence.mutation.source.details', 'Unsupported details blocks stay as editable desktop markdown source'),
+    proofFailure(proof.htmlCommentSourceSaved, 'editor.wysiwyg.persistence.mutation.source.htmlComment', 'Unsupported HTML comment blocks stay as editable desktop markdown source'),
+    proofFailure(proof.indentedDisplayMathSourceSaved, 'editor.wysiwyg.persistence.mutation.source.indentedDisplayMath', 'Indented display math stays as editable desktop markdown source'),
+    proofFailure(proof.indentedImageSourceSaved, 'editor.wysiwyg.persistence.mutation.source.indentedImage', 'Indented markdown images stay as editable desktop markdown source'),
+    proofFailure(proof.indentedListSourceSaved, 'editor.wysiwyg.persistence.mutation.source.indentedList', 'Detached indented lists stay as editable desktop markdown source'),
+    proofFailure(proof.indentedTextSourceSaved, 'editor.wysiwyg.persistence.mutation.source.indentedText', 'Indented text blocks stay as editable desktop markdown source'),
   ]
 }

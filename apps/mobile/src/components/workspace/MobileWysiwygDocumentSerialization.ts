@@ -36,6 +36,16 @@ export function nativeWysiwygDocumentContentFromJson({
   }
 }
 
+export function nativeWysiwygShouldPublishMutationProof({
+  mutationProbeEnabled,
+  skipped,
+}: {
+  mutationProbeEnabled: boolean
+  skipped: boolean
+}): boolean {
+  return mutationProbeEnabled && !skipped
+}
+
 function shouldSkipInitialEmptySerialization({
   initialBodyHasContent,
   isFirstSerialization,

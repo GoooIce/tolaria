@@ -19,11 +19,18 @@ export type NativeWysiwygMutationProof = {
   attachmentLinkSaved: boolean
   codeBlockSaved: boolean
   codeBlockStructured?: boolean
+  complexCodeFenceSourceSaved: boolean
   contentLength: number
+  detailsSourceSaved: boolean
   dividerSaved: boolean
   favoritePreserved: boolean
   frontmatterPreserved: boolean
+  htmlCommentSourceSaved: boolean
   imageAttachmentSaved: boolean
+  indentedDisplayMathSourceSaved: boolean
+  indentedImageSourceSaved: boolean
+  indentedListSourceSaved: boolean
+  indentedTextSourceSaved: boolean
   inlineMarksSaved: boolean
   listBlocksSaved: boolean
   mutationTextSaved: boolean
@@ -64,16 +71,49 @@ const mutationListSamples = ['- Bullet item', '1. Ordered item', '- [x] Task ite
 const mutationQuote = '> Quoted desktop parity'
 const mutationCodeFenceLines = ['```ts', 'const parity = "desktop";', 'ship(parity)', '```'] as const
 const mutationCodeFence = mutationCodeFenceLines.join('\n')
+const mutationComplexCodeFenceLines = ['```plain text', 'prompt: keep [[literal]]', '```'] as const
+const mutationComplexCodeFenceSource = mutationComplexCodeFenceLines.join('\n')
+const mutationDetailsSourceLines = [
+  '<details><summary>Manufacturing</summary>',
+  '',
+  'Made in Italy',
+  '',
+  '</details>',
+] as const
+const mutationDetailsSource = mutationDetailsSourceLines.join('\n')
+const mutationHtmlCommentSourceLines = ['<!--', '{"fold":true}', '-->'] as const
+const mutationHtmlCommentSource = mutationHtmlCommentSourceLines.join('\n')
+const mutationIndentedDisplayMathLines = ['  $$', '  x^2', '  $$'] as const
+const mutationIndentedDisplayMathSource = mutationIndentedDisplayMathLines.join('\n')
+const mutationIndentedImageLines = ['  ![](https://example.com/agent.png)'] as const
+const mutationIndentedImageSource = mutationIndentedImageLines.join('\n')
+const mutationIndentedListLines = [
+  '  1. Contextualize: Dump TOC into an LLM.',
+  '  2. Summarize major sections.',
+] as const
+const mutationIndentedListSource = mutationIndentedListLines.join('\n')
+const mutationIndentedTextLines = [
+  '    Teach your AI agent the workflow context.',
+  '    Then run the task.',
+] as const
+const mutationIndentedTextSource = mutationIndentedTextLines.join('\n')
 const mutationTableLines = ['| Surface | Target |', '| :--- | ---: |', '| Editor | Native WYSIWYG |'] as const
 const mutationDividerBeforeTable = `\n---\n\n${mutationTableLines[0]}`
 const mutationWikilink = '[[AI Ops Guide]]'
 const mutationProofBooleanFields: readonly NativeWysiwygMutationBooleanField[] = [
   'attachmentLinkSaved',
   'codeBlockSaved',
+  'complexCodeFenceSourceSaved',
+  'detailsSourceSaved',
   'dividerSaved',
   'favoritePreserved',
   'frontmatterPreserved',
+  'htmlCommentSourceSaved',
   'imageAttachmentSaved',
+  'indentedDisplayMathSourceSaved',
+  'indentedImageSourceSaved',
+  'indentedListSourceSaved',
+  'indentedTextSourceSaved',
   'inlineMarksSaved',
   'listBlocksSaved',
   'mutationTextSaved',
@@ -136,6 +176,13 @@ export function nativeWysiwygMutationProbeContent(vaultRootUri?: VaultRootUri): 
       mutationCodeBlockNode,
       paragraphNode('---'),
       mutationTableNode,
+      paragraphNode(...mutationComplexCodeFenceLines),
+      paragraphNode(...mutationDetailsSourceLines),
+      paragraphNode(...mutationHtmlCommentSourceLines),
+      paragraphNode(...mutationIndentedDisplayMathLines),
+      paragraphNode(...mutationIndentedImageLines),
+      paragraphNode(...mutationIndentedListLines),
+      paragraphNode(...mutationIndentedTextLines),
     ],
     type: 'doc',
   }
@@ -157,11 +204,18 @@ export function nativeWysiwygMutationProof({
     attachmentLinkSaved: content.includes(mutationAttachmentLink),
     codeBlockSaved: content.includes(mutationCodeFence),
     ...mutationStructuredProof(json),
+    complexCodeFenceSourceSaved: content.includes(mutationComplexCodeFenceSource),
     contentLength: content.length,
+    detailsSourceSaved: content.includes(mutationDetailsSource),
     dividerSaved: content.includes(mutationDividerBeforeTable),
     favoritePreserved: content.includes('\n_favorite: true\n'),
     frontmatterPreserved: content.startsWith('---\n'),
+    htmlCommentSourceSaved: content.includes(mutationHtmlCommentSource),
     imageAttachmentSaved: content.includes(mutationImageAttachment),
+    indentedDisplayMathSourceSaved: content.includes(mutationIndentedDisplayMathSource),
+    indentedImageSourceSaved: content.includes(mutationIndentedImageSource),
+    indentedListSourceSaved: content.includes(mutationIndentedListSource),
+    indentedTextSourceSaved: content.includes(mutationIndentedTextSource),
     inlineMarksSaved: mutationInlineSamples.every((sample) => content.includes(sample)),
     listBlocksSaved: mutationListSamples.every((sample) => content.includes(sample)),
     mutationTextSaved: content.includes(mutationText),
@@ -221,6 +275,13 @@ export function assertNativeWysiwygMutationProofs(
     proofFailure(latest.tableLinesPreserved, 'editor.wysiwyg.mutation.table', 'Native WYSIWYG structured tables serialize to desktop markdown table lines'),
     proofFailure(latest.tableAlignmentSaved, 'editor.wysiwyg.mutation.tableAlignment', 'Native WYSIWYG structured tables preserve desktop markdown alignment dividers'),
     proofFailure(latest.tableStructured === true, 'editor.wysiwyg.mutation.tableStructured', 'Native WYSIWYG mutation proof keeps tables as structured TenTap table JSON before save'),
+    proofFailure(latest.complexCodeFenceSourceSaved, 'editor.wysiwyg.mutation.source.complexCodeFence', 'Complex code-fence metadata stays as editable desktop markdown source'),
+    proofFailure(latest.detailsSourceSaved, 'editor.wysiwyg.mutation.source.details', 'Unsupported details blocks stay as editable desktop markdown source'),
+    proofFailure(latest.htmlCommentSourceSaved, 'editor.wysiwyg.mutation.source.htmlComment', 'Unsupported HTML comment blocks stay as editable desktop markdown source'),
+    proofFailure(latest.indentedDisplayMathSourceSaved, 'editor.wysiwyg.mutation.source.indentedDisplayMath', 'Indented display math stays as editable desktop markdown source'),
+    proofFailure(latest.indentedImageSourceSaved, 'editor.wysiwyg.mutation.source.indentedImage', 'Indented markdown images stay as editable desktop markdown source'),
+    proofFailure(latest.indentedListSourceSaved, 'editor.wysiwyg.mutation.source.indentedList', 'Detached indented lists stay as editable desktop markdown source'),
+    proofFailure(latest.indentedTextSourceSaved, 'editor.wysiwyg.mutation.source.indentedText', 'Indented text blocks stay as editable desktop markdown source'),
   ].filter((failure): failure is NativeWysiwygMutationAssertionFailure => failure !== null)
 }
 
@@ -322,7 +383,7 @@ function paragraphNode(...lines: readonly FrontmatterValue[]): TiptapJsonNode {
   return {
     content: lines.flatMap((line, index): TiptapJsonNode[] => [
       ...(index > 0 ? [{ type: 'hardBreak' }] : []),
-      { text: line, type: 'text' },
+      ...(line ? [{ text: line, type: 'text' }] : []),
     ]),
     type: 'paragraph',
   }

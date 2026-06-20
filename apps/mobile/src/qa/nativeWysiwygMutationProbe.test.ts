@@ -86,6 +86,20 @@ describe('native WYSIWYG mutation probe', () => {
     })
   })
 
+  it('seeds source-backed fallback paragraphs for unsupported desktop markdown', () => {
+    expect(nativeWysiwygMutationProbeContent()).toMatchObject({
+      content: expect.arrayContaining([
+        paragraphMatcher('```plain text', 'prompt: keep [[literal]]', '```'),
+        paragraphMatcher('<details><summary>Manufacturing</summary>', '', 'Made in Italy', '', '</details>'),
+        paragraphMatcher('<!--', '{"fold":true}', '-->'),
+        paragraphMatcher('  $$', '  x^2', '  $$'),
+        paragraphMatcher('  ![](https://example.com/agent.png)'),
+        paragraphMatcher('  1. Contextualize: Dump TOC into an LLM.', '  2. Summarize major sections.'),
+        paragraphMatcher('    Teach your AI agent the workflow context.', '    Then run the task.'),
+      ]),
+    })
+  })
+
   it('parses native simulator log lines and reports missing invariants', () => {
     const proof = nativeWysiwygMutationProof({
       content: '# Native WYSIWYG Mutation Probe\n\nNative bridge mutation saved through TenTap.\n',
@@ -112,6 +126,13 @@ describe('native WYSIWYG mutation probe', () => {
       'editor.wysiwyg.mutation.table',
       'editor.wysiwyg.mutation.tableAlignment',
       'editor.wysiwyg.mutation.tableStructured',
+      'editor.wysiwyg.mutation.source.complexCodeFence',
+      'editor.wysiwyg.mutation.source.details',
+      'editor.wysiwyg.mutation.source.htmlComment',
+      'editor.wysiwyg.mutation.source.indentedDisplayMath',
+      'editor.wysiwyg.mutation.source.indentedImage',
+      'editor.wysiwyg.mutation.source.indentedList',
+      'editor.wysiwyg.mutation.source.indentedText',
     ])
   })
 
@@ -190,5 +211,45 @@ function savedMutationContent(): string {
     '| :--- | ---: |',
     '| Editor | Native WYSIWYG |',
     '',
+    '```plain text',
+    'prompt: keep [[literal]]',
+    '```',
+    '',
+    '<details><summary>Manufacturing</summary>',
+    '',
+    'Made in Italy',
+    '',
+    '</details>',
+    '',
+    '<!--',
+    '{"fold":true}',
+    '-->',
+    '',
+    '  $$',
+    '  x^2',
+    '  $$',
+    '',
+    '  ![](https://example.com/agent.png)',
+    '',
+    '  1. Contextualize: Dump TOC into an LLM.',
+    '  2. Summarize major sections.',
+    '',
+    '    Teach your AI agent the workflow context.',
+    '    Then run the task.',
+    '',
   ].join('\n')
+}
+
+function paragraphMatcher(...lines: string[]) {
+  return expect.objectContaining({
+    content: paragraphContentMatcher(lines),
+    type: 'paragraph',
+  })
+}
+
+function paragraphContentMatcher(lines: string[]) {
+  return lines.flatMap((line, index) => [
+    ...(index > 0 ? [expect.objectContaining({ type: 'hardBreak' })] : []),
+    ...(line ? [expect.objectContaining({ text: line, type: 'text' })] : []),
+  ])
 }

@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { nativeWysiwygDocumentContentFromJson } from './MobileWysiwygDocumentSerialization'
+import {
+  nativeWysiwygDocumentContentFromJson,
+  nativeWysiwygShouldPublishMutationProof,
+} from './MobileWysiwygDocumentSerialization'
 import type { TiptapJsonNode } from '../../workspace/mobileDocumentContent'
 
 describe('native WYSIWYG document serialization', () => {
@@ -125,6 +128,21 @@ describe('native WYSIWYG document serialization', () => {
       markdown: '',
       skipped: true,
     })
+  })
+
+  it('publishes mutation QA proofs for every non-skipped serialization', () => {
+    expect(nativeWysiwygShouldPublishMutationProof({
+      mutationProbeEnabled: true,
+      skipped: false,
+    })).toBe(true)
+    expect(nativeWysiwygShouldPublishMutationProof({
+      mutationProbeEnabled: true,
+      skipped: true,
+    })).toBe(false)
+    expect(nativeWysiwygShouldPublishMutationProof({
+      mutationProbeEnabled: false,
+      skipped: false,
+    })).toBe(false)
   })
 })
 

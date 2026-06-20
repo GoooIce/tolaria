@@ -28,7 +28,10 @@ import {
   nativeWysiwygFormattingActions,
   type NativeWysiwygCommandBridge,
 } from './MobileWysiwygFormatCommands'
-import { nativeWysiwygDocumentContentFromJson } from './MobileWysiwygDocumentSerialization'
+import {
+  nativeWysiwygDocumentContentFromJson,
+  nativeWysiwygShouldPublishMutationProof,
+} from './MobileWysiwygDocumentSerialization'
 import { MobileWysiwygWikilinkPicker } from './MobileWysiwygWikilinkPicker'
 import {
   nativeWysiwygDocumentWithInsertedWikilink,
@@ -671,8 +674,10 @@ function writeEditorJsonToMarkdown({
         tableStructured: nativeWysiwygMarkdownBlockStructuredTable(json),
       })
     }
-    if (mutationProbeEnabled) publishNativeWysiwygMutationProof(noteId, nextContent.content, json)
     if (wikilinkInsertProbeEnabled) publishNativeWysiwygWikilinkInsertProof(noteId, nextContent.content)
+  }
+  if (nativeWysiwygShouldPublishMutationProof({ mutationProbeEnabled, skipped: nextContent.skipped })) {
+    publishNativeWysiwygMutationProof(noteId, nextContent.content, json)
   }
   if (!nextContent.skipped && shouldPublishTableCommandMutationProof(tableCommandMutationProbeEnabled, refs)) {
     publishNativeWysiwygTableCommandMutationProof({ content: nextContent.content, json, noteId })
