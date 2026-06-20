@@ -1,5 +1,6 @@
 import type { MobileNote, MobilePropertyValue, MobileTypeDefinition, MobileTypeDefinitions } from './mobileWorkspaceModel'
 import { mobileNoteForWikilinkTarget, parseMobileWikilink } from './mobileWikilinks'
+import { SUGGESTED_RELATIONSHIP_KEYS } from '../../../../src/utils/workspaceSuggestionContracts'
 
 type NormalizedSuggestionKey = string
 type PropertyKey = string
@@ -12,16 +13,14 @@ export type MobileTypeValueSuggestionItem = {
   value: string
 }
 
-const RELATIONSHIP_SCHEMA_KEYS = new Set(['belongs_to', 'has', 'related_to'])
-const CANONICAL_RELATIONSHIP_KEYS: Partial<Record<NormalizedSuggestionKey, RelationshipKey>> = {
-  belongs_to: 'belongs_to',
-  has: 'has',
-  related_to: 'related_to',
-}
+const RELATIONSHIP_SCHEMA_KEYS = new Set<string>(SUGGESTED_RELATIONSHIP_KEYS)
+const CANONICAL_RELATIONSHIP_KEYS = new Map<NormalizedSuggestionKey, RelationshipKey>(
+  SUGGESTED_RELATIONSHIP_KEYS.map((key) => [canonicalSuggestionKey(key), key]),
+)
 
 export function normalizeMobileRelationshipKey(key: RelationshipKey): RelationshipKey {
   const trimmed = key.trim()
-  const relationshipKey = CANONICAL_RELATIONSHIP_KEYS[canonicalSuggestionKey(trimmed)]
+  const relationshipKey = CANONICAL_RELATIONSHIP_KEYS.get(canonicalSuggestionKey(trimmed))
   return relationshipKey === undefined ? trimmed : relationshipKey
 }
 
