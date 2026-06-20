@@ -23,6 +23,7 @@ export type NativeWysiwygMutationProof = {
   dividerSaved: boolean
   favoritePreserved: boolean
   frontmatterPreserved: boolean
+  imageAttachmentSaved: boolean
   inlineMarksSaved: boolean
   listBlocksSaved: boolean
   mutationTextSaved: boolean
@@ -57,6 +58,7 @@ const mutationLogPrefix = 'TOLARIA_MOBILE_WYSIWYG_MUTATION_PROBE'
 const mutationTitle = 'Native WYSIWYG Mutation Probe'
 const mutationText = 'Native bridge mutation saved through TenTap.'
 const mutationAttachmentLink = '[project brief.pdf](<attachments/project brief.pdf>)'
+const mutationImageAttachment = '![mobile diagram.png](<attachments/mobile diagram.png>)'
 const mutationInlineSamples = ['**bold**', '*italic*', '~~strike~~', '`code`', '==highlight=='] as const
 const mutationListSamples = ['- Bullet item', '1. Ordered item', '- [x] Task item'] as const
 const mutationQuote = '> Quoted desktop parity'
@@ -71,6 +73,7 @@ const mutationProofBooleanFields: readonly NativeWysiwygMutationBooleanField[] =
   'dividerSaved',
   'favoritePreserved',
   'frontmatterPreserved',
+  'imageAttachmentSaved',
   'inlineMarksSaved',
   'listBlocksSaved',
   'mutationTextSaved',
@@ -125,6 +128,7 @@ export function nativeWysiwygMutationProbeContent(vaultRootUri?: VaultRootUri): 
       headingNode(mutationTitle),
       paragraphNode(mutationText),
       mutationRichInlineParagraphNode(vaultRootUri),
+      mutationImageNode(vaultRootUri),
       mutationBulletListNode,
       mutationOrderedListNode,
       mutationTaskListNode,
@@ -157,6 +161,7 @@ export function nativeWysiwygMutationProof({
     dividerSaved: content.includes(mutationDividerBeforeTable),
     favoritePreserved: content.includes('\n_favorite: true\n'),
     frontmatterPreserved: content.startsWith('---\n'),
+    imageAttachmentSaved: content.includes(mutationImageAttachment),
     inlineMarksSaved: mutationInlineSamples.every((sample) => content.includes(sample)),
     listBlocksSaved: mutationListSamples.every((sample) => content.includes(sample)),
     mutationTextSaved: content.includes(mutationText),
@@ -199,6 +204,7 @@ export function assertNativeWysiwygMutationProofs(
   return [
     proofFailure(latest.frontmatterPreserved, 'editor.wysiwyg.mutation.frontmatter', 'Frontmatter boundary survives native WYSIWYG saves'),
     proofFailure(latest.attachmentLinkSaved, 'editor.wysiwyg.mutation.attachment', 'Native file attachment links serialize back to portable desktop markdown'),
+    proofFailure(latest.imageAttachmentSaved, 'editor.wysiwyg.mutation.imageAttachment', 'Native image attachments serialize back to portable desktop markdown images'),
     proofFailure(latest.typePreserved, 'editor.wysiwyg.mutation.type', 'Desktop type frontmatter survives native WYSIWYG saves'),
     proofFailure(latest.statusPreserved, 'editor.wysiwyg.mutation.status', 'Desktop status frontmatter survives native WYSIWYG saves'),
     proofFailure(latest.tagsPreserved, 'editor.wysiwyg.mutation.tags', 'Desktop tag frontmatter survives native WYSIWYG saves'),
@@ -290,6 +296,22 @@ function mutationAttachmentHref(vaultRootUri?: VaultRootUri): string {
   return vaultRootUri?.trim()
     ? `${ensureTrailingSlash(vaultRootUri.trim())}attachments/project%20brief.pdf`
     : 'attachments/project brief.pdf'
+}
+
+function mutationImageNode(vaultRootUri?: VaultRootUri): TiptapJsonNode {
+  return {
+    attrs: {
+      alt: 'mobile diagram.png',
+      src: mutationImageSrc(vaultRootUri),
+    },
+    type: 'image',
+  }
+}
+
+function mutationImageSrc(vaultRootUri?: VaultRootUri): string {
+  return vaultRootUri?.trim()
+    ? `${ensureTrailingSlash(vaultRootUri.trim())}attachments/mobile%20diagram.png`
+    : 'attachments/mobile diagram.png'
 }
 
 function ensureTrailingSlash(value: string): string {

@@ -56,6 +56,13 @@ describe('native WYSIWYG mutation probe', () => {
           ]),
         }),
         expect.objectContaining({
+          attrs: {
+            alt: 'mobile diagram.png',
+            src: 'file:///vault/root/attachments/mobile%20diagram.png',
+          },
+          type: 'image',
+        }),
+        expect.objectContaining({
           type: 'codeBlock',
         }),
         expect.objectContaining({
@@ -90,6 +97,7 @@ describe('native WYSIWYG mutation probe', () => {
     expect(assertNativeWysiwygMutationProofs(parsed).map((failure) => failure.id)).toEqual([
       'editor.wysiwyg.mutation.frontmatter',
       'editor.wysiwyg.mutation.attachment',
+      'editor.wysiwyg.mutation.imageAttachment',
       'editor.wysiwyg.mutation.type',
       'editor.wysiwyg.mutation.status',
       'editor.wysiwyg.mutation.tags',
@@ -160,6 +168,8 @@ function savedMutationContent(): string {
     'Formatting: **bold**, *italic*, ~~strike~~, `code`, ==highlight==, [[AI Ops Guide]].',
     '',
     '[project brief.pdf](<attachments/project brief.pdf>)',
+    '',
+    '![mobile diagram.png](<attachments/mobile diagram.png>)',
     '',
     '- Bullet item',
     '',
