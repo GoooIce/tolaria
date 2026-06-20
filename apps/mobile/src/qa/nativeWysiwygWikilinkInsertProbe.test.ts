@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  nativeWysiwygDocumentWithInsertedSlashCommandBlock,
   nativeWysiwygDocumentWithInsertedPlainText,
   nativeWysiwygDocumentWithInsertedWikilink,
 } from '../components/workspace/MobileWysiwygWikilinkBridgeModel'
@@ -12,6 +13,8 @@ import {
   nativeWysiwygPersonMentionInsertProbeContent,
   nativeWysiwygPersonMentionInsertProbePayload,
   nativeWysiwygPersonMentionInsertProbeSelection,
+  nativeWysiwygSlashCommandInsertProbePayload,
+  nativeWysiwygSlashCommandInsertProbeSelection,
   nativeWysiwygWikilinkInsertLogLine,
   nativeWysiwygWikilinkInsertProbeEnabled,
   nativeWysiwygWikilinkInsertProbePayload,
@@ -32,6 +35,7 @@ describe('native WYSIWYG wikilink insert probe', () => {
       target: 'People/Luca',
     })
     expect(nativeWysiwygEmojiInsertProbePayload()).toEqual({ text: rocketEmoji })
+    expect(nativeWysiwygSlashCommandInsertProbePayload()).toEqual({ action: 'table' })
     expect(nativeWysiwygPersonMentionInsertProbeContent()).toMatchObject({
       content: [{
         content: [{ text: 'Ask @Lu', type: 'text' }],
@@ -39,45 +43,53 @@ describe('native WYSIWYG wikilink insert probe', () => {
       }, {
         content: [{ text: 'Ship :rock', type: 'text' }],
         type: 'paragraph',
+      }, {
+        content: [{ text: 'Insert /table', type: 'text' }],
+        type: 'paragraph',
       }],
       type: 'doc',
     })
     expect(nativeWysiwygPersonMentionInsertProbeSelection()).toEqual({ from: 5, to: 8 })
     expect(nativeWysiwygEmojiInsertProbeSelection()).toEqual({ from: 15, to: 20 })
+    expect(nativeWysiwygSlashCommandInsertProbeSelection()).toEqual({ from: 29, to: 35 })
   })
 
   it('builds a passing proof when inserted links save as desktop markdown', () => {
     expect(nativeWysiwygWikilinkInsertProof({
-      content: `# Note\n\nAsk [[People/Luca|Luca]] about [[AI Ops Guide]].\n\nShip ${rocketEmoji}`,
+      content: `# Note\n\nAsk [[People/Luca|Luca]] about [[AI Ops Guide]].\n\nShip ${rocketEmoji}\n\n| Column | Value |\n| --- | --- |\n| Item | Detail |`,
       noteId: 'note.md',
     })).toMatchObject({
       insertedEmojiSaved: true,
       insertedEmojiSourceRemoved: true,
       insertedPersonMentionSaved: true,
       insertedPersonMentionSourceRemoved: true,
+      insertedSlashCommandBlockSaved: true,
+      insertedSlashCommandSourceRemoved: true,
       insertedWikilinkSaved: true,
       noteId: 'note.md',
     })
   })
 
   it('builds a passing proof from the native probe insertion order', () => {
-    const emojiJson = nativeWysiwygDocumentWithInsertedPlainText({
+    const slashCommandJson = expectProbeJson(nativeWysiwygDocumentWithInsertedSlashCommandBlock({
       json: nativeWysiwygPersonMentionInsertProbeContent(),
+      payload: nativeWysiwygSlashCommandInsertProbePayload(),
+      selection: nativeWysiwygSlashCommandInsertProbeSelection(),
+    }))
+    const emojiJson = expectProbeJson(nativeWysiwygDocumentWithInsertedPlainText({
+      json: slashCommandJson,
       payload: nativeWysiwygEmojiInsertProbePayload(),
       selection: nativeWysiwygEmojiInsertProbeSelection(),
-    })
-    if (!emojiJson) throw new Error('Emoji probe insertion failed')
-    const personMentionJson = nativeWysiwygDocumentWithInsertedWikilink({
+    }))
+    const personMentionJson = expectProbeJson(nativeWysiwygDocumentWithInsertedWikilink({
       json: emojiJson,
       payload: nativeWysiwygPersonMentionInsertProbePayload(),
       selection: nativeWysiwygPersonMentionInsertProbeSelection(),
-    })
-    if (!personMentionJson) throw new Error('Person mention probe insertion failed')
-    const combinedJson = nativeWysiwygDocumentWithInsertedWikilink({
+    }))
+    const combinedJson = expectProbeJson(nativeWysiwygDocumentWithInsertedWikilink({
       json: personMentionJson,
       payload: nativeWysiwygWikilinkInsertProbePayload(),
-    })
-    if (!combinedJson) throw new Error('Wikilink probe insertion failed')
+    }))
     const proof = nativeWysiwygWikilinkInsertProof({
       content: tiptapJsonToMobileMarkdown(combinedJson),
       noteId: 'note.md',
@@ -88,7 +100,7 @@ describe('native WYSIWYG wikilink insert probe', () => {
 
   it('parses and asserts simulator log proofs', () => {
     const proof = nativeWysiwygWikilinkInsertProof({
-      content: `# Note\n\nAsk [[People/Luca|Luca]] [[AI Ops Guide]]\n\nShip ${rocketEmoji}`,
+      content: `# Note\n\nAsk [[People/Luca|Luca]] [[AI Ops Guide]]\n\nShip ${rocketEmoji}\n\n| Column | Value |\n| --- | --- |\n| Item | Detail |`,
       noteId: 'note.md',
     })
 
@@ -111,10 +123,13 @@ describe('native WYSIWYG wikilink insert probe', () => {
     }, {
       id: 'editor.wysiwyg.wikilinkInsert.emojiSaved',
       message: 'Native WYSIWYG emoji insertion saves as plain markdown emoji text',
+    }, {
+      id: 'editor.wysiwyg.wikilinkInsert.slashCommandBlockSaved',
+      message: 'Native WYSIWYG slash-command insertion saves the selected block as desktop markdown',
     }])
     expect(assertNativeWysiwygWikilinkInsertProofs([
       nativeWysiwygWikilinkInsertProof({
-        content: '# Note\n\nAsk @Lu [[AI Ops Guide]]\n\nShip :rock',
+        content: '# Note\n\nAsk @Lu [[AI Ops Guide]]\n\nShip :rock\n\nInsert /table',
         noteId: 'note.md',
       }),
     ])).toEqual([{
@@ -129,6 +144,12 @@ describe('native WYSIWYG wikilink insert probe', () => {
     }, {
       id: 'editor.wysiwyg.wikilinkInsert.emojiReplacement',
       message: 'Native WYSIWYG emoji insertion replaces the typed shortcode query',
+    }, {
+      id: 'editor.wysiwyg.wikilinkInsert.slashCommandBlockSaved',
+      message: 'Native WYSIWYG slash-command insertion saves the selected block as desktop markdown',
+    }, {
+      id: 'editor.wysiwyg.wikilinkInsert.slashCommandReplacement',
+      message: 'Native WYSIWYG slash-command insertion replaces the typed slash query',
     }])
   })
 
@@ -137,3 +158,8 @@ describe('native WYSIWYG wikilink insert probe', () => {
     expect(nativeWysiwygWikilinkInsertProbeEnabled(new globalThis.URLSearchParams('wysiwygWikilinkInsertProbe=0'))).toBe(false)
   })
 })
+
+function expectProbeJson(json: unknown | null): unknown {
+  expect(json).not.toBeNull()
+  return json
+}

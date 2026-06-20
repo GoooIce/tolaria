@@ -1,4 +1,5 @@
 import type {
+  NativeWysiwygMarkdownBlockPayload,
   NativeWysiwygPlainTextPayload,
   NativeWysiwygSelection,
   NativeWysiwygWikilinkPayload,
@@ -15,6 +16,8 @@ export type NativeWysiwygWikilinkInsertProof = {
   insertedEmojiSourceRemoved: boolean
   insertedPersonMentionSaved: boolean
   insertedPersonMentionSourceRemoved: boolean
+  insertedSlashCommandBlockSaved: boolean
+  insertedSlashCommandSourceRemoved: boolean
   insertedWikilinkSaved: boolean
   noteId: NoteId
 }
@@ -34,12 +37,17 @@ const expectedPersonMentionWikilink = `[[${personMentionProbeTarget}|${personMen
 const emojiProbeSource = 'Ship :rock'
 const emojiProbeShortcode = ':rock'
 const expectedEmoji = String.fromCodePoint(0x1F680)
+const slashCommandProbeSource = 'Insert /table'
+const slashCommandProbeQuery = '/table'
+const expectedSlashCommandTable = '| Column | Value |'
 const proofFieldTypes = {
   contentLength: 'number',
   insertedEmojiSaved: 'boolean',
   insertedEmojiSourceRemoved: 'boolean',
   insertedPersonMentionSaved: 'boolean',
   insertedPersonMentionSourceRemoved: 'boolean',
+  insertedSlashCommandBlockSaved: 'boolean',
+  insertedSlashCommandSourceRemoved: 'boolean',
   insertedWikilinkSaved: 'boolean',
   noteId: 'string',
 } as const
@@ -64,6 +72,12 @@ export function nativeWysiwygEmojiInsertProbePayload(): NativeWysiwygPlainTextPa
   }
 }
 
+export function nativeWysiwygSlashCommandInsertProbePayload(): NativeWysiwygMarkdownBlockPayload {
+  return {
+    action: 'table',
+  }
+}
+
 export function nativeWysiwygPersonMentionInsertProbeContent(): object {
   return {
     content: [
@@ -73,6 +87,10 @@ export function nativeWysiwygPersonMentionInsertProbeContent(): object {
       },
       {
         content: [{ text: emojiProbeSource, type: 'text' }],
+        type: 'paragraph',
+      },
+      {
+        content: [{ text: slashCommandProbeSource, type: 'text' }],
         type: 'paragraph',
       },
     ],
@@ -88,6 +106,10 @@ export function nativeWysiwygEmojiInsertProbeSelection(): NativeWysiwygSelection
   return { from: 15, to: 20 }
 }
 
+export function nativeWysiwygSlashCommandInsertProbeSelection(): NativeWysiwygSelection {
+  return { from: 29, to: 35 }
+}
+
 export function nativeWysiwygWikilinkInsertProof({
   content,
   noteId,
@@ -101,6 +123,8 @@ export function nativeWysiwygWikilinkInsertProof({
     insertedEmojiSourceRemoved: !content.includes(emojiProbeShortcode),
     insertedPersonMentionSaved: content.includes(expectedPersonMentionWikilink),
     insertedPersonMentionSourceRemoved: !content.includes('@Lu'),
+    insertedSlashCommandBlockSaved: content.includes(expectedSlashCommandTable),
+    insertedSlashCommandSourceRemoved: !content.includes(slashCommandProbeQuery),
     insertedWikilinkSaved: content.includes(expectedWikilink),
     noteId,
   }
@@ -155,6 +179,16 @@ export function assertNativeWysiwygWikilinkInsertProofs(
       'editor.wysiwyg.wikilinkInsert.emojiReplacement',
       'Native WYSIWYG emoji insertion replaces the typed shortcode query',
     ),
+    proofFailure(
+      latest.insertedSlashCommandBlockSaved,
+      'editor.wysiwyg.wikilinkInsert.slashCommandBlockSaved',
+      'Native WYSIWYG slash-command insertion saves the selected block as desktop markdown',
+    ),
+    proofFailure(
+      latest.insertedSlashCommandSourceRemoved,
+      'editor.wysiwyg.wikilinkInsert.slashCommandReplacement',
+      'Native WYSIWYG slash-command insertion replaces the typed slash query',
+    ),
   ].filter((failure): failure is NativeWysiwygWikilinkInsertAssertionFailure => failure !== null)
 }
 
@@ -189,6 +223,8 @@ function parsedProof(value: unknown): NativeWysiwygWikilinkInsertProof | null {
     insertedEmojiSourceRemoved: value.insertedEmojiSourceRemoved,
     insertedPersonMentionSaved: value.insertedPersonMentionSaved,
     insertedPersonMentionSourceRemoved: value.insertedPersonMentionSourceRemoved,
+    insertedSlashCommandBlockSaved: value.insertedSlashCommandBlockSaved,
+    insertedSlashCommandSourceRemoved: value.insertedSlashCommandSourceRemoved,
     insertedWikilinkSaved: value.insertedWikilinkSaved,
     noteId: value.noteId,
   }

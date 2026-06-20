@@ -274,7 +274,7 @@ export const mobileParityInventory = [
     surface: 'Native WYSIWYG WebView editor source',
   },
   {
-    assertions: ['WYSIWYG wikilink, emoji, and slash-command picker suggestion tests', 'native iOS WYSIWYG wikilink, person mention, and emoji insertion proof'],
+    assertions: ['WYSIWYG wikilink, emoji, and slash-command picker suggestion tests', 'native iOS WYSIWYG wikilink, person mention, emoji, and slash-command insertion proof'],
     contracts: ['desktopEditorParity', 'desktopToolbarActionParity'],
     desktopSource: 'BlockNote wikilink suggestion menu and shared wikilink autocomplete candidates',
     mobileFile: 'src/components/workspace/MobileWysiwygWikilinkPicker.tsx',
