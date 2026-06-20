@@ -66,6 +66,39 @@ describe('mobile frontmatter writes', () => {
       'key:value': 'kept',
     })
   })
+
+  it('canonicalizes status aliases during direct writes', () => {
+    const content = writeMobileFrontmatterContentValue(
+      '---\nStatus: Draft\n---\n# Note\n',
+      'status',
+      'Active',
+    )
+
+    expect(content).toContain('\nstatus: Active')
+    expect(content).not.toContain('\nStatus:')
+  })
+
+  it('canonicalizes tag aliases during direct writes', () => {
+    const content = writeMobileFrontmatterContentValue(
+      '---\nTags:\n  - Old\n---\n# Note\n',
+      'Tags',
+      ['Design', 'AI'],
+    )
+
+    expect(content).toContain('\ntags:\n  - Design\n  - AI')
+    expect(content).not.toContain('\nTags:')
+  })
+
+  it('canonicalizes title aliases during direct writes', () => {
+    const content = writeMobileFrontmatterContentValue(
+      '---\nTitle: Old title\n---\n# Note\n',
+      'title',
+      'New title',
+    )
+
+    expect(content).toContain('\ntitle: New title')
+    expect(content).not.toContain('\nTitle:')
+  })
 })
 
 function snapshotWithLegacyMetadataNote(): MobileWorkspaceSnapshot {
