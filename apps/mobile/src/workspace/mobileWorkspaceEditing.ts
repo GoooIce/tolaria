@@ -49,6 +49,7 @@ import {
   type MobileViewMoveDirection,
 } from './mobileSavedViews'
 import { buildMobileSidebarSections } from './mobileSidebarSections'
+import { mobileCreateNotePathTitle } from './mobileCreateNoteTitles'
 import { mobileCreateRelationshipTargetDefaults } from './mobileCreateNoteDefaults'
 import { isMobileInboxNote } from './mobileNoteFilters'
 import { normalizedMobileFolderPath } from './mobileWorkspaceFolders'
@@ -461,12 +462,13 @@ function createMobileNote(
   const trimmedTitle = title.trim()
 
   const notePool = workspaceNotePool(snapshot)
-  const basePath = createNotePath(createNotePathTitle(trimmedTitle), defaults.folderPath)
+  const type = cleanTypeName(defaults.type ?? 'Note') || 'Note'
+  const now = Date.now()
+  const pathTitle = mobileCreateNotePathTitle({ now, title: trimmedTitle, type })
+  const basePath = createNotePath(pathTitle, defaults.folderPath)
   const id = uniqueMobileNotePath(notePool, basePath)
   if (id !== basePath && trimmedTitle) return snapshot
 
-  const now = Date.now()
-  const type = cleanTypeName(defaults.type ?? 'Note') || 'Note'
   const rawContent = createNoteRawContent(trimmedTitle, type, defaults)
   const note = deriveEditableNote({
     fallback: {
@@ -484,7 +486,7 @@ function createMobileNote(
       status: defaults.status ?? '',
       snippet: '',
       tags: defaults.tags ?? [],
-      title: createNotePathTitle(trimmedTitle),
+      title: pathTitle,
       type,
       typeTone: 'gray',
       workspace: snapshot.source?.label ?? 'Tolaria Vault',
@@ -501,10 +503,6 @@ function createMobileNote(
     [note, ...snapshot.notes],
     [note, ...notePool],
   )
-}
-
-function createNotePathTitle(title: NoteTitle): NoteTitle {
-  return title.trim() || 'Untitled'
 }
 
 function createMobileNoteResult(

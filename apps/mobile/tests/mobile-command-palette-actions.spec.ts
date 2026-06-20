@@ -31,8 +31,8 @@ test.describe('mobile command palette actions', () => {
     await runCommand(page, 'new essay', 'new-essay')
 
     await expect(page.getByTestId('mobile-command-palette')).toBeHidden()
-    await expect(page.getByTestId('note-row-untitled.md')).toBeVisible()
-    await expect(page.getByTestId('editor-toolbar-title')).toHaveText('Untitled')
+    await expect(page.getByTestId(/note-row-untitled-essay-\d+\.md/u)).toBeVisible()
+    await expect(page.getByTestId('editor-toolbar-title')).toHaveText(/Untitled Essay \d+/u)
     await expect(page.getByTestId('editor-title')).toBeHidden()
     await expect(page.getByTestId('property-row-type-edit')).toHaveText('Essay')
   })

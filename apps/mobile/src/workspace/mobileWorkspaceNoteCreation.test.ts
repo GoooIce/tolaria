@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { workspaceScenarioForId } from '../fixtures/workspaceFixtures'
 import { buildLocalVaultWorkspaceSnapshot } from './localVaultSnapshot'
 import type { MobileNote } from './mobileWorkspaceModel'
@@ -10,6 +10,10 @@ import {
 import { buildMobileDeepLinkForNote } from './mobileDeepLinks'
 
 describe('mobile note creation parity', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   it('creates a selected editable note with desktop-style frontmatter content', () => {
     const snapshot = applyMobileWorkspaceEdit(workspaceScenarioForId('default'), {
       title: 'Mobile Editing Contract',
@@ -67,6 +71,7 @@ describe('mobile note creation parity', () => {
   })
 
   it('creates title-less typed notes for immediate type commands', () => {
+    vi.spyOn(Date, 'now').mockReturnValue(1700000000000)
     const result = applyMobileWorkspaceEditWithWrites(workspaceScenarioForId('default'), {
       defaults: {
         template: '## Objective\n\nLaunch mobile parity.\n',
@@ -78,7 +83,7 @@ describe('mobile note creation parity', () => {
     const note = result.snapshot.notes[0]
 
     expect(note).toMatchObject({
-      id: 'untitled.md',
+      id: 'untitled-project-1700000000.md',
       rawContent: [
         '---',
         'type: Project',
@@ -89,13 +94,13 @@ describe('mobile note creation parity', () => {
         'Launch mobile parity.',
         '',
       ].join('\n'),
-      title: 'Untitled',
+      title: 'Untitled Project 1700000000',
       type: 'Project',
     })
     expect(result.writes).toEqual([{
       content: note?.rawContent,
       kind: 'createNote',
-      path: 'untitled.md',
+      path: 'untitled-project-1700000000.md',
     }])
   })
 
@@ -195,24 +200,7 @@ describe('mobile note creation parity', () => {
   })
 
   it('creates relationship targets beside the source note and links the exact created path', () => {
-    const base = workspaceScenarioForId('default')
-    const sourceNote = {
-      ...base.notes[0],
-      rawContent: '# Workflow Orchestration Essay\n\nSource body.\n',
-    }
-    const result = applyMobileWorkspaceEditWithWrites({
-      ...base,
-      allNotes: [sourceNote, ...base.notes.slice(1)],
-      notes: [sourceNote, ...base.notes.slice(1)],
-      selectedNoteId: sourceNote.id,
-    }, {
-      key: 'Related to',
-      sourceNoteId: sourceNote.id,
-      targetTitle: 'New Dependency',
-      type: 'createRelationshipTarget',
-    })
-    const target = result.snapshot.allNotes?.find((note) => note.path === 'Tolaria/Mobile UI/new-dependency.md')
-    const updatedSource = result.snapshot.allNotes?.find((note) => note.id === sourceNote.id)
+    const { result, target, updatedSource } = createRelationshipTargetResult()
 
     expect(result.snapshot.selectedNoteId).toBe('Tolaria/Mobile UI/new-dependency.md')
     expect(target).toMatchObject({
@@ -374,6 +362,31 @@ describe('mobile note creation parity', () => {
     expect(result.snapshot.selectedNoteId).toBe(sourceNote.id)
   })
 })
+
+function createRelationshipTargetResult() {
+  const base = workspaceScenarioForId('default')
+  const sourceNote = {
+    ...base.notes[0],
+    rawContent: '# Workflow Orchestration Essay\n\nSource body.\n',
+  }
+  const result = applyMobileWorkspaceEditWithWrites({
+    ...base,
+    allNotes: [sourceNote, ...base.notes.slice(1)],
+    notes: [sourceNote, ...base.notes.slice(1)],
+    selectedNoteId: sourceNote.id,
+  }, {
+    key: 'Related to',
+    sourceNoteId: sourceNote.id,
+    targetTitle: 'New Dependency',
+    type: 'createRelationshipTarget',
+  })
+
+  return {
+    result,
+    target: result.snapshot.allNotes?.find((note) => note.path === 'Tolaria/Mobile UI/new-dependency.md'),
+    updatedSource: result.snapshot.allNotes?.find((note) => note.id === sourceNote.id),
+  }
+}
 
 function localVaultFile(relativePath: string, content: string) {
   return {
