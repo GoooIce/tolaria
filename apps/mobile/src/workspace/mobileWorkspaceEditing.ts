@@ -199,12 +199,6 @@ type MobileNoteEditContext = {
   typeDefinitions?: MobileTypeDefinitions
 }
 type TitlePropertyUpdateEdit = Extract<MobileWorkspaceEdit, { type: 'updateProperty' }> & { value: string }
-type RelationshipTargetRefContext = {
-  relationshipKey: FrontmatterKey
-  sourceNoteId: NoteId
-  targetRef: WikilinkRef
-  typeDefinitions?: MobileTypeDefinitions
-}
 type AddRelationshipInput = {
   key: FrontmatterKey
   note: EditableNoteInput
@@ -535,12 +529,8 @@ function createNoteRawContent(
 
 function createNoteBody(title: NoteTitle, template?: MarkdownContent): MarkdownContent {
   if (title) return template ? `\n${template}` : ''
-  if (templateStartsWithH1(template)) return `\n${template}`
+  if (template?.trimStart().startsWith('# ') ?? false) return `\n${template}`
   return template ? `\n# \n\n${template}` : '\n# \n\n'
-}
-
-function templateStartsWithH1(template?: MarkdownContent): boolean {
-  return template?.trimStart().startsWith('# ') ?? false
 }
 
 function createNoteFrontmatter(
@@ -568,13 +558,9 @@ function mergeRelationshipDefaultFrontmatter(
   relationships: Record<FrontmatterKey, WikilinkRef[]>,
 ) {
   for (const [key, refs] of Object.entries(relationships)) {
-    addFrontmatterValue(frontmatter, key, relationshipDefaultFrontmatterValue(refs))
+    const value = refs.length === 0 ? undefined : refs.length === 1 ? refs[0] : refs
+    addFrontmatterValue(frontmatter, key, value)
   }
-}
-
-function relationshipDefaultFrontmatterValue(refs: WikilinkRef[]): LocalVaultFrontmatterValue | undefined {
-  if (refs.length === 0) return undefined
-  return refs.length === 1 ? refs[0] : refs
 }
 
 function applyMobileNoteEdit(
@@ -866,11 +852,47 @@ function createRelationshipTarget(
   const relationshipKey = edit.key.trim()
   if (!sourceNote?.rawContent || !targetTitle || !relationshipKey) return { snapshot, writes: [] }
 
+  const explicitTarget = parseMobileWikilink(targetTitle)?.target
+  const existingTargetNote = explicitTarget
+    ? mobileNoteForWikilinkTarget(workspaceNotePool(snapshot), explicitTarget)
+    : null
+  if (existingTargetNote) {
+    return relationshipTargetEditResult({
+      createWrites: [],
+      relationshipKey,
+      snapshot,
+      sourceNote,
+      targetNote: existingTargetNote,
+    })
+  }
+
+  return createNewRelationshipTarget({
+    defaults: edit.defaults,
+    relationshipKey,
+    snapshot,
+    sourceNote,
+    targetTitle,
+  })
+}
+
+function createNewRelationshipTarget({
+  defaults,
+  relationshipKey,
+  snapshot,
+  sourceNote,
+  targetTitle,
+}: {
+  defaults?: MobileCreateNoteDefaults
+  relationshipKey: FrontmatterKey
+  snapshot: MobileWorkspaceSnapshot
+  sourceNote: MobileNote
+  targetTitle: NoteTitle
+}): MobileWorkspaceEditResult {
   const targetResult = createMobileNoteResult(
     snapshot,
     targetTitle,
     mobileCreateRelationshipTargetDefaults({
-      defaults: edit.defaults,
+      defaults,
       relationshipKey,
       sourceNote,
       typeDefinitions: snapshot.typeDefinitions,
@@ -880,69 +902,43 @@ function createRelationshipTarget(
   const targetNote = workspaceNoteById(targetSnapshot, targetSnapshot.selectedNoteId ?? '')
   if (!targetNote?.rawContent || targetResult.writes.length === 0) return { snapshot, writes: [] }
 
-  const nextSnapshot = snapshotWithRelationshipTargetRef({
+  return relationshipTargetEditResult({
+    createWrites: targetResult.writes,
     relationshipKey,
+    snapshot: targetSnapshot,
     sourceNote,
-    sourceNoteId: sourceNote.id,
     targetNote,
-    targetSnapshot,
+  })
+}
+
+function relationshipTargetEditResult({
+  createWrites,
+  relationshipKey,
+  snapshot,
+  sourceNote,
+  targetNote,
+}: {
+  createWrites: MobileWorkspaceWrite[]
+  relationshipKey: FrontmatterKey
+  snapshot: MobileWorkspaceSnapshot
+  sourceNote: MobileNote
+  targetNote: MobileNote
+}): MobileWorkspaceEditResult {
+  const result = applyMobileNoteEditResult(snapshot, {
+    key: relationshipKey,
+    noteId: sourceNote.id,
+    targetRef: `[[${mobileWikilinkTargetForNote(targetNote, sourceNote)}]]`,
+    targetTitle: targetNote.title,
+    type: 'addRelationship',
   })
 
   return {
-    snapshot: nextSnapshot,
-    writes: [
-      ...targetResult.writes,
-      ...saveNoteWrites(targetSnapshot, nextSnapshot, {
-        key: relationshipKey,
-        noteId: sourceNote.id,
-        targetTitle: targetNote.title,
-        type: 'addRelationship',
-      }),
-    ],
+    snapshot: {
+      ...result.snapshot,
+      selectedNoteId: targetNote.id,
+    },
+    writes: [...createWrites, ...result.writes],
   }
-}
-
-function snapshotWithRelationshipTargetRef({
-  relationshipKey,
-  sourceNote,
-  sourceNoteId,
-  targetNote,
-  targetSnapshot,
-}: {
-  relationshipKey: FrontmatterKey
-  sourceNote: MobileNote
-  sourceNoteId: NoteId
-  targetNote: MobileNote
-  targetSnapshot: MobileWorkspaceSnapshot
-}): MobileWorkspaceSnapshot {
-  const targetRef = `[[${mobileWikilinkTargetForNote(targetNote, sourceNote)}]]`
-  const context = {
-    relationshipKey,
-    sourceNoteId,
-    targetRef,
-    typeDefinitions: targetSnapshot.typeDefinitions,
-  }
-  const notes = addRelationshipRefToNoteList(targetSnapshot.notes, context)
-  const allNotes = targetSnapshot.allNotes
-    ? addRelationshipRefToNoteList(targetSnapshot.allNotes, context)
-    : undefined
-
-  return rebuildSnapshot(targetSnapshot, notes, allNotes)
-}
-
-function addRelationshipRefToNoteList(
-  notes: MobileNote[],
-  context: RelationshipTargetRefContext,
-): MobileNote[] {
-  return notes.map((note) => {
-    if (note.id !== context.sourceNoteId || note.rawContent === undefined) return note
-    return addRelationshipRef(
-      withEditableContent(note),
-      context.relationshipKey,
-      context.targetRef,
-      context.typeDefinitions,
-    )
-  })
 }
 
 function createMobileView(
@@ -1239,7 +1235,7 @@ function fallbackPropertyFrontmatter(note: MobileNote): LocalVaultFrontmatter {
 function fallbackRelationshipFrontmatter(note: MobileNote): LocalVaultFrontmatter {
   const frontmatter: LocalVaultFrontmatter = {}
   for (const relationship of note.relationships) {
-    frontmatter[relationshipFrontmatterKey(relationship)] = relationship.values.map(relationshipRefValue)
+    frontmatter[sharedRelationshipFrontmatterKey(relationship)] = relationship.values.map(relationshipRefValue)
   }
   return frontmatter
 }
@@ -1280,14 +1276,10 @@ function serializeDocument(frontmatter: LocalVaultFrontmatter, body: MarkdownCon
 function serializeFrontmatterEntry(key: FrontmatterKey, value: LocalVaultFrontmatterValue): string {
   const frontmatterKey = serializeLocalVaultFrontmatterKey(key)
   if (Array.isArray(value)) {
-    return `${frontmatterKey}:\n${value.map((item) => `  - ${serializeScalar(item)}`).join('\n')}`
+    return `${frontmatterKey}:\n${value.map((item) => `  - ${serializeLocalVaultFrontmatterScalar(item)}`).join('\n')}`
   }
 
-  return `${frontmatterKey}: ${serializeScalar(value)}`
-}
-
-function serializeScalar(value: Exclude<LocalVaultFrontmatterValue, LocalVaultFrontmatterValue[]>): string {
-  return serializeLocalVaultFrontmatterScalar(value)
+  return `${frontmatterKey}: ${serializeLocalVaultFrontmatterScalar(value)}`
 }
 
 function mobileRelationships(
@@ -1297,14 +1289,14 @@ function mobileRelationships(
   return Object.entries(relationships).map(([key, values]) => ({
     key,
     kind: relationshipKindForKey(key),
-    label: relationshipLabel(key),
+    label: relationshipKindForKey(key) === 'custom' ? humanizeKey(key) : undefined,
     values: values.map((value) => relationshipValue(value, notes)),
   }))
 }
 
 function relationshipValue(rawValue: WikilinkRef, notes: MobileNote[]): MobileRelationshipValue {
   const target = wikilinkTarget(rawValue)
-  const note = resolveRelationshipTarget(notes, target)
+  const note = mobileNoteForWikilinkTarget(notes, target)
   if (!note) return unresolvedRelationshipValue(rawValue, target)
 
   return {
@@ -1325,13 +1317,9 @@ function unresolvedRelationshipValue(rawValue: WikilinkRef, target: WikilinkTarg
   }
 }
 
-function resolveRelationshipTarget(notes: MobileNote[], target: WikilinkTarget): MobileNote | null {
-  return mobileNoteForWikilinkTarget(notes, target)
-}
-
 function relationshipRefForTitle(title: NoteTitle, notes: MobileNote[], sourceNote: MobileNote): WikilinkRef {
   if (/^\[\[[^\]]+\]\]$/.test(title)) return title
-  const targetNote = resolveRelationshipTarget(notes, title)
+  const targetNote = mobileNoteForWikilinkTarget(notes, title)
   const target = targetNote ? mobileWikilinkTargetForNote(targetNote, sourceNote) : slugifyTitle(title)
   return `[[${target}]]`
 }
@@ -1345,14 +1333,6 @@ function normalizedRelationshipRef(ref: WikilinkRef | undefined): WikilinkRef | 
 
 function wikilinkTarget(value: WikilinkRef): WikilinkTarget {
   return parseMobileWikilink(value)?.target ?? value.trim()
-}
-
-function relationshipLabel(label: FrontmatterKey): string | undefined {
-  return relationshipKindForKey(label) === 'custom' ? humanizeKey(label) : undefined
-}
-
-function relationshipFrontmatterKey(relationship: MobileRelationship): FrontmatterKey {
-  return sharedRelationshipFrontmatterKey(relationship)
 }
 
 function mobileProperties(properties: Record<string, LocalVaultFrontmatterValue>): MobileProperty[] {

@@ -389,6 +389,45 @@ describe('mobile note creation parity', () => {
     expect(result.snapshot.notes[0]?.rawContent).toBe(sourceNote.rawContent)
     expect(result.snapshot.selectedNoteId).toBe(sourceNote.id)
   })
+
+  it('links explicit existing wikilink relationship targets without creating duplicates', () => {
+    const base = workspaceScenarioForId('default')
+    const sourceNote = {
+      ...base.notes[0],
+      id: 'Writing/Launch/source.md',
+      path: 'Writing/Launch/source.md',
+      rawContent: '# Source\n\nSource body.\n',
+      title: 'Source',
+    }
+    const existingTarget = {
+      ...base.notes[1],
+      id: 'Writing/Launch/launch-checklist.md',
+      path: 'Writing/Launch/launch-checklist.md',
+      title: 'Launch Checklist',
+    }
+    const snapshot = {
+      ...base,
+      allNotes: [sourceNote, existingTarget, ...base.notes.slice(2)],
+      notes: [sourceNote, existingTarget, ...base.notes.slice(2)],
+      selectedNoteId: sourceNote.id,
+    }
+    const result = applyMobileWorkspaceEditWithWrites(snapshot, {
+      key: 'related_to',
+      sourceNoteId: sourceNote.id,
+      targetTitle: '[[Writing/Launch/launch-checklist]]',
+      type: 'createRelationshipTarget',
+    })
+    const updatedSource = result.snapshot.allNotes?.find((note) => note.id === sourceNote.id)
+
+    expect(result.snapshot.selectedNoteId).toBe(existingTarget.id)
+    expect(result.snapshot.notes).toHaveLength(snapshot.notes.length)
+    expect(updatedSource?.rawContent).toContain('related_to:\n  - "[[Writing/Launch/launch-checklist]]"')
+    expect(result.writes).toEqual([{
+      content: updatedSource?.rawContent,
+      kind: 'saveNote',
+      path: 'Writing/Launch/source.md',
+    }])
+  })
 })
 
 function createRelationshipTargetResult() {
