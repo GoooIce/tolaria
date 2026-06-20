@@ -19,9 +19,11 @@ import { viewMatchesSelection } from './viewIdentity'
 import { wikilinkTarget, resolveEntry } from './wikilink'
 import { buildTypeVisibilityLookup, isSectionEntryVisibleForType } from './typeVisibility'
 import {
+  compareSortableValues,
   getDefaultDirection,
   parseSortConfig,
   serializeSortConfig,
+  statusSortRank,
   type SortConfig,
   type SortDirection,
   type SortOption,
@@ -150,36 +152,6 @@ export function extractSortableProperties(entries: VaultEntry[]): string[] {
   return [...keys].sort((a, b) => a.localeCompare(b))
 }
 
-const STATUS_ORDER: Record<string, number> = {
-  Active: 0, Paused: 1, Done: 2, Finished: 3,
-}
-const STATUS_ORDER_LOOKUP = new Map(Object.entries(STATUS_ORDER))
-
-const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}/
-
-function tryParseDate(s: string): number | null {
-  if (!ISO_DATE_RE.test(s)) return null
-  const d = new Date(s)
-  return Number.isNaN(d.getTime()) ? null : d.getTime()
-}
-
-function compareNumericPair(a: unknown, b: unknown): number | null {
-  if (typeof a === 'number' && typeof b === 'number') return a - b
-  if (typeof a === 'boolean' && typeof b === 'boolean') return (a ? 1 : 0) - (b ? 1 : 0)
-  return null
-}
-
-function comparePropertyValues(a: unknown, b: unknown): number {
-  const numeric = compareNumericPair(a, b)
-  if (numeric !== null) return numeric
-  const sa = String(a)
-  const sb = String(b)
-  const da = tryParseDate(sa)
-  const db = tryParseDate(sb)
-  if (da !== null && db !== null) return da - db
-  return sa.localeCompare(sb)
-}
-
 function makePropertyComparator(key: string, flip: number): (a: VaultEntry, b: VaultEntry) => number {
   return (a, b) => {
     const va = Reflect.get(a.properties, key) ?? null
@@ -187,7 +159,7 @@ function makePropertyComparator(key: string, flip: number): (a: VaultEntry, b: V
     if (va == null && vb == null) return 0
     if (va == null) return 1
     if (vb == null) return -1
-    return flip * comparePropertyValues(va, vb)
+    return flip * compareSortableValues(va, vb)
   }
 }
 
@@ -195,8 +167,8 @@ function makeBuiltinComparator(option: string, flip: number): (a: VaultEntry, b:
   if (option === 'title') return (a, b) => flip * stringField(a.title).localeCompare(stringField(b.title))
   if (option === 'created') return (a, b) => flip * ((a.createdAt ?? a.modifiedAt ?? 0) - (b.createdAt ?? b.modifiedAt ?? 0))
   if (option === 'status') return (a, b) => {
-    const sa = STATUS_ORDER_LOOKUP.get(a.status ?? '') ?? 999
-    const sb = STATUS_ORDER_LOOKUP.get(b.status ?? '') ?? 999
+    const sa = statusSortRank(a.status)
+    const sb = statusSortRank(b.status)
     if (sa !== sb) return flip * (sa - sb)
     return (getDisplayDate(b) ?? 0) - (getDisplayDate(a) ?? 0)
   }

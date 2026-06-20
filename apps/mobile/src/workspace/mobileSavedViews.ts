@@ -8,7 +8,12 @@ import type {
   MobileViewFilterOp,
 } from './mobileWorkspaceModel'
 import { parseDateFilterInput } from '../../../../src/utils/filterDates'
-import { parseSortConfig, type SortDirection } from '../../../../src/utils/noteSort'
+import {
+  compareSortableValues,
+  parseSortConfig,
+  statusSortRank,
+  type SortDirection,
+} from '../../../../src/utils/noteSort'
 import { compileSafeUserRegex } from '../../../../src/utils/safeRegex'
 import { evaluateArrayFieldCondition } from '../../../../src/utils/viewFilterArrayFields'
 
@@ -87,14 +92,6 @@ const supportedFilterOps = new Set<MobileViewFilterOp>([
 ])
 const builtInSortFields = new Set(['created', 'modified', 'status', 'title'])
 const regexFilterOps = new Set<MobileViewFilterOp>(['contains', 'equals', 'not_contains', 'not_equals'])
-const sortableDatePrefixPattern = /^\d{4}-\d{2}-\d{2}/u
-const unknownStatusSortOrder = 999
-const statusSortOrder = new Map<string, number>([
-  ['Active', 0],
-  ['Paused', 1],
-  ['Done', 2],
-  ['Finished', 3],
-])
 
 const builtInFieldResolvers: Record<string, BuiltInFieldResolver> = {
   archived: (note) => scalarField(note.archived === true),
@@ -553,8 +550,8 @@ function sortFieldValue(note: MobileNote, field: SortField): SortFieldValue {
 }
 
 function compareStatusNotes(left: MobileNote, right: MobileNote, direction: SortDirection) {
-  const leftOrder = statusSortOrder.get(left.status ?? '') ?? unknownStatusSortOrder
-  const rightOrder = statusSortOrder.get(right.status ?? '') ?? unknownStatusSortOrder
+  const leftOrder = statusSortRank(left.status)
+  const rightOrder = statusSortRank(right.status)
   if (leftOrder !== rightOrder) {
     const result = leftOrder - rightOrder
     return direction === 'asc' ? result : -result
@@ -596,22 +593,7 @@ function compareMissingValues(left: SortFieldValue, right: SortFieldValue) {
 }
 
 function comparePresentFieldValue(left: SortFieldValue, right: SortFieldValue) {
-  if (typeof left === 'number' && typeof right === 'number') return left - right
-  if (typeof left === 'boolean' && typeof right === 'boolean') return Number(left) - Number(right)
-
-  const leftTimestamp = sortableDateTimestamp(left)
-  const rightTimestamp = sortableDateTimestamp(right)
-  if (leftTimestamp !== null && rightTimestamp !== null) return leftTimestamp - rightTimestamp
-
-  return normalizedText(left).localeCompare(normalizedText(right))
-}
-
-function sortableDateTimestamp(value: unknown): number | null {
-  if (typeof value !== 'string') return null
-  if (!sortableDatePrefixPattern.test(value)) return null
-
-  const timestamp = Date.parse(value)
-  return Number.isNaN(timestamp) ? null : timestamp
+  return compareSortableValues(left, right)
 }
 
 function emptyConditionResult(op: MobileViewFilterOp, field: ResolvedMobileField): boolean | null {
