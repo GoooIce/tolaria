@@ -320,10 +320,7 @@ function workspacePersistenceViewWrites(seedSnapshot: MobileWorkspaceSnapshot) {
     ...workspacePersistenceViewCreateWrites(seedSnapshot),
     ...workspacePersistenceViewMoveWrites(seedSnapshot),
     ...workspacePersistenceViewUpdateWrites(seedSnapshot),
-    {
-      kind: 'deleteView' as const,
-      path: 'views/old-native-proof.yml',
-    },
+    ...workspacePersistenceViewDeleteWrites(seedSnapshot),
   ]
 }
 
@@ -352,6 +349,16 @@ function workspacePersistenceViewUpdateWrites(seedSnapshot: MobileWorkspaceSnaps
   return applyMobileWorkspaceEditWithWrites(seedSnapshot, {
     definition: updatedNativeProofViewDefinition(),
     type: 'updateView',
+    viewId: view.id,
+  }).writes
+}
+
+function workspacePersistenceViewDeleteWrites(seedSnapshot: MobileWorkspaceSnapshot) {
+  const view = seedSnapshot.views?.find((candidate) => candidate.definition.name === oldViewName)
+  if (!view) return []
+
+  return applyMobileWorkspaceEditWithWrites(seedSnapshot, {
+    type: 'deleteView',
     viewId: view.id,
   }).writes
 }
