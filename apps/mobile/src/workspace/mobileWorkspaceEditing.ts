@@ -552,9 +552,23 @@ function createNoteFrontmatter(
   addFrontmatterValue(frontmatter, '_archived', defaults.archived === true ? true : undefined)
   addFrontmatterValue(frontmatter, '_organized', defaults.organized === true ? true : undefined)
   mergeFrontmatter(frontmatter, defaults.properties ?? {})
-  mergeFrontmatter(frontmatter, defaults.relationships ?? {})
+  mergeRelationshipDefaultFrontmatter(frontmatter, defaults.relationships ?? {})
 
   return frontmatter
+}
+
+function mergeRelationshipDefaultFrontmatter(
+  frontmatter: LocalVaultFrontmatter,
+  relationships: Record<FrontmatterKey, WikilinkRef[]>,
+) {
+  for (const [key, refs] of Object.entries(relationships)) {
+    addFrontmatterValue(frontmatter, key, relationshipDefaultFrontmatterValue(refs))
+  }
+}
+
+function relationshipDefaultFrontmatterValue(refs: WikilinkRef[]): LocalVaultFrontmatterValue | undefined {
+  if (refs.length === 0) return undefined
+  return refs.length === 1 ? refs[0] : refs
 }
 
 function applyMobileNoteEdit(

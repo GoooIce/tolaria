@@ -16,8 +16,8 @@ describe('mobile frontmatter serialization', () => {
 
     const noteContent = result.writes.find((write) => write.kind === 'createNote')?.content ?? ''
 
-    expect(noteContent).toContain('belongs_to:\n  - "[[Tolaria MVP]]"')
-    expect(matter(noteContent).data.belongs_to).toEqual(['[[Tolaria MVP]]'])
+    expect(noteContent).toContain('belongs_to: "[[Tolaria MVP]]"')
+    expect(matter(noteContent).data.belongs_to).toBe('[[Tolaria MVP]]')
   })
 
   it('writes type schema relationship refs as YAML strings', () => {

@@ -168,7 +168,7 @@ describe('mobile note creation parity', () => {
     expect(note.rawContent).toContain('title: Launch Checklist')
     expect(note.rawContent).toContain('tags:\n  - Design\n  - Mobile')
     expect(note.rawContent).toContain('priority: High')
-    expect(note.rawContent).toContain('belongs_to:\n  - "[[Tolaria MVP]]"')
+    expect(note.rawContent).toContain('belongs_to: "[[Tolaria MVP]]"')
     expect(result.writes).toEqual([{
       content: note.rawContent,
       kind: 'createNote',
@@ -190,7 +190,7 @@ describe('mobile note creation parity', () => {
     expect(note.relationships.find((relationship) => relationship.key === 'Belongs to')?.values).toContainEqual(
       expect.objectContaining({ title: 'Tolaria MVP' }),
     )
-    expect(note.rawContent).toContain('Belongs to:\n  - "[[Tolaria MVP]]"')
+    expect(note.rawContent).toContain('Belongs to: "[[Tolaria MVP]]"')
     expect(note.rawContent).not.toContain('belongs_to:')
     expect(result.writes).toEqual([{
       content: note.rawContent,
