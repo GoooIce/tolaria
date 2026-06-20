@@ -9,6 +9,7 @@ import { mobilePortableAttachmentHref } from './mobileAttachmentUris'
 import { isMobileMarkdownCodeFenceClose, readMobileMarkdownCodeFence } from './mobileMarkdownCodeFence'
 import { mobileMarkdownListHtml, type MobileMarkdownListItem } from './mobileMarkdownListHtml'
 import { mobileImageNodeMarkdown, mobileMarkdownImageHtml } from './mobileMarkdownImage'
+import { readMobileInlineMathAt } from './mobileInlineMath'
 import {
   normalizeUnsupportedHtmlBlockMarkdown,
   readUnsupportedHtmlBlock,
@@ -53,6 +54,7 @@ export type TiptapJsonNode = {
   attrs?: Record<string, unknown>
   content?: TiptapJsonNode[]
   marks?: TiptapJsonMark[]
+  props?: Record<string, unknown>
   text?: string
   type?: string
 }
@@ -578,6 +580,7 @@ function isMarkdownTableDivider(line: MarkdownLine): boolean {
 function inlineMarkdownToHtml(markdown: MarkdownLine): string {
   const codeSpans: string[] = []
   const escapedMarkdownChars: string[] = []
+  const inlineMathSpans: string[] = []
   const markdownWithoutCodeSpans = markdown.replace(/`([^`]+)`/g, (_match, code: PlainText) => {
     const token = codeSpanToken(codeSpans.length)
     codeSpans.push(`<code>${escapeHtml(code)}</code>`)
@@ -591,7 +594,8 @@ function inlineMarkdownToHtml(markdown: MarkdownLine): string {
       return token
     },
   )
-  const escapedMarkdown = escapeHtml(protectedMarkdown)
+  const markdownWithoutInlineMath = inlineMathMarkdownTokens(protectedMarkdown, inlineMathSpans)
+  const escapedMarkdown = escapeHtml(markdownWithoutInlineMath)
 
   const html = linkifyInlineMarkdown(escapedMarkdown)
     .replace(/==([^=]+)==/g, '<mark>$1</mark>')
@@ -602,7 +606,36 @@ function inlineMarkdownToHtml(markdown: MarkdownLine): string {
     .replace(/_([^_]+)_/g, '<em>$1</em>')
     .replace(/~~([^~]+)~~/g, '<s>$1</s>')
 
-  return restoreEscapedMarkdownTokens(restoreCodeSpanTokens(html, codeSpans), escapedMarkdownChars)
+  return restoreEscapedMarkdownTokens(
+    restoreCodeSpanTokens(restoreInlineMathTokens(html, inlineMathSpans), codeSpans),
+    escapedMarkdownChars,
+  )
+}
+
+function inlineMathMarkdownTokens(markdown: MarkdownLine, spans: HtmlSnippet[]): MarkdownLine {
+  let result = ''
+  let index = 0
+
+  while (index < markdown.length) {
+    const math = readMobileInlineMathAt({ index, text: markdown })
+    if (!math) {
+      result += markdown.charAt(index)
+      index += 1
+      continue
+    }
+
+    const token = inlineMathToken(spans.length)
+    spans.push(inlineMathHtml(math.latex))
+    result += token
+    index = math.end + 1
+  }
+
+  return result
+}
+
+function inlineMathHtml(latex: PlainText): HtmlSnippet {
+  const escapedLatex = escapeAttribute(latex)
+  return `<span class="math math--inline" data-latex="${escapedLatex}" data-type="mathInline">$${escapeHtml(latex)}$</span>`
 }
 
 function linkifyInlineMarkdown(markdown: MarkdownLine): string {
@@ -824,7 +857,15 @@ function serializeInlineNode(node: TiptapJsonNode, options: SerializeInlineOptio
   if (node.type === 'text') return serializeTextNode(node, options)
   if (node.type === 'hardBreak') return '  \n'
   if (node.type === 'image') return imageMarkdown(node, options)
+  if (node.type === 'mathInline') return inlineMathMarkdown(node)
   return serializeInlineChildren(node.content ?? [], options)
+}
+
+function inlineMathMarkdown(node: TiptapJsonNode): MarkdownBody {
+  const latex = typeof node.attrs?.latex === 'string'
+    ? node.attrs.latex
+    : typeof node.props?.latex === 'string' ? node.props.latex : ''
+  return `$${latex}$`
 }
 
 function serializeTextNode(node: TiptapJsonNode, options: SerializeInlineOptions): string {
@@ -1006,6 +1047,10 @@ function escapedMarkdownToken(index: number): string {
   return `\u0000ESCAPEDMARKDOWN${index}\u0000`
 }
 
+function inlineMathToken(index: number): string {
+  return `\u0000INLINEMATH${index}\u0000`
+}
+
 const plainSourceSpanPattern =
   /\b(?:https?|mailto):[^\s<>()]+(?:\([^\s<>()]*\)[^\s<>()]*)*|\b[A-Za-z0-9.!#$%&*+/=?^_`{|}~-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/gu
 
@@ -1023,6 +1068,10 @@ function restoreEscapedMarkdownTokens(html: HtmlSnippet, escapedMarkdownChars: H
   return escapedMarkdownChars.reduce((current, escapedChar, index) => (
     current.replaceAll(escapedMarkdownToken(index), escapedChar)
   ), html)
+}
+
+function restoreInlineMathTokens(html: HtmlSnippet, spans: HtmlSnippet[]): HtmlSnippet {
+  return spans.reduce((current, span, index) => current.replaceAll(inlineMathToken(index), span), html)
 }
 
 function restorePlainSourceSpanTokens(text: PlainText, spans: PlainText[]): PlainText {

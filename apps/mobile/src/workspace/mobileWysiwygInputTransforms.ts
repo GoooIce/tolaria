@@ -1,4 +1,5 @@
 import type { TiptapJsonMark, TiptapJsonNode } from './mobileDocumentContent'
+import { readCompletedMobileInlineMathAtEnd } from './mobileInlineMath'
 
 type NativeWysiwygInputTransformInput = {
   json: unknown
@@ -13,10 +14,7 @@ type NativeWysiwygSelection = {
 type InlineTransform = {
   after: string
   before: string
-  marked?: {
-    marks: TiptapJsonMark[]
-    text: string
-  }
+  replacement?: TiptapJsonNode[]
 }
 
 type InlineTransformResult = {
@@ -25,6 +23,7 @@ type InlineTransformResult = {
 }
 
 const highlightMarkType = 'highlight'
+const mathInlineNodeType = 'mathInline'
 
 export function nativeWysiwygDocumentWithInputTransforms({
   json,
@@ -100,6 +99,7 @@ function transformTextNodeAtSelection(node: TiptapJsonNode, offset: number): Inl
   const marks = node.marks?.map(cloneMark) ?? []
 
   return completedHighlightTransform({ after, before, marks })
+    ?? completedInlineMathTransform({ after, before })
     ?? arrowLigatureTransform({ after, before })
 }
 
@@ -148,10 +148,25 @@ function completedHighlightTransform({
   return {
     after,
     before: before.slice(0, openingStart),
-    marked: {
-      marks: withHighlightMark(marks),
-      text: content,
-    },
+    replacement: [textNode(content, withHighlightMark(marks))].filter(isTiptapJsonNode),
+  }
+}
+
+function completedInlineMathTransform({
+  after,
+  before,
+}: Pick<InlineTransform, 'after' | 'before'>): InlineTransform | null {
+  const trailingWhitespace = before.match(/[^\S\r\n]$/u)?.[0] ?? ''
+  if (!trailingWhitespace) return null
+
+  const candidate = before.slice(0, -trailingWhitespace.length)
+  const math = readCompletedMobileInlineMathAtEnd({ text: candidate })
+  if (!math) return null
+
+  return {
+    after: `${trailingWhitespace}${after}`,
+    before: candidate.slice(0, math.start),
+    replacement: [mathInlineNode(math.latex)],
   }
 }
 
@@ -164,9 +179,16 @@ function validHighlightContent(content: string): boolean {
 function inlineTransformNodes(transform: InlineTransform): TiptapJsonNode[] {
   return [
     textNode(transform.before),
-    transform.marked ? textNode(transform.marked.text, transform.marked.marks) : null,
+    ...(transform.replacement ?? []),
     textNode(transform.after),
   ].filter((node): node is TiptapJsonNode => node !== null)
+}
+
+function mathInlineNode(latex: string): TiptapJsonNode {
+  return {
+    attrs: { latex },
+    type: mathInlineNodeType,
+  }
 }
 
 function textNode(text: string, marks?: TiptapJsonMark[]): TiptapJsonNode | null {
@@ -215,6 +237,10 @@ function isInlineContainer(node: TiptapJsonNode): boolean {
 
 function isTiptapDocument(value: unknown): value is TiptapJsonNode {
   return Boolean(value && typeof value === 'object' && (value as TiptapJsonNode).type === 'doc')
+}
+
+function isTiptapJsonNode(value: unknown): value is TiptapJsonNode {
+  return Boolean(value && typeof value === 'object' && typeof (value as TiptapJsonNode).type === 'string')
 }
 
 function tiptapNodeSize(node: TiptapJsonNode): number {

@@ -12,11 +12,12 @@ import {
 } from './nativeWysiwygInputTransformProbe'
 
 describe('native WYSIWYG input transform probe', () => {
-  it('defines native editor transform steps for arrow, escaped arrow, and highlight input', () => {
+  it('defines native editor transform steps for arrow, escaped arrow, highlight, and inline math input', () => {
     expect(nativeWysiwygInputTransformProbeSteps().map((step) => step.step)).toEqual([
       'arrow',
       'escapedArrow',
       'highlight',
+      'inlineMath',
     ])
   })
 

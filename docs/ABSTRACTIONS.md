@@ -86,6 +86,7 @@ Workspace surfaces now sit one level above those primitives:
 | `mobileVaultConfig.ts` | Mobile vault-path-local config normalization for primary All Notes/Inbox display properties |
 | `mobileWikilinkAutocomplete.ts` | Cursor-aware mobile wikilink query detection, canonical target insertion, and desktop-style suggestion matching across title, aliases, filename, type, tags, and path |
 | `mobileEditorCommands.ts` | Active editor command registry that lets tablet/phone command palettes dispatch selection-sensitive editor actions without importing editor internals |
+| `mobileInlineMath.ts` | Shared desktop-compatible inline math parser for mobile hydration, input transforms, and save serialization |
 | `TabletWorkspace` | Tablet shell that owns selected-note state, panel layout, action-sheet forms, and editable snapshot state |
 | `PhoneWorkspace` | Phone shell that reuses the tablet controller/repository boundary while adapting navigation to list, sidebar, editor, and properties screens |
 | `MobileWorkspaceSidebar` | Sidebar groups, counts, and folder tree |
@@ -93,6 +94,7 @@ Workspace surfaces now sit one level above those primitives:
 | `MobileCommandPalette` / `mobileCommandPalette.ts` | Desktop-ID-preserving mobile command search over existing workspace callbacks, including selected-note file utilities and retargeting |
 | `MobileWorkspaceActionSheet` | Search, create, property, relationship, and more-action sheets |
 | `TabletEditorPanel` | Editor rendering plus full raw markdown/frontmatter editing with wikilink suggestions |
+| `MobileWysiwygMarkdownEditor` | Native TenTap editor wrapper, custom bridge registration, markdown hydration/serialization, and editor command registration |
 | `MobilePropertiesPanel` | Scalar properties, tags, and typed relationship display/removal |
 | `MobileSyncStatusBar` | Bottom sync/status footer |
 

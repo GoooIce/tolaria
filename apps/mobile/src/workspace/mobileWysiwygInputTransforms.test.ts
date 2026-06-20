@@ -40,6 +40,35 @@ describe('native WYSIWYG input transforms', () => {
     expect(paragraphMarks(nextDocument)).toContain('highlight')
   })
 
+  it('turns desktop inline math into a native math node after trailing whitespace', () => {
+    const nextDocument = nativeWysiwygDocumentWithInputTransforms({
+      json: documentNode(paragraphNode('Use $x^2$ today.')),
+      selection: { from: 11, to: 11 },
+    })
+
+    expect(tiptapJsonToMobileMarkdown(nextDocument)).toBe('Use $x^2$ today.')
+    expect(paragraphNodeTypes(nextDocument)).toContain('mathInline')
+  })
+
+  it('waits for trailing whitespace before replacing completed inline math', () => {
+    expect(nativeWysiwygDocumentWithInputTransforms({
+      json: documentNode(paragraphNode('Use $x^2$')),
+      selection: { from: 10, to: 10 },
+    })).toBeNull()
+  })
+
+  it('does not transform financial prose or code-marked inline math', () => {
+    expect(nativeWysiwygDocumentWithInputTransforms({
+      json: documentNode(paragraphNode('Paid $2.5M in ARR$ today.')),
+      selection: { from: 23, to: 23 },
+    })).toBeNull()
+
+    expect(nativeWysiwygDocumentWithInputTransforms({
+      json: documentNode(paragraphNode('Use $x^2$ ', [{ type: 'code' }])),
+      selection: { from: 11, to: 11 },
+    })).toBeNull()
+  })
+
   it('does not transform empty, whitespace-padded, or code-marked highlight syntax', () => {
     for (const text of ['Use ==== today.', 'Use == marked== today.', 'Use ==marked == today.']) {
       expect(nativeWysiwygDocumentWithInputTransforms({
@@ -67,6 +96,13 @@ function paragraphMarks(node: TiptapJsonNode | null): string[] {
     ?.flatMap((block) => block.content ?? [])
     .flatMap((inline) => inline.marks ?? [])
     .map((mark) => mark.type ?? '')
+    .filter(Boolean) ?? []
+}
+
+function paragraphNodeTypes(node: TiptapJsonNode | null): string[] {
+  return node?.content
+    ?.flatMap((block) => block.content ?? [])
+    .map((inline) => inline.type ?? '')
     .filter(Boolean) ?? []
 }
 

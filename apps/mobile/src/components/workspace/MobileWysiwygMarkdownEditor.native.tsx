@@ -17,6 +17,7 @@ import type { MobileEditorBlock, MobileNote } from '../../workspace/mobileWorksp
 import { probeProps, type MobileLayoutProbe } from '../../qa/mobileLayoutProbe'
 import { mobileColors, mobileSpace } from '../../ui/tokens'
 import { MobileMarkdownFormattingToolbar } from './MobileMarkdownFormattingToolbar'
+import { MobileMathInlineBridge } from './MobileWysiwygMathBridge'
 import { mobileTentapEditorCss } from './MobileWysiwygMarkdownEditorCss'
 import {
   applyNativeWysiwygFormat,
@@ -173,6 +174,8 @@ type ContentSettableEditorBridge = EditorBridge & {
 type SelectionSettableEditorBridge = EditorBridge & {
   setSelection: (from: number, to: number) => void
 }
+
+const mobileTenTapBridgeExtensions = [...TenTapStartKit, MobileMathInlineBridge]
 
 export function MobileWysiwygMarkdownEditor({
   blocks,
@@ -418,7 +421,7 @@ function useNativeTentapEditorBridge({
 
   const editor = useEditorBridge({
     avoidIosKeyboard: true,
-    bridgeExtensions: TenTapStartKit,
+    bridgeExtensions: mobileTenTapBridgeExtensions,
     initialContent,
     onChange: scheduleEditorChange,
   })

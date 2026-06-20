@@ -135,6 +135,14 @@ Updated body.
     expect(html).not.toContain('<code><mark>literal</mark></code>')
   })
 
+  it('hydrates inline math as a native TenTap math node without touching code spans', () => {
+    const html = mobileMarkdownBodyToTentapHtml('Use $x^2$ but keep `$x^2$` literal.\n')
+
+    expect(html).toContain('data-type="mathInline"')
+    expect(html).toContain('data-latex="x^2"')
+    expect(html).toContain('<code>$x^2$</code>')
+  })
+
   it('hydrates escaped inline markdown punctuation as literal text', () => {
     const html = mobileMarkdownBodyToTentapHtml('Keep \\(No highlights\\) and ¯\\_(ツ)_/¯\n')
 
@@ -464,6 +472,24 @@ Updated body.
     const document = paragraphDocument('$$', '\\int_0^1 x\\,dx', '$$')
 
     expect(tiptapJsonToMobileMarkdown(document)).toBe('$$\n\\int_0^1 x\\,dx\n$$')
+  })
+
+  it('serializes native inline math nodes back to desktop markdown source', () => {
+    const document: TiptapJsonNode = {
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          content: [
+            { text: 'Use ', type: 'text' },
+            { attrs: { latex: 'x^2' }, type: 'mathInline' },
+            { text: ' today.', type: 'text' },
+          ],
+        },
+      ],
+    }
+
+    expect(tiptapJsonToMobileMarkdown(document)).toBe('Use $x^2$ today.')
   })
 
   it('keeps indented display math paragraphs as editable markdown source after native saves', () => {

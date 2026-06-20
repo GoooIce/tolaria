@@ -2,11 +2,12 @@ import type { TiptapJsonNode } from '../workspace/mobileDocumentContent'
 
 type ProbeLogText = string
 type ProbeLine = string
-type StepId = 'arrow' | 'escapedArrow' | 'highlight'
+type StepId = 'arrow' | 'escapedArrow' | 'highlight' | 'inlineMath'
 
 export type NativeWysiwygInputTransformProof = {
   highlightMarkApplied: boolean
   markdown: string
+  mathInlineApplied: boolean
   step: StepId
   transformed: boolean
 }
@@ -45,6 +46,12 @@ export function nativeWysiwygInputTransformProbeSteps(): NativeWysiwygInputTrans
       selection: { from: 14, to: 14 },
       step: 'highlight',
     },
+    {
+      content: textProbeContent('Inline $x^2$'),
+      input: ' ',
+      selection: { from: 13, to: 13 },
+      step: 'inlineMath',
+    },
   ]
 }
 
@@ -60,6 +67,7 @@ export function nativeWysiwygInputTransformProof({
   return {
     highlightMarkApplied: containsHighlightMark(json),
     markdown: probeMarkdownFromJson(json),
+    mathInlineApplied: containsMathInline(json),
     step,
     transformed,
   }
@@ -98,6 +106,11 @@ export function assertNativeWysiwygInputTransformProofs(
       hasProof(proofs, { highlightMarkApplied: true, markdown: 'Use ==marked== today.', step: 'highlight', transformed: true }),
       'editor.wysiwyg.inputTransform.highlight',
       'Native WYSIWYG applies completed desktop highlight syntax as a mark',
+    ),
+    proofFailure(
+      hasProof(proofs, { markdown: 'Inline $x^2$ ', mathInlineApplied: true, step: 'inlineMath', transformed: true }),
+      'editor.wysiwyg.inputTransform.inlineMath',
+      'Native WYSIWYG applies completed desktop inline math syntax as a math node',
     ),
   ].filter((failure): failure is NativeWysiwygInputTransformAssertionFailure => failure !== null)
 }
@@ -144,10 +157,12 @@ function parsedProof(value: unknown): NativeWysiwygInputTransformProof | null {
   if (typeof candidate.markdown !== 'string') return null
   if (typeof candidate.transformed !== 'boolean') return null
   if (typeof candidate.highlightMarkApplied !== 'boolean') return null
+  if (typeof candidate.mathInlineApplied !== 'boolean') return null
 
   return {
     highlightMarkApplied: candidate.highlightMarkApplied,
     markdown: candidate.markdown,
+    mathInlineApplied: candidate.mathInlineApplied,
     step: candidate.step,
     transformed: candidate.transformed,
   }
@@ -157,12 +172,22 @@ function hasProof(
   proofs: NativeWysiwygInputTransformProof[],
   expected: Partial<NativeWysiwygInputTransformProof> & Pick<NativeWysiwygInputTransformProof, 'step'>,
 ): boolean {
-  return proofs.some((proof) => (
-    proof.step === expected.step
-    && (expected.markdown === undefined || proof.markdown === expected.markdown)
-    && (expected.transformed === undefined || proof.transformed === expected.transformed)
-    && (expected.highlightMarkApplied === undefined || proof.highlightMarkApplied === expected.highlightMarkApplied)
-  ))
+  return proofs.some((proof) => proofMatchesExpected(proof, expected))
+}
+
+function proofMatchesExpected(
+  proof: NativeWysiwygInputTransformProof,
+  expected: Partial<NativeWysiwygInputTransformProof> & Pick<NativeWysiwygInputTransformProof, 'step'>,
+): boolean {
+  return proof.step === expected.step
+    && optionalProofFieldMatches(proof.markdown, expected.markdown)
+    && optionalProofFieldMatches(proof.transformed, expected.transformed)
+    && optionalProofFieldMatches(proof.highlightMarkApplied, expected.highlightMarkApplied)
+    && optionalProofFieldMatches(proof.mathInlineApplied, expected.mathInlineApplied)
+}
+
+function optionalProofFieldMatches<T>(actual: T, expected: T | undefined): boolean {
+  return expected === undefined || actual === expected
 }
 
 function proofFailure(
@@ -174,7 +199,7 @@ function proofFailure(
 }
 
 function isStepId(value: unknown): value is StepId {
-  return value === 'arrow' || value === 'escapedArrow' || value === 'highlight'
+  return value === 'arrow' || value === 'escapedArrow' || value === 'highlight' || value === 'inlineMath'
 }
 
 function containsHighlightMark(value: unknown): boolean {
@@ -184,11 +209,23 @@ function containsHighlightMark(value: unknown): boolean {
   return node.content?.some(containsHighlightMark) ?? false
 }
 
+function containsMathInline(value: unknown): boolean {
+  if (!value || typeof value !== 'object') return false
+  const node = value as Partial<TiptapJsonNode>
+  if (node.type === 'mathInline') return true
+  return node.content?.some(containsMathInline) ?? false
+}
+
 function probeMarkdownFromJson(value: unknown): string {
   if (!value || typeof value !== 'object') return ''
   const node = value as Partial<TiptapJsonNode>
   if (node.type === 'text') return markedProbeText(node)
+  if (node.type === 'mathInline') return `$${mathInlineLatex(node)}$`
   return node.content?.map(probeMarkdownFromJson).join(node.type === 'doc' ? '\n\n' : '') ?? ''
+}
+
+function mathInlineLatex(node: Partial<TiptapJsonNode>): string {
+  return typeof node.attrs?.latex === 'string' ? node.attrs.latex : ''
 }
 
 function markedProbeText(node: Partial<TiptapJsonNode>): string {
