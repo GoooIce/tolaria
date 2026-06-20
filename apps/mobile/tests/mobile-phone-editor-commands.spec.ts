@@ -10,6 +10,7 @@ test.describe('phone editor command parity', () => {
     await createPhoneCommandDraft(page)
     await insertPhonePersonMention(page)
     await insertPhoneWikilink(page)
+    await insertPhoneEmojiShortcode(page)
     await applyPhoneFormattingCommands(page)
     await assertRenderedPhoneMarkdown(page)
     await openPhoneTableOfContents(page)
@@ -58,6 +59,13 @@ async function insertPhoneWikilink(page: Page) {
   await expect(page.getByTestId('editor-markdown-input')).toHaveValue(
     '# Phone Editor Commands\n\nReference [[Tolaria/Mobile UI/How I Run an Open Source Project]]',
   )
+}
+
+async function insertPhoneEmojiShortcode(page: Page) {
+  await page.getByTestId('editor-markdown-input').fill('# Phone Editor Commands\n\nShip :rock')
+  await expect(page.getByTestId('editor-emoji-suggestions')).toBeVisible()
+  await page.getByTestId('editor-emoji-suggestion-rocket').click()
+  await expect(page.getByTestId('editor-markdown-input')).toHaveValue('# Phone Editor Commands\n\nShip 🚀')
 }
 
 async function applyPhoneFormattingCommands(page: Page) {

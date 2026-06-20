@@ -6,11 +6,13 @@ import { MobileChip } from '../../ui/MobileChip'
 import { desktopEditorParity } from '../../ui/desktopParity'
 import { mobileColors, mobileRadius, mobileSpace, mobileType } from '../../ui/tokens'
 import {
+  activeMobileEmojiShortcodeQuery,
   activeMobilePersonMentionQuery,
   activeMobileWikilinkQuery,
   mobilePersonMentionAutocompleteSuggestions,
   mobileWikilinkAutocompleteSuggestions,
   mobileWikilinkAutocompleteTarget,
+  replaceActiveMobileEmojiShortcodeQuery,
   replaceActiveMobilePersonMentionQuery,
   replaceActiveMobileWikilinkQuery,
 } from '../../workspace/mobileWikilinkAutocomplete'
@@ -47,6 +49,7 @@ import type { MobileEditorBlock, MobileNote } from '../../workspace/mobileWorksp
 import { nativeSourceSelectionProof } from '../../qa/nativeSourceSelectionProbe'
 import { nativeSourceSelectionLogLine } from '../../qa/nativeSourceSelectionLog'
 import { MobileMarkdownFormattingToolbar } from './MobileMarkdownFormattingToolbar'
+import { mobileWysiwygEmojiPickerSuggestions } from './MobileWysiwygWikilinkPickerModel'
 
 export type MobileMarkdownSourceEditorProps = {
   blocks: MobileEditorBlock[]
@@ -61,7 +64,14 @@ export type MobileMarkdownSourceEditorProps = {
   sourceSelectionProbe?: boolean
 }
 
-type InlineAutocompleteKind = 'personMention' | 'wikilink'
+type InlineAutocompleteKind = 'emoji' | 'personMention' | 'wikilink'
+type MarkdownInlineAutocompleteSuggestion = {
+  chipLabel: string
+  emoji?: string
+  id: string
+  note?: MobileNote
+  title: string
+}
 type TimerHandle = ReturnType<typeof setTimeout>
 
 export function MobileMarkdownSourceEditor(props: MobileMarkdownSourceEditorProps) {
@@ -169,7 +179,7 @@ function MarkdownSourceEditor(props: Omit<MobileMarkdownSourceEditorProps, 'plai
               onPress={() => autocomplete.insertSuggestion(suggestion)}
             >
               <Text numberOfLines={1} style={editorStyles.suggestionTitle}>{suggestion.title}</Text>
-              <MobileChip label={suggestion.type} tone="gray" />
+              <MobileChip label={suggestion.chipLabel} tone="gray" />
             </Pressable>
           ))}
         </View>
@@ -350,7 +360,7 @@ function useMarkdownInlineAutocomplete({
     setSelection(result.selection)
     setControlledSelection(result.selection)
   }, [content, noteId, onImportAttachment, onUpdateContent, selection])
-  const insertSuggestion = useCallback((suggestion: MobileNote) => {
+  const insertSuggestion = useCallback((suggestion: MarkdownInlineAutocompleteSuggestion) => {
     const replacement = markdownInlineAutocompleteReplacement({
       content,
       cursor: selection.start,
@@ -387,14 +397,22 @@ function markdownInlineAutocompleteState(
   if (wikilinkMatch) {
     return {
       kind: 'wikilink' as const,
-      suggestions: mobileWikilinkAutocompleteSuggestions(notes, wikilinkMatch.query),
+      suggestions: noteAutocompleteSuggestions(mobileWikilinkAutocompleteSuggestions(notes, wikilinkMatch.query)),
     }
   }
 
   const personMentionMatch = activeMobilePersonMentionQuery(content, cursor)
+  if (personMentionMatch) {
+    return {
+      kind: 'personMention' as const,
+      suggestions: noteAutocompleteSuggestions(mobilePersonMentionAutocompleteSuggestions(notes, personMentionMatch.query)),
+    }
+  }
+
+  const emojiMatch = activeMobileEmojiShortcodeQuery(content, cursor)
   return {
-    kind: personMentionMatch ? 'personMention' as const : null,
-    suggestions: personMentionMatch ? mobilePersonMentionAutocompleteSuggestions(notes, personMentionMatch.query) : [],
+    kind: emojiMatch ? 'emoji' as const : null,
+    suggestions: emojiMatch ? emojiAutocompleteSuggestions(emojiMatch.query) : [],
   }
 }
 
@@ -409,11 +427,17 @@ function markdownInlineAutocompleteReplacement({
   cursor: number
   kind: InlineAutocompleteKind | null
   sourceNote: MobileNote
-  suggestion: MobileNote
+  suggestion: MarkdownInlineAutocompleteSuggestion
 }) {
   if (kind === null) return null
+  if (kind === 'emoji') {
+    return suggestion.emoji
+      ? replaceActiveMobileEmojiShortcodeQuery(content, cursor, suggestion.emoji)
+      : null
+  }
+  if (!suggestion.note) return null
 
-  const target = mobileWikilinkAutocompleteTarget(suggestion, sourceNote)
+  const target = mobileWikilinkAutocompleteTarget(suggestion.note, sourceNote)
   return kind === 'personMention'
     ? replaceActiveMobilePersonMentionQuery(content, cursor, target)
     : replaceActiveMobileWikilinkQuery(content, cursor, target)
@@ -421,7 +445,8 @@ function markdownInlineAutocompleteReplacement({
 
 function hasActiveInlineAutocomplete(text: string, cursor: number): boolean {
   if (activeMobileWikilinkQuery(text, cursor)) return true
-  return activeMobilePersonMentionQuery(text, cursor) !== null
+  if (activeMobilePersonMentionQuery(text, cursor)) return true
+  return activeMobileEmojiShortcodeQuery(text, cursor) !== null
 }
 
 function textStartSelection(): MobileMarkdownTextSelection {
@@ -429,11 +454,31 @@ function textStartSelection(): MobileMarkdownTextSelection {
 }
 
 function inlineAutocompleteTestId(kind: InlineAutocompleteKind | null): string {
+  if (kind === 'emoji') return 'editor-emoji-suggestions'
   return kind === 'personMention' ? 'editor-person-mention-suggestions' : 'editor-wikilink-suggestions'
 }
 
 function inlineAutocompleteRowTestIdPrefix(kind: InlineAutocompleteKind | null): string {
+  if (kind === 'emoji') return 'editor-emoji-suggestion'
   return kind === 'personMention' ? 'editor-person-mention-suggestion' : 'editor-wikilink-suggestion'
+}
+
+function noteAutocompleteSuggestions(notes: MobileNote[]): MarkdownInlineAutocompleteSuggestion[] {
+  return notes.map((note) => ({
+    chipLabel: note.type,
+    id: note.id,
+    note,
+    title: note.title,
+  }))
+}
+
+function emojiAutocompleteSuggestions(query: string): MarkdownInlineAutocompleteSuggestion[] {
+  return mobileWysiwygEmojiPickerSuggestions(query).map((entry) => ({
+    chipLabel: entry.emoji,
+    emoji: entry.emoji,
+    id: entry.name,
+    title: entry.name,
+  }))
 }
 
 function testIdSegment(value: string) {
