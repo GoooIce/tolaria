@@ -19,6 +19,7 @@ import {
   SUGGESTED_RELATIONSHIP_KEYS,
 } from '../../../../src/utils/workspaceSuggestionContracts'
 import { systemMetadataAliases } from '../../../../src/utils/systemMetadata'
+import { relationshipFrontmatterKey as sharedRelationshipFrontmatterKey } from '../../../../src/utils/relationshipKeys'
 
 type PropertyKey = string
 type PropertyValueText = string
@@ -57,12 +58,6 @@ const BUILT_IN_VIEW_VALUE_RESOLVERS: Record<string, ViewValueResolver> = {
   title: (note) => [note.title],
   type: (note) => [note.type],
 }
-const RELATIONSHIP_KIND_KEYS: Partial<Record<MobileRelationship['kind'], RelationshipKey>> = {
-  belongsTo: 'belongs_to',
-  has: 'has',
-  relatedTo: 'related_to',
-}
-
 export function mobilePropertyKeySuggestions(
   notes: MobileNote[],
   selectedNote: MobileNote | null,
@@ -476,18 +471,11 @@ function propertyListQuery(
 }
 
 function relationshipFrontmatterKey(relationship: MobileRelationship): RelationshipKey {
-  const kindKey = relationshipKeyForKind(relationship)
-  if (relationship.key) return relationship.key
-  if (kindKey) return kindKey
-  return relationship.label ? relationship.label : 'related_to'
+  return sharedRelationshipFrontmatterKey(relationship)
 }
 
 function propertiesForNote(note: MobileNote) {
   return note.properties ? note.properties : []
-}
-
-function relationshipKeyForKind(relationship: MobileRelationship): RelationshipKey | null {
-  return RELATIONSHIP_KIND_KEYS[relationship.kind] ?? null
 }
 
 function uniqueSuggestedKeys(values: readonly SuggestionText[]): SuggestionText[] {

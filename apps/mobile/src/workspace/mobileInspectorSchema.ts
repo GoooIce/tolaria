@@ -11,6 +11,7 @@ import {
 } from '../../../../src/utils/workspaceSuggestionContracts'
 import { normalizePropertyKey, systemMetadataAliases } from '../../../../src/utils/systemMetadata'
 import { humanizePropertyKey } from '../../../../src/utils/propertyLabels'
+import { relationshipFrontmatterKey } from '../../../../src/utils/relationshipKeys'
 
 type SlotSource = 'suggested' | 'typeDerived'
 
@@ -159,11 +160,7 @@ function existingRelationshipRawKeys(note: MobileNote): Set<string> {
 }
 
 function rawRelationshipFrontmatterKey(relationship: MobileRelationship): string {
-  if (relationship.key) return relationship.key
-  if (relationship.kind === 'belongsTo') return 'belongs_to'
-  if (relationship.kind === 'relatedTo') return 'related_to'
-  if (relationship.kind === 'has') return 'has'
-  return relationship.label ?? 'related_to'
+  return relationshipFrontmatterKey(relationship)
 }
 
 function isVisibleTypeDerivedProperty(

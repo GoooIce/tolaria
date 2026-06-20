@@ -35,7 +35,6 @@ import type {
   MobileProperty,
   MobilePropertyValue,
   MobileRelationship,
-  MobileRelationshipKind,
   MobileRelationshipValue,
   MobileSavedView,
   MobileTone,
@@ -44,6 +43,7 @@ import type {
   MobileVaultConfig,
   MobileWorkspaceSnapshot,
 } from './mobileWorkspaceModel'
+import { relationshipKindForKey } from '../../../../src/utils/relationshipKeys'
 
 type AbsoluteVaultPath = string
 type LocalVaultLabel = string
@@ -557,22 +557,14 @@ function mobileRelationships(
 ): MobileRelationship[] {
   return Object.entries(relationships).map(([label, values]) => ({
     key: label,
-    kind: relationshipKind(label),
+    kind: relationshipKindForKey(label),
     label: relationshipLabel(label),
     values: values.map((value) => relationshipValue(value, resolveRelationship)),
   }))
 }
 
-function relationshipKind(label: RelationshipLabel): MobileRelationshipKind {
-  const canonical = label.toLowerCase().replaceAll(' ', '_')
-  if (canonical === 'belongs_to') return 'belongsTo'
-  if (canonical === 'related_to') return 'relatedTo'
-  if (canonical === 'has' || canonical.startsWith('has_')) return 'has'
-  return 'custom'
-}
-
 function relationshipLabel(label: RelationshipLabel): string | undefined {
-  return relationshipKind(label) === 'custom' ? humanizeRelationshipKey(label) : undefined
+  return relationshipKindForKey(label) === 'custom' ? humanizeRelationshipKey(label) : undefined
 }
 
 function relationshipValue(rawValue: WikilinkTarget, resolveRelationship: RelationshipResolver): MobileRelationshipValue {

@@ -28,7 +28,6 @@ import type {
   MobileProperty,
   MobilePropertyValue,
   MobileRelationship,
-  MobileRelationshipKind,
   MobileRelationshipValue,
   MobileSavedView,
   MobileTone,
@@ -99,6 +98,10 @@ import {
   isMobileTextFileContentEdit,
   mobileTextFileNoteWithContent,
 } from './mobileTextFileEditing'
+import {
+  relationshipFrontmatterKey as sharedRelationshipFrontmatterKey,
+  relationshipKindForKey,
+} from '../../../../src/utils/relationshipKeys'
 
 type EditableNoteInput = MobileNote & { rawContent: string }
 type FrontmatterKey = string
@@ -1273,7 +1276,7 @@ function mobileRelationships(
 ): MobileRelationship[] {
   return Object.entries(relationships).map(([key, values]) => ({
     key,
-    kind: relationshipKind(key),
+    kind: relationshipKindForKey(key),
     label: relationshipLabel(key),
     values: values.map((value) => relationshipValue(value, notes)),
   }))
@@ -1324,24 +1327,12 @@ function wikilinkTarget(value: WikilinkRef): WikilinkTarget {
   return parseMobileWikilink(value)?.target ?? value.trim()
 }
 
-function relationshipKind(label: FrontmatterKey): MobileRelationshipKind {
-  const canonical = label.toLowerCase().replaceAll(' ', '_')
-  if (canonical === 'belongs_to') return 'belongsTo'
-  if (canonical === 'related_to') return 'relatedTo'
-  if (canonical === 'has' || canonical.startsWith('has_')) return 'has'
-  return 'custom'
-}
-
 function relationshipLabel(label: FrontmatterKey): string | undefined {
-  return relationshipKind(label) === 'custom' ? humanizeKey(label) : undefined
+  return relationshipKindForKey(label) === 'custom' ? humanizeKey(label) : undefined
 }
 
 function relationshipFrontmatterKey(relationship: MobileRelationship): FrontmatterKey {
-  if (relationship.key) return relationship.key
-  if (relationship.kind === 'belongsTo') return 'belongs_to'
-  if (relationship.kind === 'relatedTo') return 'related_to'
-  if (relationship.kind === 'has') return 'has'
-  return relationship.label ?? 'related_to'
+  return sharedRelationshipFrontmatterKey(relationship)
 }
 
 function mobileProperties(properties: Record<string, LocalVaultFrontmatterValue>): MobileProperty[] {
