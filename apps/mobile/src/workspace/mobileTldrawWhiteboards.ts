@@ -8,6 +8,7 @@ export type MobileTldrawWhiteboard = {
   boardId: string
   endLine: number
   height: string
+  indent: string
   key: string
   metadataSuffix: string
   snapshot: string
@@ -70,6 +71,7 @@ export function updateMobileTldrawWhiteboard(
       fallback: whiteboard.height,
       value: update.height,
     }),
+    indent: whiteboard.indent,
     metadataSuffix: whiteboard.metadataSuffix,
     snapshot: normalizedSnapshot({ snapshot: update.snapshot ?? whiteboard.snapshot }),
     width: normalizedDimension({ blankFallback: '', fallback: whiteboard.width, value: update.width }),
@@ -89,19 +91,21 @@ export function updateMobileTldrawWhiteboard(
 export function mobileTldrawFenceSource({
   boardId,
   height,
+  indent = '',
   metadataSuffix = '',
   snapshot,
   width,
 }: Pick<MobileTldrawWhiteboard, 'boardId' | 'height' | 'snapshot' | 'width'> & {
+  indent?: string
   metadataSuffix?: string
 }): string {
   const fence = mobileMarkdownFenceForContent({ content: snapshot })
-  return `${fence}tldraw${mobileTldrawFenceMetadata({
+  return indentTldrawFenceSource(`${fence}tldraw${mobileTldrawFenceMetadata({
     boardId,
     height,
     metadataSuffix,
     width,
-  })}\n${snapshotBody({ snapshot })}${fence}`
+  })}\n${snapshotBody({ snapshot })}${fence}`, indent)
 }
 
 function readMobileTldrawFenceAt({
@@ -111,11 +115,14 @@ function readMobileTldrawFenceAt({
   lineNumber: number
   lines: string[]
 }): MobileTldrawFenceMatch | null {
-  const opening = readMobileMarkdownCodeFence(lines[lineNumber] ?? '')
+  const sourceLine = tldrawSourceLine(lines[lineNumber] ?? '')
+  if (!sourceLine) return null
+
+  const opening = readMobileMarkdownCodeFence(sourceLine.content)
   const metadata = opening?.info ? readMobileTldrawFenceMetadata({ info: opening.info }) : null
   if (!opening || !metadata) return null
 
-  const body = readMobileTldrawFenceBody({ lineNumber, lines, opening })
+  const body = readMobileTldrawFenceBody({ indent: sourceLine.indent, lineNumber, lines, opening })
   if (!body) return null
 
   return {
@@ -123,6 +130,7 @@ function readMobileTldrawFenceAt({
     whiteboard: {
       ...metadata,
       endLine: body.endLine,
+      indent: sourceLine.indent,
       key: mobileTldrawWhiteboardKey({ boardId: metadata.boardId, startLine: lineNumber }),
       snapshot: body.snapshot,
       startLine: lineNumber,
@@ -131,10 +139,12 @@ function readMobileTldrawFenceAt({
 }
 
 function readMobileTldrawFenceBody({
+  indent,
   lineNumber,
   lines,
   opening,
 }: {
+  indent: string
   lineNumber: number
   lines: string[]
   opening: NonNullable<ReturnType<typeof readMobileMarkdownCodeFence>>
@@ -142,8 +152,8 @@ function readMobileTldrawFenceBody({
   const bodyLines: string[] = []
   let closeLine = lineNumber + 1
 
-  while (closeLine < lines.length && !isMobileMarkdownCodeFenceClose(lines[closeLine] ?? '', opening)) {
-    bodyLines.push(lines[closeLine] ?? '')
+  while (closeLine < lines.length && !isTldrawFenceClose({ line: lines[closeLine] ?? '', opening })) {
+    bodyLines.push(stripTldrawFenceIndent({ indent, line: lines[closeLine] ?? '' }))
     closeLine += 1
   }
 
@@ -220,6 +230,30 @@ function normalizedSnapshot({ snapshot }: { snapshot: string }): string {
 
 function snapshotBody({ snapshot }: { snapshot: string }): string {
   return snapshot.endsWith('\n') ? snapshot : `${snapshot}\n`
+}
+
+function isTldrawFenceClose({
+  line,
+  opening,
+}: {
+  line: string
+  opening: NonNullable<ReturnType<typeof readMobileMarkdownCodeFence>>
+}): boolean {
+  const sourceLine = tldrawSourceLine(line)
+  return sourceLine ? isMobileMarkdownCodeFenceClose(sourceLine.content, opening) : false
+}
+
+function tldrawSourceLine(line: string): { content: string; indent: string } | null {
+  const match = /^( {0,3})(\S.*)$/u.exec(line)
+  return match ? { content: match[2] ?? '', indent: match[1] ?? '' } : null
+}
+
+function stripTldrawFenceIndent({ indent, line }: { indent: string; line: string }): string {
+  return indent && line.startsWith(indent) ? line.slice(indent.length) : line
+}
+
+function indentTldrawFenceSource(source: string, indent: string): string {
+  return indent ? source.split('\n').map((line) => `${indent}${line}`).join('\n') : source
 }
 
 function escapeFenceAttribute({ value }: { value: string }): string {

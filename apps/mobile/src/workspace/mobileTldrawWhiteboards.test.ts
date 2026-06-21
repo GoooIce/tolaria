@@ -28,6 +28,7 @@ describe('mobile tldraw whiteboards', () => {
       boardId: 'map',
       endLine: 4,
       height: '640',
+      indent: '',
       key: 'map',
       metadataSuffix: '',
       snapshot: '{ "store": { "shape": true } }',
@@ -104,6 +105,63 @@ describe('mobile tldraw whiteboards', () => {
       '{ "document": true }',
       '```',
     ].join('\n'))
+  })
+
+  it('preserves leading-space tldraw fence indentation when editing from mobile', () => {
+    const content = [
+      '# Planning',
+      '',
+      '  ```tldraw id="map" height="640"',
+      '  { "store": true }',
+      '  ```',
+      '',
+      'Tail',
+    ].join('\n')
+
+    const [board] = readMobileTldrawWhiteboards({ markdown: content })
+    expect(board?.indent).toBe('  ')
+    expect(board?.snapshot).toBe('{ "store": true }')
+
+    const result = updateMobileTldrawWhiteboard({
+      markdown: content,
+      update: {
+        height: '720',
+        key: 'map',
+        snapshot: '{ "store": { "shape": true } }',
+        width: '900',
+      },
+    })
+
+    expect(result.updated).toBe(true)
+    expect(result.markdown).toBe([
+      '# Planning',
+      '',
+      '  ```tldraw id="map" height="720" width="900"',
+      '  { "store": { "shape": true } }',
+      '  ```',
+      '',
+      'Tail',
+    ].join('\n'))
+  })
+
+  it('does not treat code-indented tldraw fences as desktop whiteboards', () => {
+    const content = [
+      '# Planning',
+      '',
+      '    ```tldraw id="map" height="640"',
+      '    {}',
+      '    ```',
+    ].join('\n')
+
+    expect(readMobileTldrawWhiteboards({ markdown: content })).toEqual([])
+    expect(updateMobileTldrawWhiteboard({
+      markdown: content,
+      update: {
+        height: '720',
+        key: 'map',
+        snapshot: '{}',
+      },
+    })).toEqual({ markdown: content, updated: false })
   })
 
   it('uses a longer fence when the snapshot contains backticks', () => {

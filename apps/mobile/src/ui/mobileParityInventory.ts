@@ -162,7 +162,7 @@ export const mobileParityInventory = [
     surface: 'Source block more actions',
   },
   {
-    assertions: ['source-backed tldraw whiteboard metadata, snapshot, and text-shape add/edit/remove checks'],
+    assertions: ['source-backed tldraw whiteboard metadata, snapshot, text-shape add/edit/remove, leading-space indentation, and code-indented exclusion checks'],
     contracts: ['desktopEditorParity', 'desktopToolbarActionParity'],
     desktopSource: 'Desktop tldraw fenced markdown persistence and editor command actions',
     mobileFile: 'src/components/workspace/MobileWhiteboardMoreActions.tsx',
