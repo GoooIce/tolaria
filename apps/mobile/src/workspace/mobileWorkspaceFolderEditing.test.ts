@@ -6,8 +6,11 @@ import type { MobileNote, MobileWorkspaceSnapshot } from './mobileWorkspaceModel
 type NotePath = string
 
 describe('mobile folder editing', () => {
-  it('does not create folders over existing vault file paths', () => {
-    const snapshot = snapshotWithFileEntry('Writing/Drafts')
+  it.each([
+    ['Writing/Drafts'],
+    ['Writing/drafts'],
+  ])('does not create folders over existing vault file path %s', (existingPath) => {
+    const snapshot = snapshotWithFileEntry(existingPath)
 
     const result = applyMobileWorkspaceEditWithWrites(snapshot, {
       name: 'Drafts',
@@ -19,9 +22,12 @@ describe('mobile folder editing', () => {
     expect(result.writes).toEqual([])
   })
 
-  it('does not rename folders over existing vault file paths', () => {
+  it.each([
+    ['Research'],
+    ['research'],
+  ])('does not rename folders over existing vault file path %s', (existingPath) => {
     const snapshot = {
-      ...snapshotWithFileEntry('Research'),
+      ...snapshotWithFileEntry(existingPath),
       folderPaths: ['Tolaria', 'Tolaria/Mobile UI'],
     }
 

@@ -200,22 +200,26 @@ function snapshotWithFolderPaths(
 }
 
 function workspaceFolderPathExists(snapshot: MobileWorkspaceSnapshot, folderPath: FolderPath): boolean {
-  const normalizedPath = normalizedMobileFolderPath(folderPath)
-  return workspaceFolderPaths(snapshot).some((path) => normalizedMobileFolderPath(path) === normalizedPath)
+  const normalizedPath = canonicalFolderPath(folderPath)
+  return workspaceFolderPaths(snapshot).some((path) => canonicalFolderPath(path) === normalizedPath)
 }
 
 function workspacePathExists(snapshot: MobileWorkspaceSnapshot, path: FolderPath): boolean {
-  const normalizedPath = normalizedMobileFolderPath(path)
+  const normalizedPath = canonicalFolderPath(path)
   return workspaceFolderPathExists(snapshot, normalizedPath)
     || workspaceNotePool(snapshot).some((note) => notePathExists(note, normalizedPath))
 }
 
 function notePathExists(note: MobileNote, path: FolderPath): boolean {
-  return noteIdentityPaths(note).some((candidate) => normalizedMobileFolderPath(candidate) === path)
+  return noteIdentityPaths(note).some((candidate) => canonicalFolderPath(candidate) === path)
 }
 
 function noteIdentityPaths(note: MobileNote): FolderPath[] {
   return [note.id, note.path ?? '', noteWritePath(note)]
+}
+
+function canonicalFolderPath(path: FolderPath): FolderPath {
+  return normalizedMobileFolderPath(path).toLowerCase()
 }
 
 function workspaceFolderPaths(snapshot: MobileWorkspaceSnapshot): FolderPath[] {
