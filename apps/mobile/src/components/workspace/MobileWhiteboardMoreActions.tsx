@@ -16,6 +16,9 @@ import {
 import {
   addMobileTldrawTextShapeToSnapshot,
   canAddMobileTldrawTextShapeToSnapshot,
+  readMobileTldrawTextShapesFromSnapshot,
+  removeMobileTldrawTextShapeFromSnapshot,
+  updateMobileTldrawTextShapeInSnapshot,
 } from '../../workspace/mobileTldrawSnapshot'
 import type { MobileEditorBlock, MobileNote } from '../../workspace/mobileWorkspaceModel'
 
@@ -104,6 +107,7 @@ function MobileWhiteboardSourceEditor({
   const [snapshot, setSnapshot] = useState(whiteboard.snapshot)
   const [textShape, setTextShape] = useState('')
   const [width, setWidth] = useState(whiteboard.width)
+  const textShapes = useMemo(() => readMobileTldrawTextShapesFromSnapshot({ snapshot }), [snapshot])
   const canAddTextShape = textShape.trim().length > 0 && canAddMobileTldrawTextShapeToSnapshot({ snapshot })
 
   const addTextShape = () => {
@@ -111,6 +115,20 @@ function MobileWhiteboardSourceEditor({
     if (!result.added) return
     setSnapshot(result.snapshot)
     setTextShape('')
+  }
+
+  const updateTextShape = (shapeId: string, text: string) => {
+    setSnapshot((currentSnapshot) => {
+      const result = updateMobileTldrawTextShapeInSnapshot({ shapeId, snapshot: currentSnapshot, text })
+      return result.updated ? result.snapshot : currentSnapshot
+    })
+  }
+
+  const removeTextShape = (shapeId: string) => {
+    setSnapshot((currentSnapshot) => {
+      const result = removeMobileTldrawTextShapeFromSnapshot({ shapeId, snapshot: currentSnapshot })
+      return result.removed ? result.snapshot : currentSnapshot
+    })
   }
 
   const saveWhiteboard = () => {
@@ -149,6 +167,28 @@ function MobileWhiteboardSourceEditor({
         />
       </View>
       <View style={styles.structuredEditor} testID="workspace-whiteboard-structured-editor">
+        {textShapes.length > 0 ? (
+          <View style={styles.textShapeList} testID="workspace-whiteboard-text-shape-list">
+            {textShapes.map((shape, index) => (
+              <View key={shape.id} style={styles.textShapeRow} testID={`workspace-whiteboard-text-shape-${index}`}>
+                <View style={styles.textShapeInput}>
+                  <MobileTextInput
+                    label={`${mobileText('inspector.properties.valueKind.text')} ${index + 1}`}
+                    testID={`workspace-whiteboard-text-shape-${index}-input`}
+                    value={shape.text}
+                    onChangeText={(text) => updateTextShape(shape.id, text)}
+                  />
+                </View>
+                <MobileButton
+                  label={mobileText('common.remove')}
+                  style={styles.removeTextShapeButton}
+                  variant="ghost"
+                  onPress={() => removeTextShape(shape.id)}
+                />
+              </View>
+            ))}
+          </View>
+        ) : null}
         <MobileTextInput
           label={mobileText('inspector.properties.valueKind.text')}
           testID="workspace-whiteboard-text-shape-input"
@@ -300,6 +340,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'flex-end',
+  },
+  removeTextShapeButton: {
+    alignSelf: 'flex-end',
+  },
+  textShapeInput: {
+    minWidth: 0,
+    flex: 1,
+  },
+  textShapeList: {
+    gap: mobileSpace.sm,
+  },
+  textShapeRow: {
+    minWidth: 0,
+    alignItems: 'flex-end',
+    flexDirection: 'row',
+    gap: mobileSpace.sm,
   },
   title: {
     color: mobileColors.text,

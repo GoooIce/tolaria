@@ -7,6 +7,9 @@ import {
 import {
   addMobileTldrawTextShapeToSnapshot,
   canAddMobileTldrawTextShapeToSnapshot,
+  readMobileTldrawTextShapesFromSnapshot,
+  removeMobileTldrawTextShapeFromSnapshot,
+  updateMobileTldrawTextShapeInSnapshot,
 } from './mobileTldrawSnapshot'
 
 describe('mobile tldraw whiteboards', () => {
@@ -233,6 +236,184 @@ describe('mobile tldraw whiteboards', () => {
       index: 'a2',
       parentId: 'page:existing',
       type: 'text',
+    })
+  })
+
+  it('reads existing desktop text shapes from rich text and legacy text props', () => {
+    const snapshot = JSON.stringify({
+      store: {
+        'shape:rich': {
+          id: 'shape:rich',
+          props: {
+            richText: {
+              content: [{
+                content: [
+                  { text: 'First line', type: 'text' },
+                  { type: 'hardBreak' },
+                  { text: 'continued', type: 'text' },
+                ],
+                type: 'paragraph',
+              }, {
+                content: [{ text: 'Second paragraph', type: 'text' }],
+                type: 'paragraph',
+              }],
+              type: 'doc',
+            },
+          },
+          type: 'text',
+          typeName: 'shape',
+        },
+        'shape:legacy': {
+          id: 'shape:legacy',
+          props: { text: 'Legacy label' },
+          type: 'text',
+          typeName: 'shape',
+        },
+        'shape:geo': {
+          id: 'shape:geo',
+          props: {},
+          type: 'geo',
+          typeName: 'shape',
+        },
+      },
+    })
+
+    expect(readMobileTldrawTextShapesFromSnapshot({ snapshot })).toEqual([
+      { id: 'shape:rich', text: 'First line\ncontinued\nSecond paragraph' },
+      { id: 'shape:legacy', text: 'Legacy label' },
+    ])
+  })
+
+  it('updates an existing desktop text shape without replacing its record geometry', () => {
+    const result = updateMobileTldrawTextShapeInSnapshot({
+      shapeId: 'shape:desktop-text',
+      snapshot: JSON.stringify({
+        records: {
+          'shape:desktop-text': {
+            id: 'shape:desktop-text',
+            index: 'a3',
+            meta: { owner: 'desktop' },
+            parentId: 'page:existing',
+            props: {
+              color: 'blue',
+              richText: {
+                content: [{
+                  content: [{ text: 'Old label', type: 'text' }],
+                  type: 'paragraph',
+                }],
+                type: 'doc',
+              },
+              w: 320,
+            },
+            rotation: 0.2,
+            type: 'text',
+            typeName: 'shape',
+            x: 210,
+            y: 144,
+          },
+          'shape:geo': {
+            id: 'shape:geo',
+            props: {},
+            type: 'geo',
+            typeName: 'shape',
+          },
+        },
+      }),
+      text: 'Updated mobile label',
+    })
+
+    expect(result.updated).toBe(true)
+    expect(JSON.parse(result.snapshot)).toMatchObject({
+      records: {
+        'shape:desktop-text': {
+          index: 'a3',
+          meta: { owner: 'desktop' },
+          parentId: 'page:existing',
+          props: {
+            color: 'blue',
+            richText: {
+              content: [{
+                content: [{ text: 'Updated mobile label', type: 'text' }],
+                type: 'paragraph',
+              }],
+              type: 'doc',
+            },
+            w: 320,
+          },
+          rotation: 0.2,
+          type: 'text',
+          x: 210,
+          y: 144,
+        },
+        'shape:geo': {
+          id: 'shape:geo',
+          type: 'geo',
+        },
+      },
+    })
+  })
+
+  it('removes a text shape and its bindings while preserving unrelated records', () => {
+    const result = removeMobileTldrawTextShapeFromSnapshot({
+      shapeId: 'shape:desktop-text',
+      snapshot: JSON.stringify({
+        store: {
+          'binding:arrow-text': {
+            fromId: 'shape:arrow',
+            id: 'binding:arrow-text',
+            toId: 'shape:desktop-text',
+            typeName: 'binding',
+          },
+          'binding:other': {
+            fromId: 'shape:arrow',
+            id: 'binding:other',
+            toId: 'shape:geo',
+            typeName: 'binding',
+          },
+          'shape:keyed-record': {
+            id: 'shape:desktop-text',
+            props: { text: 'Remove me' },
+            type: 'text',
+            typeName: 'shape',
+          },
+          'shape:geo': {
+            id: 'shape:geo',
+            props: {},
+            type: 'geo',
+            typeName: 'shape',
+          },
+        },
+      }),
+    })
+
+    const snapshot = JSON.parse(result.snapshot)
+    expect(result.removed).toBe(true)
+    expect(snapshot.store['shape:keyed-record']).toBeUndefined()
+    expect(snapshot.store['binding:arrow-text']).toBeUndefined()
+    expect(snapshot.store['binding:other']).toMatchObject({ toId: 'shape:geo' })
+    expect(snapshot.store['shape:geo']).toMatchObject({ type: 'geo' })
+  })
+
+  it('leaves snapshots unchanged when editing a missing or non-text shape', () => {
+    const snapshot = JSON.stringify({
+      store: {
+        'shape:geo': {
+          id: 'shape:geo',
+          props: {},
+          type: 'geo',
+          typeName: 'shape',
+        },
+      },
+    })
+
+    expect(updateMobileTldrawTextShapeInSnapshot({
+      shapeId: 'shape:geo',
+      snapshot,
+      text: 'No-op',
+    })).toEqual({ snapshot, updated: false })
+    expect(removeMobileTldrawTextShapeFromSnapshot({ shapeId: 'shape:missing', snapshot })).toEqual({
+      removed: false,
+      snapshot,
     })
   })
 })

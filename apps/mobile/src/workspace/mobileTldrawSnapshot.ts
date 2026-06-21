@@ -11,9 +11,94 @@ export type MobileTldrawSnapshotEditResult = {
   snapshot: string
 }
 
+export type MobileTldrawTextShape = {
+  id: string
+  text: string
+}
+
+export type MobileTldrawTextShapeUpdateResult = {
+  snapshot: string
+  updated: boolean
+}
+
+export type MobileTldrawTextShapeRemoveResult = {
+  removed: boolean
+  snapshot: string
+}
+
+type MobileTldrawTextShapeRecord = {
+  id: string
+  record: JsonObject
+  recordKey: string
+}
+
 export function canAddMobileTldrawTextShapeToSnapshot({ snapshot }: { snapshot: string }): boolean {
   const root = readSnapshotObject({ snapshot })
   return root ? snapshotRecordsOwner({ root }) !== null : false
+}
+
+export function readMobileTldrawTextShapesFromSnapshot({ snapshot }: { snapshot: string }): MobileTldrawTextShape[] {
+  const root = readSnapshotObject({ snapshot })
+  const recordsOwner = root ? snapshotRecordsOwner({ root }) : null
+  if (!recordsOwner) return []
+
+  return textShapeRecords({ records: recordsOwner.records }).map(({ id, record }) => ({
+    id,
+    text: readTextShapePlainText({ record }),
+  }))
+}
+
+export function updateMobileTldrawTextShapeInSnapshot({
+  shapeId,
+  snapshot,
+  text,
+}: {
+  shapeId: string
+  snapshot: string
+  text: string
+}): MobileTldrawTextShapeUpdateResult {
+  const root = readSnapshotObject({ snapshot })
+  const recordsOwner = root ? snapshotRecordsOwner({ root }) : null
+  if (!recordsOwner) return { snapshot, updated: false }
+
+  const shape = textShapeRecords({ records: recordsOwner.records }).find(candidate => candidate.id === shapeId)
+  if (!shape) return { snapshot, updated: false }
+
+  const props = isJsonObject(shape.record.props) ? shape.record.props : {}
+  const nextProps: JsonObject = {
+    ...props,
+    richText: mobileTldrawRichText({ text }),
+  }
+  if (typeof props.text === 'string') nextProps.text = text
+  shape.record.props = nextProps
+
+  return {
+    snapshot: JSON.stringify(root, null, 2),
+    updated: true,
+  }
+}
+
+export function removeMobileTldrawTextShapeFromSnapshot({
+  shapeId,
+  snapshot,
+}: {
+  shapeId: string
+  snapshot: string
+}): MobileTldrawTextShapeRemoveResult {
+  const root = readSnapshotObject({ snapshot })
+  const recordsOwner = root ? snapshotRecordsOwner({ root }) : null
+  if (!recordsOwner) return { snapshot, removed: false }
+
+  const shape = textShapeRecords({ records: recordsOwner.records }).find(candidate => candidate.id === shapeId)
+  if (!shape) return { snapshot, removed: false }
+
+  delete recordsOwner.records[shape.recordKey]
+  removeBindingsForShape({ records: recordsOwner.records, shapeId })
+
+  return {
+    removed: true,
+    snapshot: JSON.stringify(root, null, 2),
+  }
 }
 
 export function addMobileTldrawTextShapeToSnapshot({
@@ -71,6 +156,55 @@ function snapshotRecordsOwner({ root }: { root: JsonObject }): (JsonObject & { r
   }
 
   return null
+}
+
+function textShapeRecords({ records }: { records: JsonObject }): MobileTldrawTextShapeRecord[] {
+  return Object.entries(records).flatMap(([recordId, record]) => {
+    if (!isTextShapeRecord(record)) return []
+    return [{
+      id: typeof record.id === 'string' ? record.id : recordId,
+      record,
+      recordKey: recordId,
+    }]
+  })
+}
+
+function isTextShapeRecord(record: JsonValue | undefined): record is JsonObject {
+  if (!isJsonObject(record)) return false
+  return record.typeName === 'shape' && record.type === 'text'
+}
+
+function readTextShapePlainText({ record }: { record: JsonObject }): string {
+  const props = isJsonObject(record.props) ? record.props : null
+  if (!props) return ''
+  if (typeof props.text === 'string') return props.text
+  return readRichTextDocumentText(props.richText)
+}
+
+function readRichTextDocumentText(value: JsonValue | undefined): string {
+  if (!isJsonObject(value)) return ''
+
+  const content = value.content
+  if (!Array.isArray(content)) return readRichTextInlineText(value)
+
+  return content.map(readRichTextInlineText).join('\n')
+}
+
+function readRichTextInlineText(value: JsonValue | undefined): string {
+  if (!isJsonObject(value)) return ''
+  if (typeof value.text === 'string') return value.text
+  if (value.type === 'hardBreak') return '\n'
+
+  const content = value.content
+  if (!Array.isArray(content)) return ''
+  return content.map(readRichTextInlineText).join('')
+}
+
+function removeBindingsForShape({ records, shapeId }: { records: JsonObject; shapeId: string }) {
+  for (const [recordId, record] of Object.entries(records)) {
+    if (!isJsonObject(record) || record.typeName !== 'binding') continue
+    if (record.fromId === shapeId || record.toId === shapeId) delete records[recordId]
+  }
 }
 
 function ensureDocumentRecord({ records }: { records: JsonObject }) {
