@@ -120,27 +120,24 @@ test.describe('mobile command palette actions', () => {
   test('flushes the active source editor draft from the tablet command palette save command', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'tablet-landscape', 'Command palette save checks use the full-width tablet layout.')
 
-    const initialMarkdown = '# Workflow Orchestration Essay\n\nOriginal host body.\n'
-    const markdown = '# Workflow Orchestration Essay\n\nSaved from the live source editor command.\n'
+    await assertSourceEditorDraftSavesFromCommandPalette(page, {
+      initialMarkdown: '# Workflow Orchestration Essay\n\nOriginal host body.\n',
+      markdown: '# Workflow Orchestration Essay\n\nSaved from the live source editor command.\n',
+      openPalette: openCommandPalette,
+      url: '/?source=host-vault&editorMode=source&disableEditorIdleSave=1',
+    })
+  })
 
-    await installFixtureHostWorkspace(page, initialMarkdown)
-    await page.goto('/?source=host-vault&editorMode=source&disableEditorIdleSave=1')
-    const editor = page.getByTestId('editor-markdown-input')
-    await expect(editor).toBeVisible()
-    await expect(editor).toHaveValue(initialMarkdown)
-    await editor.fill(markdown)
-    await expect(hostWorkspaceWrites(page)).resolves.toEqual([])
+  test('flushes the active source editor draft from the phone command palette save command', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'phone-portrait', 'Phone command palette save checks run on the phone editor shell.')
 
-    await openCommandPalette(page)
-    await runCommand(page, 'save note', 'file-save')
-
-    await expect(page.getByTestId('mobile-command-palette')).toBeHidden()
-    await expect.poll(() => hostWorkspaceWrites(page)).toEqual([
-      expect.objectContaining({
-        content: markdown,
-        kind: 'saveNote',
-      }),
-    ])
+    await assertSourceEditorDraftSavesFromCommandPalette(page, {
+      initialMarkdown: '# Workflow Orchestration Essay\n\nOriginal phone host body.\n',
+      markdown: '# Workflow Orchestration Essay\n\nSaved from the live phone source editor command.\n',
+      openPalette: openPhoneCommandPalette,
+      screenTestId: 'phone-editor-screen',
+      url: '/?source=host-vault&editorMode=source&disableEditorIdleSave=1&phoneState=editor',
+    })
   })
 
   test('dispatches workspace commands from the phone command palette', async ({ page }, testInfo) => {
@@ -223,6 +220,38 @@ async function openPhoneCommandPalette(page: Page) {
 async function runCommand(page: Page, query: string, commandId: string) {
   await page.getByTestId('mobile-command-palette-input').fill(query)
   await page.getByTestId(`mobile-command-palette-command-${commandId}`).click()
+}
+
+type SourceEditorSaveOptions = {
+  initialMarkdown: string
+  markdown: string
+  openPalette: (page: Page) => Promise<void>
+  screenTestId?: string
+  url: string
+}
+
+async function assertSourceEditorDraftSavesFromCommandPalette(page: Page, options: SourceEditorSaveOptions) {
+  await installFixtureHostWorkspace(page, options.initialMarkdown)
+  await page.goto(options.url)
+  if (options.screenTestId) {
+    await expect(page.getByTestId(options.screenTestId)).toBeVisible()
+  }
+  const editor = page.getByTestId('editor-markdown-input')
+  await expect(editor).toBeVisible()
+  await expect(editor).toHaveValue(options.initialMarkdown)
+  await editor.fill(options.markdown)
+  await expect(hostWorkspaceWrites(page)).resolves.toEqual([])
+
+  await options.openPalette(page)
+  await runCommand(page, 'save note', 'file-save')
+
+  await expect(page.getByTestId('mobile-command-palette')).toBeHidden()
+  await expect.poll(() => hostWorkspaceWrites(page)).toEqual([
+    expect.objectContaining({
+      content: options.markdown,
+      kind: 'saveNote',
+    }),
+  ])
 }
 
 function noteRowSlug(title: string) {
