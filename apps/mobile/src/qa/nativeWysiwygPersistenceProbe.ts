@@ -137,8 +137,8 @@ function mutationProofFailures(
     proofFailure(proof.complexCodeFenceSourceSaved, 'editor.wysiwyg.persistence.mutation.source.complexCodeFence', 'Complex code-fence metadata stays as editable desktop markdown source'),
     proofFailure(proof.detailsSourceSaved, 'editor.wysiwyg.persistence.mutation.source.details', 'Unsupported details blocks stay as editable desktop markdown source'),
     proofFailure(proof.htmlCommentSourceSaved, 'editor.wysiwyg.persistence.mutation.source.htmlComment', 'Unsupported HTML comment blocks stay as editable desktop markdown source'),
-    proofFailure(proof.indentedDisplayMathSourceSaved, 'editor.wysiwyg.persistence.mutation.source.indentedDisplayMath', 'Indented display math stays as editable desktop markdown source'),
-    proofFailure(proof.indentedImageSourceSaved, 'editor.wysiwyg.persistence.mutation.source.indentedImage', 'Indented markdown images stay as editable desktop markdown source'),
+    proofFailure(proof.indentedDisplayMathSourceSaved, 'editor.wysiwyg.persistence.mutation.source.indentedDisplayMath', 'Code-indented display math stays as editable desktop markdown source'),
+    proofFailure(proof.indentedImageSourceSaved, 'editor.wysiwyg.persistence.mutation.source.indentedImage', 'Code-indented markdown images stay as editable desktop markdown source'),
     proofFailure(proof.indentedListSourceSaved, 'editor.wysiwyg.persistence.mutation.source.indentedList', 'Detached indented lists stay as editable desktop markdown source'),
     proofFailure(proof.indentedTextSourceSaved, 'editor.wysiwyg.persistence.mutation.source.indentedText', 'Indented text blocks stay as editable desktop markdown source'),
   ]

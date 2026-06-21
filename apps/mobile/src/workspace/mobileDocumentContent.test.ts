@@ -210,10 +210,19 @@ Updated body.
     expect(html).toBe('<blockquote><p>First quote line<br>Second line</p><p>Follow-up paragraph</p></blockquote>\n<p>Done</p>')
   })
 
-  it('keeps indented display math blocks editable as source until nested block editing is supported', () => {
+  it('hydrates display math with non-code leading spaces as native TenTap math nodes', () => {
     const html = mobileMarkdownBodyToTentapHtml('  $$\n  x^2\n  $$\n\nDone\n')
 
-    expect(html).toBe('<p>  $$<br>  x^2<br>  $$</p>\n<p>Done</p>')
+    expect(html).toContain('data-type="mathBlock"')
+    expect(html).toContain('data-latex="x^2"')
+    expect(html).toContain('<p>Done</p>')
+  })
+
+  it('keeps code-indented display math blocks editable as source until indented code editing is supported', () => {
+    const html = mobileMarkdownBodyToTentapHtml('    $$\n    x^2\n    $$\n\nDone\n')
+
+    expect(html).toBe('<p>    $$<br>    x^2<br>    $$</p>\n<p>Done</p>')
+    expect(html).not.toContain('data-type="mathBlock"')
   })
 
   it('keeps unsupported details blocks editable as escaped markdown source', () => {
@@ -651,10 +660,10 @@ Updated body.
     expect(tiptapJsonToMobileMarkdown(document)).toBe('Use $x^2$ today.')
   })
 
-  it('keeps indented display math paragraphs as editable markdown source after native saves', () => {
-    const document = paragraphDocument('  $$', '  x^2', '  $$')
+  it('keeps code-indented display math paragraphs as editable markdown source after native saves', () => {
+    const document = paragraphDocument('    $$', '    x^2', '    $$')
 
-    expect(tiptapJsonToMobileMarkdown(document)).toBe('  $$\n  x^2\n  $$')
+    expect(tiptapJsonToMobileMarkdown(document)).toBe('    $$\n    x^2\n    $$')
   })
 
   it('keeps indented fenced code paragraphs as editable markdown source after native saves', () => {

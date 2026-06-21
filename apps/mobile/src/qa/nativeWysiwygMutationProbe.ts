@@ -83,9 +83,9 @@ const mutationDetailsSourceLines = [
 const mutationDetailsSource = mutationDetailsSourceLines.join('\n')
 const mutationHtmlCommentSourceLines = ['<!--', '{"fold":true}', '-->'] as const
 const mutationHtmlCommentSource = mutationHtmlCommentSourceLines.join('\n')
-const mutationIndentedDisplayMathLines = ['  $$', '  x^2', '  $$'] as const
+const mutationIndentedDisplayMathLines = ['    $$', '    x^2', '    $$'] as const
 const mutationIndentedDisplayMathSource = mutationIndentedDisplayMathLines.join('\n')
-const mutationIndentedImageLines = ['  ![](https://example.com/agent.png)'] as const
+const mutationIndentedImageLines = ['    ![](https://example.com/agent.png)'] as const
 const mutationIndentedImageSource = mutationIndentedImageLines.join('\n')
 const mutationIndentedListLines = [
   '  1. Contextualize: Dump TOC into an LLM.',
@@ -278,8 +278,8 @@ export function assertNativeWysiwygMutationProofs(
     proofFailure(latest.complexCodeFenceSourceSaved, 'editor.wysiwyg.mutation.source.complexCodeFence', 'Complex code-fence metadata stays as editable desktop markdown source'),
     proofFailure(latest.detailsSourceSaved, 'editor.wysiwyg.mutation.source.details', 'Unsupported details blocks stay as editable desktop markdown source'),
     proofFailure(latest.htmlCommentSourceSaved, 'editor.wysiwyg.mutation.source.htmlComment', 'Unsupported HTML comment blocks stay as editable desktop markdown source'),
-    proofFailure(latest.indentedDisplayMathSourceSaved, 'editor.wysiwyg.mutation.source.indentedDisplayMath', 'Indented display math stays as editable desktop markdown source'),
-    proofFailure(latest.indentedImageSourceSaved, 'editor.wysiwyg.mutation.source.indentedImage', 'Indented markdown images stay as editable desktop markdown source'),
+    proofFailure(latest.indentedDisplayMathSourceSaved, 'editor.wysiwyg.mutation.source.indentedDisplayMath', 'Code-indented display math stays as editable desktop markdown source'),
+    proofFailure(latest.indentedImageSourceSaved, 'editor.wysiwyg.mutation.source.indentedImage', 'Code-indented markdown images stay as editable desktop markdown source'),
     proofFailure(latest.indentedListSourceSaved, 'editor.wysiwyg.mutation.source.indentedList', 'Detached indented lists stay as editable desktop markdown source'),
     proofFailure(latest.indentedTextSourceSaved, 'editor.wysiwyg.mutation.source.indentedText', 'Indented text blocks stay as editable desktop markdown source'),
   ].filter((failure): failure is NativeWysiwygMutationAssertionFailure => failure !== null)

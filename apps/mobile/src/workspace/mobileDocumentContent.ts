@@ -165,11 +165,11 @@ function readCodeBlock(lines: MarkdownLines, startIndex: number): ReadHtmlBlockR
   const opening = readMobileMarkdownCodeFence(openingLine)
   if (!opening) return null
 
-  const openingIndent = leadingMarkdownCodeFenceIndent(openingLine)
+  const openingIndent = leadingMarkdownBlockIndent(openingLine)
   const codeLines: string[] = []
   let index = startIndex + 1
   while (index < lines.length && !isMobileMarkdownCodeFenceClose(lines[index] ?? '', opening)) {
-    codeLines.push(stripCodeFenceContentIndent(lines[index] ?? '', openingIndent))
+    codeLines.push(stripMarkdownBlockContentIndent(lines[index] ?? '', openingIndent))
     index += 1
   }
 
@@ -219,13 +219,13 @@ function readIndentedCodeFenceSourceBlock(lines: MarkdownLines, startIndex: numb
   return sourceLinesParagraphBlock(lines.slice(startIndex, nextIndex), nextIndex)
 }
 
-function leadingMarkdownCodeFenceIndent(line: MarkdownLine): number {
+function leadingMarkdownBlockIndent(line: MarkdownLine): number {
   const spaces = line.match(/^ */u)?.[0].length ?? 0
   return Math.min(spaces, 3)
 }
 
-function stripCodeFenceContentIndent(line: MarkdownLine, fenceIndent: number): MarkdownLine {
-  const removableSpaces = Math.min(line.match(/^ */u)?.[0].length ?? 0, fenceIndent)
+function stripMarkdownBlockContentIndent(line: MarkdownLine, blockIndent: number): MarkdownLine {
+  const removableSpaces = Math.min(line.match(/^ */u)?.[0].length ?? 0, blockIndent)
   return line.slice(removableSpaces)
 }
 
@@ -260,8 +260,11 @@ function readHtmlBlock(lines: MarkdownLines, startIndex: number): ReadHtmlBlockR
 }
 
 function readDisplayMathBlock(lines: MarkdownLines, startIndex: number): ReadHtmlBlockResult | null {
+  const openingLine = lines[startIndex] ?? ''
   const displayMath = readMobileDisplayMathBlock(lines, startIndex)
-  const latex = displayMath ? mobileDisplayMathLatex(displayMath.lines) : null
+  const latex = displayMath
+    ? mobileDisplayMathLatex(nativeDisplayMathLines(displayMath.lines, openingLine))
+    : null
   return displayMath
     ? { html: displayMathBlockHtml(latex ?? displayMath.lines.join('\n')), nextIndex: displayMath.nextIndex }
     : null
@@ -278,7 +281,7 @@ function displayMathBlockHtml(latex: PlainText): HtmlSnippet {
 }
 
 function readIndentedDisplayMathSourceBlock(lines: MarkdownLines, startIndex: number): ReadHtmlBlockResult | null {
-  if (!hasLeadingWhitespace(lines[startIndex] ?? '') || !isMobileDisplayMathStart(lines[startIndex] ?? '')) {
+  if (!isCodeIndentedLine(lines[startIndex] ?? '') || !isMobileDisplayMathStart(lines[startIndex] ?? '')) {
     return null
   }
 
@@ -286,6 +289,17 @@ function readIndentedDisplayMathSourceBlock(lines: MarkdownLines, startIndex: nu
   return displayMath
     ? sourceLinesParagraphBlock(lines.slice(startIndex, displayMath.nextIndex), displayMath.nextIndex)
     : null
+}
+
+function nativeDisplayMathLines(lines: MarkdownLines, openingLine: MarkdownLine): MarkdownLines {
+  if (lines.length <= 1) return lines
+
+  const openingIndent = leadingMarkdownBlockIndent(openingLine)
+  return lines.map((line, index) => (
+    index > 0 && index < lines.length - 1
+      ? stripMarkdownBlockContentIndent(line, openingIndent)
+      : line
+  ))
 }
 
 function readUnsupportedHtmlSourceBlock(lines: MarkdownLines, startIndex: number): ReadHtmlBlockResult | null {
