@@ -29,6 +29,7 @@ describe('mobile markdown source block editing', () => {
         content: 'const answer = 42',
         endLine: 4,
         fence: '```',
+        indent: '',
         infoSuffix: '',
         key: 'line:2',
         kind: 'codeBlock',
@@ -39,6 +40,7 @@ describe('mobile markdown source block editing', () => {
         content: 'flowchart LR\n  A --> B',
         endLine: 9,
         fence: '```',
+        indent: '',
         infoSuffix: '',
         key: 'line:6',
         kind: 'mermaid',
@@ -49,6 +51,7 @@ describe('mobile markdown source block editing', () => {
         content: 'a^2 + b^2 = c^2',
         endLine: 13,
         fence: '$$',
+        indent: '',
         infoSuffix: '',
         key: 'line:11',
         kind: 'mathBlock',
@@ -91,28 +94,51 @@ describe('mobile markdown source block editing', () => {
     ].join('\n'))
   })
 
-  it('updates desktop code-fence metadata when editing code content or language', () => {
-    const markdown = [
-      'Intro',
-      '',
-      '```ts title="Mobile editor" {1,3}',
-      'const previous = true',
-      '```',
-      '',
-      'Tail',
-    ].join('\n')
-
-    const [block] = readMobileMarkdownEditableSourceBlocks({ markdown })
-    expect(block).toMatchObject({
-      infoSuffix: 'title="Mobile editor" {1,3}',
-      language: 'ts',
-    })
+  it.each([
+    {
+      block: {
+        infoSuffix: 'title="Mobile editor" {1,3}',
+        language: 'ts',
+      },
+      expectedLines: ['```tsx title="Updated editor" {2}', 'const next = true', '```'],
+      name: 'updates desktop code-fence metadata when editing code content or language',
+      sourceLines: ['```ts title="Mobile editor" {1,3}', 'const previous = true', '```'],
+      update: {
+        content: 'const next = true',
+        infoSuffix: 'title="Updated editor" {2}',
+      },
+    },
+    {
+      block: {
+        content: 'const previous = true',
+        indent: '  ',
+        infoSuffix: 'title="Mobile editor"',
+        language: 'ts',
+      },
+      expectedLines: [
+        '  ```tsx title="Updated editor"',
+        '  if (next) {',
+        '    ship()',
+        '  }',
+        '  ```',
+      ],
+      name: 'preserves non-code leading spaces when updating desktop code fences',
+      sourceLines: ['  ```ts title="Mobile editor"', '  const previous = true', '  ```'],
+      update: {
+        content: 'if (next) {\n  ship()\n}',
+        infoSuffix: 'title="Updated editor"',
+      },
+    },
+  ])('$name', ({ block, expectedLines, sourceLines, update }) => {
+    const markdown = sourceBlockFixture(sourceLines)
+    const [sourceBlock] = readMobileMarkdownEditableSourceBlocks({ markdown })
+    expect(sourceBlock).toMatchObject(block)
 
     const result = updateMobileMarkdownEditableSourceBlock({
       markdown,
       update: {
-        content: 'const next = true',
-        infoSuffix: 'title="Updated editor" {2}',
+        content: update.content,
+        infoSuffix: update.infoSuffix,
         key: 'line:2',
         kind: 'codeBlock',
         language: 'tsx',
@@ -120,15 +146,66 @@ describe('mobile markdown source block editing', () => {
     })
 
     expect(result.updated).toBe(true)
+    expect(result.markdown).toBe(sourceBlockFixture(expectedLines))
+  })
+
+  it('preserves non-code leading spaces when updating desktop math blocks', () => {
+    const markdown = [
+      'Intro',
+      '',
+      '  $$',
+      '  a^2 + b^2 = c^2',
+      '  $$',
+      '',
+      'Tail',
+    ].join('\n')
+
+    const [block] = readMobileMarkdownEditableSourceBlocks({ markdown })
+    expect(block).toMatchObject({
+      content: 'a^2 + b^2 = c^2',
+      indent: '  ',
+      kind: 'mathBlock',
+    })
+
+    const result = updateMobileMarkdownEditableSourceBlock({
+      markdown,
+      update: {
+        content: 'E = mc^2',
+        key: 'line:2',
+        kind: 'mathBlock',
+        language: '',
+      },
+    })
+
+    expect(result.updated).toBe(true)
     expect(result.markdown).toBe([
       'Intro',
       '',
-      '```tsx title="Updated editor" {2}',
-      'const next = true',
-      '```',
+      '  $$',
+      '  E = mc^2',
+      '  $$',
       '',
       'Tail',
     ].join('\n'))
+  })
+
+  it('does not treat code-indented fences as desktop source blocks', () => {
+    const blocks = readMobileMarkdownEditableSourceBlocks({ markdown: [
+      '    ```ts',
+      '    const literalFence = true',
+      '    ```',
+      '',
+      '```ts',
+      'const realFence = true',
+      '```',
+    ].join('\n') })
+
+    expect(blocks).toHaveLength(1)
+    expect(blocks[0]).toMatchObject({
+      content: 'const realFence = true',
+      key: 'line:4',
+      language: 'ts',
+    })
   })
 
   it('lengthens source block fences when edited content contains the original fence marker', () => {
@@ -187,9 +264,10 @@ describe('mobile markdown source block editing', () => {
     expect(mobileMarkdownEditableSourceBlockSource({
       content: 'E = mc^2',
       fence: '$$',
+      indent: '  ',
       kind: 'mathBlock',
       language: '',
-    })).toBe('$$\nE = mc^2\n$$')
+    })).toBe('  $$\n  E = mc^2\n  $$')
 
     expect(mobileMarkdownEditableSourceBlockSource({
       content: 'flowchart TD\n  A --> B',
@@ -214,3 +292,7 @@ describe('mobile markdown source block editing', () => {
     })).toEqual({ markdown: content, updated: false })
   })
 })
+
+function sourceBlockFixture(sourceLines: string[]): string {
+  return ['Intro', '', ...sourceLines, '', 'Tail'].join('\n')
+}

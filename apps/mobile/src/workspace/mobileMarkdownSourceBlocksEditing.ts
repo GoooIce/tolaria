@@ -6,6 +6,7 @@ export type MobileMarkdownEditableSourceBlock = {
   content: string
   endLine: number
   fence: string
+  indent: string
   infoSuffix: string
   key: string
   kind: MobileMarkdownEditableSourceBlockKind
@@ -28,6 +29,7 @@ type SourceBlockMatch = {
 
 type FenceMatch = {
   fence: string
+  indent: string
   infoSuffix: string
   language: string
 }
@@ -69,6 +71,7 @@ export function updateMobileMarkdownEditableSourceBlock({
   const nextSource = mobileMarkdownEditableSourceBlockSource({
     content: update.content,
     fence: block.fence,
+    indent: block.indent,
     infoSuffix: update.infoSuffix ?? block.infoSuffix,
     kind: update.kind,
     language: update.language,
@@ -87,17 +90,20 @@ export function updateMobileMarkdownEditableSourceBlock({
 export function mobileMarkdownEditableSourceBlockSource({
   content,
   fence,
+  indent = '',
   infoSuffix = '',
   kind,
   language,
 }: {
   content: string
   fence: string
+  indent?: string
   infoSuffix?: string
   kind: MobileMarkdownEditableSourceBlockKind
   language: string
 }): string {
-  if (kind === 'mathBlock') return `$$\n${content.trimEnd()}\n$$`
+  if (kind === 'mathBlock') return indentSourceBlock(`$$\n${content.trimEnd()}\n$$`, indent)
+
   const blockContent = content.trimEnd()
   const blockFence = mobileMarkdownFenceForContent({
     content: blockContent,
@@ -108,7 +114,7 @@ export function mobileMarkdownEditableSourceBlockSource({
     infoSuffix,
     language: kind === 'mermaid' ? 'mermaid' : language,
   })
-  return `${blockFence}${blockInfo}\n${blockContent}\n${blockFence}`
+  return indentSourceBlock(`${blockFence}${blockInfo}\n${blockContent}\n${blockFence}`, indent)
 }
 
 function sourceBlockFenceChar(fence: string): '`' | '~' {
@@ -135,16 +141,18 @@ function readMathBlockAt({
   lineNumber: number
   lines: string[]
 }): SourceBlockMatch | null {
-  if (lines[lineNumber]?.trim() !== '$$') return null
+  const opening = sourceBlockMarkerLine({ line: lines[lineNumber] ?? '', marker: '$$' })
+  if (!opening) return null
 
   const closingLine = findClosingMathLine({ lineNumber, lines })
   if (closingLine === null) return null
 
   return {
     block: {
-      content: lines.slice(lineNumber + 1, closingLine).join('\n'),
+      content: sourceBlockContent({ indent: opening.indent, lines: lines.slice(lineNumber + 1, closingLine) }),
       endLine: closingLine,
       fence: '$$',
+      indent: opening.indent,
       infoSuffix: '',
       key: `line:${lineNumber}`,
       kind: 'mathBlock',
@@ -173,9 +181,10 @@ function readFencedBlockAt({
 
   return {
     block: {
-      content: lines.slice(lineNumber + 1, closingLine).join('\n'),
+      content: sourceBlockContent({ indent: match.indent, lines: lines.slice(lineNumber + 1, closingLine) }),
       endLine: closingLine,
       fence: match.fence,
+      indent: match.indent,
       infoSuffix: match.infoSuffix,
       key: `line:${lineNumber}`,
       kind: normalizedLanguageName(match.language) === 'mermaid' ? 'mermaid' : 'codeBlock',
@@ -187,11 +196,15 @@ function readFencedBlockAt({
 }
 
 function openingFence({ line }: { line: string }): FenceMatch | null {
-  const match = /^(`{3,}|~{3,})(.*)$/u.exec(line.trim())
+  const sourceLine = sourceBlockLine(line)
+  if (!sourceLine) return null
+
+  const match = /^(`{3,}|~{3,})(.*)$/u.exec(sourceLine.content)
   if (!match) return null
   const info = sourceBlockInfoParts({ info: match[2] ?? '' })
   return {
     fence: match[1] ?? '```',
+    indent: sourceLine.indent,
     infoSuffix: info.suffix,
     language: info.language,
   }
@@ -221,7 +234,7 @@ function findClosingMathLine({
   lines: string[]
 }): number | null {
   for (let index = lineNumber + 1; index < lines.length; index += 1) {
-    if (lines[index]?.trim() === '$$') return index
+    if (sourceBlockMarkerLine({ line: lines[index] ?? '', marker: '$$' })) return index
   }
   return null
 }
@@ -235,9 +248,10 @@ function isClosingFenceLine({
   line: string
   minLength: number
 }): boolean {
-  const trimmed = line.trim()
-  if (trimmed.length < minLength) return false
-  return Array.from(trimmed).every((char) => char === fenceChar)
+  const sourceLine = sourceBlockLine(line)
+  const marker = sourceLine?.content.trim()
+  if (!marker || marker.length < minLength) return false
+  return Array.from(marker).every((char) => char === fenceChar)
 }
 
 function normalizedLanguageName(language: string): string {
@@ -263,6 +277,34 @@ function sourceBlockInfoParts({ info }: { info: string }): { language: string; s
     language,
     suffix: suffixParts.join(' '),
   }
+}
+
+function sourceBlockLine(line: string): { content: string; indent: string } | null {
+  const match = /^( {0,3})(\S.*)$/u.exec(line)
+  return match ? { content: match[2] ?? '', indent: match[1] ?? '' } : null
+}
+
+function sourceBlockMarkerLine({
+  line,
+  marker,
+}: {
+  line: string
+  marker: string
+}): { indent: string } | null {
+  const sourceLine = sourceBlockLine(line)
+  return sourceLine?.content.trim() === marker ? { indent: sourceLine.indent } : null
+}
+
+function sourceBlockContent({ indent, lines }: { indent: string; lines: string[] }): string {
+  return lines.map((line) => stripSourceBlockIndent(line, indent)).join('\n')
+}
+
+function stripSourceBlockIndent(line: string, indent: string): string {
+  return indent && line.startsWith(indent) ? line.slice(indent.length) : line
+}
+
+function indentSourceBlock(source: string, indent: string): string {
+  return indent ? source.split('\n').map((line) => `${indent}${line}`).join('\n') : source
 }
 
 function markdownLines({ markdown }: { markdown: string }): string[] {

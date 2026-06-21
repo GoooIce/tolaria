@@ -155,7 +155,7 @@ export const mobileParityInventory = [
     surface: 'Table alignment controls',
   },
   {
-    assertions: ['source-backed code, code-fence metadata, math, and Mermaid block edit checks'],
+    assertions: ['source-backed code, code-fence metadata, math, Mermaid, leading-space source indentation, and code-indented fence exclusion edit checks'],
     contracts: ['desktopEditorParity', 'desktopToolbarActionParity'],
     desktopSource: 'BlockNote code blocks, math markdown, Mermaid fences, and editor command actions',
     mobileFile: 'src/components/workspace/MobileSourceBlockMoreActions.tsx',
