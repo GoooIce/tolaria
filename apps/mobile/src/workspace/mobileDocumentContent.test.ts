@@ -334,10 +334,16 @@ Updated body.
     expect(html).not.toContain('<img')
   })
 
-  it('keeps indented markdown headings editable as source until nested block editing is supported', () => {
+  it('hydrates markdown headings with non-code leading spaces as native heading nodes', () => {
     const html = mobileMarkdownBodyToTentapHtml('  ### Daniel Yeboah\n\nDone\n')
 
-    expect(html).toBe('<p>  ### Daniel Yeboah</p>\n<p>Done</p>')
+    expect(html).toBe('<h3>Daniel Yeboah</h3>\n<p>Done</p>')
+  })
+
+  it('keeps code-indented markdown headings editable as source until indented code editing is supported', () => {
+    const html = mobileMarkdownBodyToTentapHtml('    ### Daniel Yeboah\n\nDone\n')
+
+    expect(html).toBe('<p>    ### Daniel Yeboah</p>\n<p>Done</p>')
     expect(html).not.toContain('<h3>')
   })
 

@@ -308,11 +308,13 @@ function readHorizontalRule(lines: MarkdownLines, startIndex: number): ReadHtmlB
 
 function readIndentedHeadingSourceBlock(lines: MarkdownLines, startIndex: number): ReadHtmlBlockResult | null {
   const line = lines[startIndex] ?? ''
-  return /^\s+#{1,6}\s+/u.test(line) ? { html: `<p>${escapeHtml(line)}</p>`, nextIndex: startIndex + 1 } : null
+  return /^(?: {4,}|\t)#{1,6}(?:\s+|$)/u.test(line)
+    ? { html: `<p>${escapeHtml(line)}</p>`, nextIndex: startIndex + 1 }
+    : null
 }
 
 function readHeading(lines: MarkdownLines, startIndex: number): ReadHtmlBlockResult | null {
-  const heading = lines[startIndex]?.match(/^(#{1,6})(?:[ \t]+(.*)|[ \t]*)$/u)
+  const heading = lines[startIndex]?.match(/^ {0,3}(#{1,6})(?:[ \t]+(.*)|[ \t]*)$/u)
   if (!heading) return null
 
   const level = heading[1].length
