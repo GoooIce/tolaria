@@ -14,11 +14,12 @@ describe('mobile document list continuations', () => {
     )
   })
 
-  it('keeps list items with indented images editable as source', () => {
+  it('hydrates list items with image continuations as structured list item image paragraphs', () => {
     const html = mobileMarkdownBodyToTentapHtml('- Internet access\n  ![](https://example.com/search.png)\n')
 
-    expect(html).toBe('<p>- Internet access<br>  ![](https://example.com/search.png)</p>')
-    expect(html).not.toContain('<img')
+    expect(html).toBe(
+      '<ul><li><p>Internet access</p><p><img src="https://example.com/search.png" alt=""></p></li></ul>',
+    )
   })
 
   it('serializes structured list item paragraphs as desktop markdown continuations after native saves', () => {
@@ -48,6 +49,30 @@ describe('mobile document list continuations', () => {
       '- Provide instructions\n  Teach your AI agent the workflow context\n- Run workflow',
     )
   })
+
+  it('serializes structured list item image paragraphs as desktop markdown continuations after native saves', () => {
+    const document: TiptapJsonNode = {
+      type: 'doc',
+      content: [
+        {
+          type: 'bulletList',
+          content: [
+            {
+              type: 'listItem',
+              content: [
+                paragraphNode('Internet access'),
+                imageParagraphNode('https://example.com/search.png'),
+              ],
+            },
+          ],
+        },
+      ],
+    }
+
+    expect(tiptapJsonToMobileMarkdown(document)).toBe(
+      '- Internet access\n  ![](https://example.com/search.png)',
+    )
+  })
 })
 
 function paragraphNode(...lines: string[]): TiptapJsonNode {
@@ -57,5 +82,12 @@ function paragraphNode(...lines: string[]): TiptapJsonNode {
       ...(index > 0 ? [{ type: 'hardBreak' }] : []),
       ...(line ? [{ text: line, type: 'text' }] : []),
     ]),
+  }
+}
+
+function imageParagraphNode(src: string): TiptapJsonNode {
+  return {
+    type: 'paragraph',
+    content: [{ attrs: { src }, type: 'image' }],
   }
 }

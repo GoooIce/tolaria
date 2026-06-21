@@ -232,7 +232,6 @@ const htmlBlockReaders = [
   readQuote,
   readIndentedTextSourceBlock,
   readIndentedListSourceBlock,
-  readListContinuationSourceBlock,
   readListHardBreakSourceBlock,
   readOrderedParenListSourceBlock,
   readIrregularOrderedDotListSourceBlock,
@@ -390,13 +389,6 @@ function readIndentedTextSourceBlock(lines: MarkdownLines, startIndex: number): 
   return sourceLinesParagraphBlock(sourceLines, index)
 }
 
-function readListContinuationSourceBlock(lines: MarkdownLines, startIndex: number): ReadHtmlBlockResult | null {
-  const source = readListSourceLines(lines, startIndex)
-  if (!source?.hasContinuation || !hasUnsupportedListContinuationSource(source)) return null
-
-  return sourceLinesParagraphBlock(source.lines, source.nextIndex)
-}
-
 function readListHardBreakSourceBlock(lines: MarkdownLines, startIndex: number): ReadHtmlBlockResult | null {
   const source = readListSourceLines(lines, startIndex)
   if (!source?.hasHardBreak || !hasUnsupportedListHardBreakSource(source)) return null
@@ -406,12 +398,6 @@ function readListHardBreakSourceBlock(lines: MarkdownLines, startIndex: number):
 
 function hasUnsupportedListHardBreakSource(source: ReadListSourceLinesResult): boolean {
   return source.lines.some(isBackslashListHardBreakSourceLine)
-}
-
-function hasUnsupportedListContinuationSource(source: ReadListSourceLinesResult): boolean {
-  return source.lines.some((line) => (
-    isListContinuationSourceLine(line, source.baseIndent) && hasInlineMarkdownImageSource(line)
-  ))
 }
 
 function readListSourceLines(lines: MarkdownLines, startIndex: number): ReadListSourceLinesResult | null {
