@@ -36,7 +36,6 @@ import { PhoneWorkspaceTransition } from './PhoneWorkspaceTransition'
 import { useTabletWorkspaceController } from './useTabletWorkspaceController'
 import { useMobileInspectorReferenceGroups } from './useMobileInspectorReferenceGroups'
 import {
-  phoneWorkspaceDragCommitOffset,
   phoneWorkspaceDragOffset,
   phoneWorkspaceSidebarDrawerWidth,
   phoneWorkspaceSwipeDestination,
@@ -497,17 +496,10 @@ function usePhoneDragPreview(phoneState: PhoneWorkspaceState, screenWidth: numbe
     }
 
     dragX.stopAnimation()
-    setPreviewState(nextState)
-    NativeAnimated.timing(dragX, {
-      duration: 160,
-      toValue: phoneWorkspaceDragCommitOffset(phoneState, nextState, screenWidth),
-      useNativeDriver: true,
-    }).start(() => {
-      dragX.setValue(0)
-      setPreviewState(null)
-      action()
-    })
-  }, [dragX, enabled, phoneState, screenWidth])
+    dragX.setValue(0)
+    setPreviewState(null)
+    action()
+  }, [dragX, enabled])
   const onSwipeProgress = useCallback(({ dx }: { dx: number }) => {
     if (!enabled) return
 
@@ -671,9 +663,13 @@ function PhoneNoteListScreen({
   phoneLayoutProbe,
   phoneSwipePreview,
 }: PhoneWorkspaceStateViewProps) {
+  const commitSidebar = useCallback(
+    () => phoneSwipePreview.commit('sidebar', openSidebar),
+    [openSidebar, phoneSwipePreview],
+  )
   const swipeHandlers = useHorizontalSwipe({
     ...phoneSwipePreviewHandlers(phoneSwipePreview),
-    onSwipeRight: openSidebar,
+    onSwipeRight: commitSidebar,
   })
 
   return (
@@ -723,9 +719,13 @@ function PhoneSidebarDrawer({
 }: PhoneWorkspaceStateViewProps) {
   const { width } = useWindowDimensions()
   const drawerWidth = phoneWorkspaceSidebarDrawerWidth(width)
+  const commitList = useCallback(
+    () => phoneSwipePreview.commit('list', openList),
+    [openList, phoneSwipePreview],
+  )
   const swipeHandlers = useHorizontalSwipe({
     ...phoneSwipePreviewHandlers(phoneSwipePreview),
-    onSwipeLeft: openList,
+    onSwipeLeft: commitList,
   })
   const selectFolder = useSelectAndOpenList(controller.onSelectFolder, openList)
   const selectItem = useSelectAndOpenList(controller.onSelectSidebarItem, openList)
@@ -793,10 +793,18 @@ function PhoneEditorScreen({
   suggestionNotes,
   tableOfContentsTarget,
 }: PhoneWorkspaceStateViewProps) {
+  const commitList = useCallback(
+    () => phoneSwipePreview.commit('list', openList),
+    [openList, phoneSwipePreview],
+  )
+  const commitProperties = useCallback(
+    () => phoneSwipePreview.commit('properties', openProperties),
+    [openProperties, phoneSwipePreview],
+  )
   const swipeHandlers = useHorizontalSwipe({
     ...phoneSwipePreviewHandlers(phoneSwipePreview),
-    onSwipeLeft: openProperties,
-    onSwipeRight: openList,
+    onSwipeLeft: commitProperties,
+    onSwipeRight: commitList,
   })
   const handleNavigateWikilink = usePhoneWikilinkNavigation({ controller, suggestionNotes })
 
@@ -909,6 +917,10 @@ function PhonePropertiesScreen({
   phoneSwipePreview,
 }: PhoneWorkspaceStateViewProps) {
   const returnToEditor = useCallback(() => openEditor(), [openEditor])
+  const commitEditor = useCallback(
+    () => phoneSwipePreview.commit('editor', returnToEditor),
+    [phoneSwipePreview, returnToEditor],
+  )
   const enterNeighborhood = useCallback((noteId: string) => {
     controller.onEnterNeighborhood(noteId)
     openList()
@@ -916,7 +928,7 @@ function PhonePropertiesScreen({
   const referenceGroups = useMobileInspectorReferenceGroups(controller.selectedNote, controller.snapshot)
   const swipeHandlers = useHorizontalSwipe({
     ...phoneSwipePreviewHandlers(phoneSwipePreview),
-    onSwipeRight: returnToEditor,
+    onSwipeRight: commitEditor,
   })
 
   return (
