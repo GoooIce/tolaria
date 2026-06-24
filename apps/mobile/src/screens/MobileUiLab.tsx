@@ -77,6 +77,7 @@ import {
 import {
   nativeMobileKeyboardShortcutProbeEnabled,
 } from '../qa/nativeMobileKeyboardShortcutProof'
+import { nativeMobileLaunchSearch } from '../native/mobileNativeKeyCommands'
 import { setMobileLayoutMetricSinkUrl } from '../qa/mobileLayoutProbe'
 import type { MobileNote, MobileWorkspaceSnapshot } from '../workspace/mobileWorkspaceModel'
 import {
@@ -696,6 +697,7 @@ function useMobileActionAdapterProbe({
 function useMobileUiSearchParams() {
   const [nativeSearch, setNativeSearch] = useState('')
   const webSearch = currentWebSearch()
+  const launchSearch = useMemo(() => nativeMobileLaunchSearch(), [])
 
   useEffect(() => {
     let mounted = true
@@ -717,7 +719,10 @@ function useMobileUiSearchParams() {
     }
   }, [])
 
-  return useMemo(() => new URLSearchParams(nativeSearch || webSearch), [nativeSearch, webSearch])
+  return useMemo(
+    () => new URLSearchParams(nativeSearch || webSearch || launchSearch),
+    [launchSearch, nativeSearch, webSearch],
+  )
 }
 
 function currentWebSearch() {

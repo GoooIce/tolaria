@@ -2,6 +2,10 @@ import ExpoModulesCore
 import React
 import UIKit
 
+private let keyboardProbeLogPrefix = "TOLARIA_MOBILE_KEYBOARD_SHORTCUT_PROBE"
+private let keyboardProbeEnvironmentName = "TOLARIA_MOBILE_KEYBOARD_SHORTCUT_PROBE"
+private let mobileSearchEnvironmentName = "TOLARIA_MOBILE_SEARCH"
+
 private struct TolariaKeyCommand {
   let action: String
   let altKey: Bool
@@ -116,6 +120,14 @@ public class TolariaKeyCommandsModule: Module {
       return true
     }
 
+    Function("launchArguments") {
+      return ProcessInfo.processInfo.arguments
+    }
+
+    Function("environmentValue") { (name: String) -> String? in
+      return ProcessInfo.processInfo.environment[name]
+    }
+
     OnStartObserving("onShortcut") {
       self.registerCommands()
     }
@@ -139,6 +151,10 @@ public class TolariaKeyCommandsModule: Module {
       }
 
       self.registered = true
+      self.logKeyboardProbe([
+        "kind": "bridge",
+        "nativeModuleAvailable": true
+      ])
     }
   }
 
@@ -158,6 +174,17 @@ public class TolariaKeyCommandsModule: Module {
   }
 
   private func sendShortcut(_ command: TolariaKeyCommand) {
+    logKeyboardProbe([
+      "action": command.action,
+      "altKey": command.altKey,
+      "code": command.code,
+      "ctrlKey": command.ctrlKey,
+      "kind": "action",
+      "key": command.key,
+      "metaKey": command.metaKey,
+      "shiftKey": command.shiftKey,
+      "source": "native"
+    ])
     sendEvent("onShortcut", [
       "action": command.action,
       "altKey": command.altKey,
@@ -176,5 +203,25 @@ public class TolariaKeyCommandsModule: Module {
     } else {
       DispatchQueue.main.async(execute: action)
     }
+  }
+
+  private func logKeyboardProbe(_ proof: [String: Any]) {
+    guard keyboardProbeLoggingEnabled() else { return }
+
+    guard
+      let data = try? JSONSerialization.data(withJSONObject: proof),
+      let json = String(data: data, encoding: .utf8)
+    else {
+      return
+    }
+
+    NSLog("%@ %@", keyboardProbeLogPrefix, json)
+  }
+
+  private func keyboardProbeLoggingEnabled() -> Bool {
+    let environment = ProcessInfo.processInfo.environment
+
+    return environment[keyboardProbeEnvironmentName] == "1"
+      || environment[mobileSearchEnvironmentName]?.contains("mobileKeyboardShortcutProbe=1") == true
   }
 }

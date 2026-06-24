@@ -1,5 +1,9 @@
 import { requireOptionalNativeModule } from 'expo'
-import type { NativeMobileKeyCommandsModule } from './mobileNativeKeyCommands'
+import {
+  mobileLaunchSearchEnvironmentName,
+  mobileLaunchSearchFromNativeInputs,
+  type NativeMobileKeyCommandsModule,
+} from './mobileNativeKeyCommandsContract'
 
 let cachedModule: NativeMobileKeyCommandsModule | null | undefined
 
@@ -14,4 +18,13 @@ export function nativeMobileKeyCommandsAvailable(
 ) {
   if (!module) return false
   return module.isSupported?.() ?? true
+}
+
+export function nativeMobileLaunchSearch(
+  module: NativeMobileKeyCommandsModule | null = optionalNativeMobileKeyCommandsModule(),
+) {
+  return mobileLaunchSearchFromNativeInputs({
+    args: module?.launchArguments?.() ?? [],
+    environmentSearch: module?.environmentValue?.(mobileLaunchSearchEnvironmentName),
+  })
 }

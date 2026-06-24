@@ -5,14 +5,19 @@ import { spawnSync } from 'node:child_process'
 import { waitForNativeProof } from './native-ios-proof-logs.mjs'
 import { assertNativeQaOpenUrl } from '../src/qa/nativeQaUrls.ts'
 import {
+  mobileLaunchSearchArgumentName,
+  mobileLaunchSearchEnvironmentName,
+} from '../src/native/mobileNativeKeyCommandsContract.ts'
+import {
   assertNativeMobileKeyboardShortcutProofs,
   formatNativeMobileKeyboardShortcutFailures,
   nativeMobileKeyboardShortcutLogPrefix,
   parseNativeMobileKeyboardShortcutProofs,
-} from '../src/qa/nativeMobileKeyboardShortcutProof.ts'
+} from '../src/qa/nativeMobileKeyboardShortcutProofContract.ts'
 
 const defaultExpoGoBundleId = 'host.exp.Exponent'
 const defaultLogWindow = '90s'
+const nativeKeyboardShortcutProbeEnvironmentName = 'TOLARIA_MOBILE_KEYBOARD_SHORTCUT_PROBE'
 const proofPollTimeoutMs = 18000
 
 function printHelp() {
@@ -23,6 +28,7 @@ Usage:
 
 Options:
   --device <udid>   Simulator UDID. Defaults to MOBILE_QA_SIMULATOR_UDID, then the booted iPad.
+  --bundle-id <id>  Launch this native app bundle with QA launch args instead of opening an Expo URL.
   --last <duration> log show window when no URL is opened. Defaults to ${defaultLogWindow}.
   --open-url <url>  Open an Expo native URL before collecting logs.
   --phone           Prefer a booted iPhone simulator when --device is not provided.
@@ -34,6 +40,7 @@ Options:
 function readConfig(args) {
   return {
     device: readOption(args, '--device', process.env.MOBILE_QA_SIMULATOR_UDID),
+    bundleId: readOption(args, '--bundle-id', process.env.MOBILE_QA_NATIVE_BUNDLE_ID),
     help: args.includes('--help'),
     last: readOption(args, '--last', defaultLogWindow),
     openUrl: readOption(args, '--open-url', undefined),
@@ -52,8 +59,8 @@ function readOption(args, name, fallback) {
   return value
 }
 
-function run(command, args) {
-  const result = spawnSync(command, args, { encoding: 'utf8' })
+function run(command, args, options = {}) {
+  const result = spawnSync(command, args, { encoding: 'utf8', ...options })
   if (result.status === 0) return [result.stdout, result.stderr].filter(Boolean).join('\n')
 
   const detail = result.stderr.trim() || result.stdout.trim() || `exit ${result.status}`
@@ -76,13 +83,39 @@ function selectDevice(requestedDevice, preferPhone) {
   return selected.udid
 }
 
-async function openProbeUrl(device, openUrl, waitMs) {
+async function openProbeUrl(device, { bundleId, openUrl, waitMs }) {
   assertNativeQaOpenUrl(openUrl, 'Native iOS keyboard shortcut proof')
-  terminateExpoGo(device)
-  await sleep(500)
-  openSimulatorUrl(device, keyboardShortcutProbeUrl(openUrl))
+
+  const probeUrl = keyboardShortcutProbeUrl(openUrl)
+  if (bundleId) {
+    launchNativeProbe(device, bundleId, probeUrl)
+  } else {
+    terminateExpoGo(device)
+    await sleep(500)
+    openSimulatorUrl(device, probeUrl)
+  }
+
   await sleep(Math.max(waitMs, 9000))
   await sendKeyboardShortcutSequence()
+}
+
+function launchNativeProbe(device, bundleId, probeUrl) {
+  const launchSearch = launchSearchFromUrl(probeUrl)
+  run('xcrun', [
+    'simctl',
+    'launch',
+    '--terminate-running-process',
+    device,
+    bundleId,
+    mobileLaunchSearchArgumentName,
+    launchSearch,
+  ], {
+    env: {
+      ...process.env,
+      [`SIMCTL_CHILD_${nativeKeyboardShortcutProbeEnvironmentName}`]: '1',
+      [`SIMCTL_CHILD_${mobileLaunchSearchEnvironmentName}`]: launchSearch,
+    },
+  })
 }
 
 function openSimulatorUrl(device, url) {
@@ -102,6 +135,13 @@ function isSimulatorOpenUrlTimeout(error) {
 
 function keyboardShortcutProbeUrl(openUrl) {
   return appendQueryParam(appendQueryParam(openUrl, 'mobileKeyboardShortcutProbe', '1'), 'qaRun', Date.now().toString())
+}
+
+function launchSearchFromUrl(url) {
+  const queryStart = url.indexOf('?')
+  if (queryStart === -1) return ''
+
+  return url.slice(queryStart + 1)
 }
 
 function terminateExpoGo(device) {
@@ -197,7 +237,7 @@ async function main() {
 
   const device = selectDevice(config.device, config.phone)
   const logStart = config.openUrl ? simulatorLogTimestamp(new Date(Date.now() - 1000)) : undefined
-  if (config.openUrl) await openProbeUrl(device, config.openUrl, config.waitMs)
+  if (config.openUrl) await openProbeUrl(device, config)
 
   const { failures } = await waitForNativeProof({
     assertProofs: assertNativeMobileKeyboardShortcutProofs,

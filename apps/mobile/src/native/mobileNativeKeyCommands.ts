@@ -1,20 +1,13 @@
-export type NativeMobileKeyCommandEvent = {
-  altKey: boolean
-  code?: string
-  ctrlKey: boolean
-  key: string
-  metaKey: boolean
-  shiftKey: boolean
-  source: 'native'
-}
+import {
+  mobileLaunchSearchEnvironmentName,
+  mobileLaunchSearchFromNativeInputs,
+  type NativeMobileKeyCommandsModule,
+} from './mobileNativeKeyCommandsContract'
 
-export type NativeMobileKeyCommandsModule = {
-  addListener: (
-    eventName: 'onShortcut',
-    listener: (event: NativeMobileKeyCommandEvent) => void,
-  ) => { remove: () => void }
-  isSupported?: () => boolean
-}
+export type {
+  NativeMobileKeyCommandEvent,
+  NativeMobileKeyCommandsModule,
+} from './mobileNativeKeyCommandsContract'
 
 export function optionalNativeMobileKeyCommandsModule(): NativeMobileKeyCommandsModule | null {
   return null
@@ -25,4 +18,13 @@ export function nativeMobileKeyCommandsAvailable(
 ) {
   if (!module) return false
   return module.isSupported?.() ?? true
+}
+
+export function nativeMobileLaunchSearch(
+  module: NativeMobileKeyCommandsModule | null = optionalNativeMobileKeyCommandsModule(),
+) {
+  return mobileLaunchSearchFromNativeInputs({
+    args: module?.launchArguments?.() ?? [],
+    environmentSearch: module?.environmentValue?.(mobileLaunchSearchEnvironmentName),
+  })
 }
