@@ -503,7 +503,8 @@ function normalizedFrontmatterValues(frontmatter: LocalVaultFrontmatter): Normal
 }
 
 function isReservedFrontmatterKey(key: FrontmatterKey): boolean {
-  return reservedFrontmatterKeys.has(normalizedFrontmatterKey(key))
+  const normalizedKey = normalizedFrontmatterKey(key)
+  return normalizedKey.startsWith('_') || reservedFrontmatterKeys.has(normalizedKey)
 }
 
 function normalizedFrontmatterKey(key: FrontmatterKey): FrontmatterKey {

@@ -18,6 +18,8 @@ STATUS: Active
 TAGS:
   - Design
 custom: value
+_display: sheet
+_sheet:
 related to:
   - "[[Target]]"
 ---
@@ -28,6 +30,23 @@ Body.
     expect(frontmatterScalar(document.frontmatter, ['status'])).toBe('Active')
     expect(frontmatterList(document.frontmatter, ['tags'])).toEqual(['Design'])
     expect(frontmatterProperties(document.frontmatter)).toEqual({ custom: 'value' })
+  })
+
+  it('hides unknown underscored desktop metadata while preserving non-underscored custom properties', () => {
+    const document = parseLocalVaultDocument(`---
+_display: sheet
+_sheet:
+_plugin_hint: local
+display: public
+sheet: budget
+---
+Body.
+`)
+
+    expect(frontmatterProperties(document.frontmatter)).toEqual({
+      display: 'public',
+      sheet: 'budget',
+    })
   })
 
   it('prefers exact frontmatter keys before normalized aliases', () => {

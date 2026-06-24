@@ -83,6 +83,10 @@ import {
 import { Text } from '../components/ui/text'
 import { mobileText } from '../i18n/mobileText'
 import { mobileColors, mobileSpace, mobileType } from '../ui/tokens'
+import {
+  mobileSnapshotWithRequestedSelectedNote,
+  requestedSelectedNoteId,
+} from './mobileUiLabSelectedNote'
 
 type DevVaultLoadState =
   | { status: 'idle' | 'loading' }
@@ -106,7 +110,11 @@ export function MobileUiLab() {
   const qa = mobileUiQaFlags(searchParams, { wysiwygPersistenceProbe })
   const metricSinkUrl = qa.layoutProbe ? searchParams.get('metricSink') : null
   const actionAdapterProbeRunKey = searchParams.get('qaRun') ?? 'interactive'
-  const snapshot = mobileSnapshotForProbes(workspaceSource.baseSnapshot, {
+  const selectedSnapshot = mobileSnapshotWithRequestedSelectedNote(
+    workspaceSource.baseSnapshot,
+    requestedSelectedNoteId(searchParams),
+  )
+  const snapshot = mobileSnapshotForProbes(selectedSnapshot, {
     tableOfContentsProbe: qa.tableOfContentsProbe,
     wysiwygMutationProbe: qa.wysiwygMutationProbe,
     wysiwygPersistenceProbe,
@@ -523,6 +531,7 @@ function mobileWorkspaceKey({
     sourceInfo?.label ?? 'Tolaria Vault',
     sourceInfo?.totalNotes ?? snapshot.notes.length,
     firstNoteId(snapshot),
+    snapshot.selectedNoteId ?? 'no-selected-note',
   ].join(':')
 }
 

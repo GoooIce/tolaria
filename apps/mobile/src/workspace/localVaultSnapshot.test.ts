@@ -34,6 +34,41 @@ describe('buildLocalVaultWorkspaceSnapshot', () => {
     expect(snapshot.allNotes?.map((note) => note.title)).toContain('Workflow Orchestration')
   })
 
+  it('keeps internal desktop metadata out of mobile properties without hiding relationships', () => {
+    const snapshot = buildLocalVaultWorkspaceSnapshot({
+      files: [
+        vaultFile('source.md', `---
+type: Note
+_display: sheet
+_sheet:
+_plugin_hint: local
+display: public
+related_to:
+  - "[[target]]"
+---
+# Source
+`),
+        vaultFile('target.md', `---
+type: Project
+---
+# Target
+`),
+      ],
+      vaultLabel: 'Laputa',
+      vaultPath: '/Users/luca/Laputa',
+    })
+
+    expect(snapshot.notes[0]?.properties).toEqual([{
+      key: 'display',
+      label: 'Display',
+      value: 'public',
+    }])
+    expect(snapshot.notes[0]?.relationships[0]).toMatchObject({
+      key: 'related_to',
+      values: [expect.objectContaining({ title: 'Target', type: 'Project' })],
+    })
+  })
+
   it('resolves relationship refs through target aliases and folded title targets like desktop wikilinks', () => {
     const snapshot = buildLocalVaultWorkspaceSnapshot({
       files: [
