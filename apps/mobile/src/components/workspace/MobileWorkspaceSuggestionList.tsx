@@ -31,12 +31,16 @@ export function MobileWorkspaceSuggestionList({
           accessibilityLabel={humanizeSuggestionLabel(item.label)}
           accessibilityRole="button"
           key={`${item.value}-${item.label}`}
-          style={({ pressed }) => [styles.row, pressed ? styles.rowPressed : null]}
+          style={styles.pressable}
           testID={`${testIDPrefix}-${item.testId ?? testIdSegment(item.value)}`}
           onPress={() => onSelect(item.value, item)}
         >
-          <Text numberOfLines={1} style={styles.title}>{humanizeSuggestionLabel(item.label)}</Text>
-          {item.meta ? <Text numberOfLines={1} style={styles.meta}>{item.meta}</Text> : null}
+          {({ pressed }) => (
+            <View style={[styles.row, pressed ? styles.rowPressed : null]}>
+              <Text numberOfLines={1} style={styles.title}>{humanizeSuggestionLabel(item.label)}</Text>
+              {item.meta ? <Text numberOfLines={1} style={styles.meta}>{item.meta}</Text> : null}
+            </View>
+          )}
         </Pressable>
       ))}
     </View>
@@ -70,6 +74,10 @@ const styles = StyleSheet.create({
     color: mobileColors.textMuted,
     fontSize: mobileType.caption,
     textAlign: 'right',
+  },
+  pressable: {
+    alignSelf: 'stretch',
+    width: '100%',
   },
   row: {
     minHeight: mobileWorkspaceSuggestionRowLayoutContract.minHeight,

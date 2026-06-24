@@ -40,6 +40,14 @@ export const mobileWorkspaceSuggestionRowLayoutContract = {
   radius: 6,
 } as const
 
+export const mobilePropertyValueChoiceLayoutContract = {
+  gap: mobileSpace.xs,
+  minHeight: 30,
+  minWidth: 58,
+  paddingHorizontal: mobileSpace.sm,
+  radius: 6,
+} as const
+
 export const mobileWorkspaceFilterControlLayoutContract = {
   gap: mobileSpace.xs,
   minHeight: 32,

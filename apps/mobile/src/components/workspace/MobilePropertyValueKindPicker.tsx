@@ -3,6 +3,7 @@ import { Text } from '../ui/text'
 import { mobileText } from '../../i18n/mobileText'
 import { mobileColors, mobileRadius, mobileSpace, mobileType } from '../../ui/tokens'
 import type { MobilePropertyValueKind } from '../../workspace/mobilePropertyValues'
+import { mobilePropertyValueChoiceLayoutContract } from './MobileWorkspaceActionSheetModel'
 import { mobilePropertyValueKindOptions } from './mobilePropertyValueKindOptions'
 
 export function MobilePropertyValueKindPicker({
@@ -144,18 +145,24 @@ function PropertyValueKindButton({
       accessibilityLabel={label}
       accessibilityRole="button"
       accessibilityState={{ disabled, selected }}
-      style={({ pressed }) => [
-        styles.kindButton,
-        selected ? styles.selectedButton : null,
-        disabled ? styles.disabledButton : null,
-        pressed && !disabled ? styles.pressedButton : null,
-      ]}
+      style={styles.choicePressable}
       testID={`workspace-property-kind-${kind}`}
       onPress={() => {
         if (!disabled) onPress()
       }}
     >
-      <Text style={[styles.buttonText, selected ? styles.selectedButtonText : null, disabled ? styles.disabledButtonText : null]}>{label}</Text>
+      {({ pressed }) => (
+        <View
+          style={[
+            styles.kindButton,
+            selected ? styles.selectedButton : null,
+            disabled ? styles.disabledButton : null,
+            pressed && !disabled ? styles.pressedButton : null,
+          ]}
+        >
+          <Text style={[styles.buttonText, selected ? styles.selectedButtonText : null, disabled ? styles.disabledButtonText : null]}>{label}</Text>
+        </View>
+      )}
     </Pressable>
   )
 }
@@ -176,15 +183,15 @@ function PropertyValueButton({
       accessibilityLabel={label}
       accessibilityRole="button"
       accessibilityState={{ selected }}
-      style={({ pressed }) => [
-        styles.booleanButton,
-        selected ? styles.selectedButton : null,
-        pressed ? styles.pressedButton : null,
-      ]}
+      style={styles.choicePressable}
       testID={testID}
       onPress={onPress}
     >
-      <Text style={[styles.buttonText, selected ? styles.selectedButtonText : null]}>{label}</Text>
+      {({ pressed }) => (
+        <View style={[styles.booleanButton, selected ? styles.selectedButton : null, pressed ? styles.pressedButton : null]}>
+          <Text style={[styles.buttonText, selected ? styles.selectedButtonText : null]}>{label}</Text>
+        </View>
+      )}
     </Pressable>
   )
 }
@@ -209,16 +216,19 @@ function testIdSegment(value: string) {
 
 const styles = StyleSheet.create({
   booleanButton: {
-    minHeight: 30,
-    minWidth: 58,
+    minHeight: mobilePropertyValueChoiceLayoutContract.minHeight,
+    minWidth: mobilePropertyValueChoiceLayoutContract.minWidth,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 6,
-    paddingHorizontal: mobileSpace.sm,
+    backgroundColor: mobileColors.control,
+    borderColor: mobileColors.border,
+    borderRadius: mobilePropertyValueChoiceLayoutContract.radius,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: mobilePropertyValueChoiceLayoutContract.paddingHorizontal,
   },
   booleanOptions: {
     flexDirection: 'row',
-    gap: mobileSpace.xs,
+    gap: mobilePropertyValueChoiceLayoutContract.gap,
   },
   buttonText: {
     color: mobileColors.textMuted,
@@ -243,6 +253,9 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: mobileSpace.xs,
   },
+  choicePressable: {
+    borderRadius: mobilePropertyValueChoiceLayoutContract.radius,
+  },
   disabledButton: {
     opacity: 0.45,
   },
@@ -250,11 +263,14 @@ const styles = StyleSheet.create({
     color: mobileColors.textFaint,
   },
   kindButton: {
-    minHeight: 30,
+    minHeight: mobilePropertyValueChoiceLayoutContract.minHeight,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 6,
-    paddingHorizontal: mobileSpace.sm,
+    backgroundColor: mobileColors.control,
+    borderColor: mobileColors.border,
+    borderRadius: mobilePropertyValueChoiceLayoutContract.radius,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: mobilePropertyValueChoiceLayoutContract.paddingHorizontal,
   },
   kindGroup: {
     gap: mobileSpace.xs,
@@ -266,13 +282,14 @@ const styles = StyleSheet.create({
   kindOptions: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: mobileSpace.xs,
+    gap: mobilePropertyValueChoiceLayoutContract.gap,
   },
   pressedButton: {
     backgroundColor: mobileColors.graySoft,
   },
   selectedButton: {
     backgroundColor: mobileColors.selected,
+    borderColor: mobileColors.primary,
   },
   selectedButtonText: {
     color: mobileColors.primary,
@@ -280,6 +297,6 @@ const styles = StyleSheet.create({
   statusOptions: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: mobileSpace.xs,
+    gap: mobilePropertyValueChoiceLayoutContract.gap,
   },
 })

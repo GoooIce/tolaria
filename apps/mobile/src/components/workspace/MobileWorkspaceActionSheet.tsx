@@ -989,18 +989,22 @@ function AddRelationshipContent({
               accessibilityLabel={note.title}
               accessibilityRole="button"
               key={note.id}
-              style={({ pressed }) => [styles.suggestionRow, pressed ? styles.suggestionRowPressed : null]}
+              style={styles.suggestionPressable}
               testID={`workspace-relationship-note-suggestion-${note.id}`}
               onPress={() => onRelationshipNoteSelect(note.title, `[[${mobileWikilinkTargetForNote(note, selectedNote)}]]`)}
             >
-              <MobileTypeIcon
-                size={16}
-                tone={note.typeTone}
-                type={note.type}
-                typeDefinitions={typeDefinitions}
-              />
-              <Text numberOfLines={1} style={styles.suggestionTitle}>{note.title}</Text>
-              <MobileChip label={note.type} tone={chipTone(note.typeTone)} />
+              {({ pressed }) => (
+                <View style={[styles.suggestionRow, pressed ? styles.suggestionRowPressed : null]}>
+                  <MobileTypeIcon
+                    size={16}
+                    tone={note.typeTone}
+                    type={note.type}
+                    typeDefinitions={typeDefinitions}
+                  />
+                  <Text numberOfLines={1} style={styles.suggestionTitle}>{note.title}</Text>
+                  <MobileChip label={note.type} tone={chipTone(note.typeTone)} />
+                </View>
+              )}
             </Pressable>
           ))}
         </View>
@@ -1027,14 +1031,18 @@ function CreateRelationshipTargetRow({
     <Pressable
       accessibilityLabel={`${mobileText('inspector.relationship.createAndOpen')} ${title}`}
       accessibilityRole="button"
-      style={({ pressed }) => [styles.suggestionRow, pressed ? styles.suggestionRowPressed : null]}
+      style={styles.suggestionPressable}
       testID="workspace-relationship-create-target"
       onPress={onPress}
     >
-      <FilePlus color={mobileColors.textMuted} size={16} />
-      <Text numberOfLines={1} style={styles.suggestionTitle}>
-        {mobileText('inspector.relationship.createAndOpen')} {title}
-      </Text>
+      {({ pressed }) => (
+        <View style={[styles.suggestionRow, pressed ? styles.suggestionRowPressed : null]}>
+          <FilePlus color={mobileColors.textMuted} size={16} />
+          <Text numberOfLines={1} style={styles.suggestionTitle}>
+            {mobileText('inspector.relationship.createAndOpen')} {title}
+          </Text>
+        </View>
+      )}
     </Pressable>
   )
 }
@@ -1252,6 +1260,10 @@ const styles = StyleSheet.create({
   },
   suggestionList: {
     gap: mobileSpace.xs,
+  },
+  suggestionPressable: {
+    alignSelf: 'stretch',
+    width: '100%',
   },
   suggestionRow: {
     minHeight: 34,
