@@ -1,4 +1,15 @@
 import type { MobileRelationship } from '../../workspace/mobileWorkspaceModel'
+import { desktopPropertyParity, desktopRelationshipParity } from '../../ui/desktopParity'
+
+export const mobileInspectorReferenceRowLayoutContract = {
+  iconSize: desktopRelationshipParity.iconSize,
+  minHeight: desktopPropertyParity.rowMinHeight,
+  paddingHorizontal: desktopRelationshipParity.rowPaddingHorizontal,
+  paddingVertical: desktopRelationshipParity.rowPaddingVertical,
+  radius: desktopRelationshipParity.rowRadius,
+  textFontSize: desktopRelationshipParity.textFontSize,
+  textFontWeight: desktopRelationshipParity.textFontWeight,
+} as const
 
 export function mobileRelationshipValueMetricSegments(
   values: MobileRelationship['values'],

@@ -22,7 +22,10 @@ import {
 import { MobileTypeIcon } from './MobileWorkspaceIcons'
 import { chipTone, noteTypeColor, noteTypeSoftColor, statusTone, tagTone } from './mobileWorkspaceTone'
 import { MobileFrontmatterStateNotice } from './MobileFrontmatterStateNotice'
-import { mobileRelationshipValueMetricSegments } from './MobilePropertiesPanelModel'
+import {
+  mobileInspectorReferenceRowLayoutContract,
+  mobileRelationshipValueMetricSegments,
+} from './MobilePropertiesPanelModel'
 import { mobileFrontmatterState, needsMobileFrontmatterNotice } from '../../workspace/mobileFrontmatterState'
 
 export function MobilePropertiesPanel({
@@ -155,7 +158,12 @@ function NoteProperties({
           onFixInvalidFrontmatter={onFixInvalidFrontmatter}
           onInitializeProperties={() => onInitializeProperties(note.id)}
         />
-        <ReferenceGroups groups={referenceGroups} typeDefinitions={typeDefinitions} onSelectNote={onSelectNote} />
+        <ReferenceGroups
+          groups={referenceGroups}
+          layoutProbe={layoutProbe}
+          typeDefinitions={typeDefinitions}
+          onSelectNote={onSelectNote}
+        />
       </>
     )
   }
@@ -253,7 +261,12 @@ function NoteProperties({
         testID="property-action-add-relationship"
         onPress={() => onAddRelationship()}
       />
-      <ReferenceGroups groups={referenceGroups} typeDefinitions={typeDefinitions} onSelectNote={onSelectNote} />
+      <ReferenceGroups
+        groups={referenceGroups}
+        layoutProbe={layoutProbe}
+        typeDefinitions={typeDefinitions}
+        onSelectNote={onSelectNote}
+      />
     </>
   )
 }
@@ -675,10 +688,12 @@ function propertyProbe(layoutProbe: MobileLayoutProbe | undefined, metricId: str
 
 function ReferenceGroups({
   groups,
+  layoutProbe,
   typeDefinitions,
   onSelectNote,
 }: {
   groups: MobileNeighborhoodGroup[]
+  layoutProbe?: MobileLayoutProbe
   typeDefinitions?: MobileTypeDefinitions
   onSelectNote: (noteId: string) => void
 }) {
@@ -692,7 +707,12 @@ function ReferenceGroups({
           label={referenceGroupLabel(group)}
           testID={`inspector-reference-group-${group.id}`}
         >
-          <ReferenceValues group={group} typeDefinitions={typeDefinitions} onSelectNote={onSelectNote} />
+          <ReferenceValues
+            group={group}
+            layoutProbe={layoutProbe}
+            typeDefinitions={typeDefinitions}
+            onSelectNote={onSelectNote}
+          />
         </PropertySection>
       ))}
     </View>
@@ -701,10 +721,12 @@ function ReferenceGroups({
 
 function ReferenceValues({
   group,
+  layoutProbe,
   typeDefinitions,
   onSelectNote,
 }: {
   group: MobileNeighborhoodGroup
+  layoutProbe?: MobileLayoutProbe
   typeDefinitions?: MobileTypeDefinitions
   onSelectNote: (noteId: string) => void
 }) {
@@ -715,13 +737,18 @@ function ReferenceValues({
           key={`${group.id}-${note.id}`}
           accessibilityLabel={note.title}
           accessibilityRole="button"
-          style={({ pressed }) => [referenceStyles.row, pressed ? propertyStyles.editableValuePressed : null]}
+          {...propertyProbe(layoutProbe, referenceRowMetricId(group, note), 'row')}
+          style={({ pressed }) => [
+            referenceStyles.row,
+            relationshipRowTone(note.typeTone),
+            pressed ? propertyStyles.editableValuePressed : null,
+          ]}
           testID={`inspector-reference-row-${testIdSegment(note.title)}`}
           onPress={() => onSelectNote(note.id)}
         >
           <MobileTypeIcon
             fileKind={note.fileKind}
-            size={desktopRelationshipParity.iconSize}
+            size={mobileInspectorReferenceRowLayoutContract.iconSize}
             tone={note.typeTone}
             type={note.type}
             typeDefinitions={typeDefinitions}
@@ -737,6 +764,10 @@ function ReferenceValues({
 
 function referenceGroupLabel(group: MobileNeighborhoodGroup) {
   return group.source === 'instances' ? `${group.label} (${group.notes.length})` : group.label
+}
+
+function referenceRowMetricId(group: MobileNeighborhoodGroup, note: MobileNote) {
+  return `properties.reference.${testIdSegment(group.id)}.${testIdSegment(note.title)}`
 }
 
 function relationshipHeading(relationship: MobileRelationship): string {
@@ -862,21 +893,21 @@ const referenceStyles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
   },
   row: {
-    minHeight: desktopPropertyParity.rowMinHeight,
+    minHeight: mobileInspectorReferenceRowLayoutContract.minHeight,
     minWidth: 0,
     alignItems: 'center',
     flexDirection: 'row',
     gap: desktopRelationshipParity.rowGap,
-    borderRadius: desktopRelationshipParity.rowRadius,
-    paddingHorizontal: 0,
-    paddingVertical: 4,
+    borderRadius: mobileInspectorReferenceRowLayoutContract.radius,
+    paddingHorizontal: mobileInspectorReferenceRowLayoutContract.paddingHorizontal,
+    paddingVertical: mobileInspectorReferenceRowLayoutContract.paddingVertical,
     width: '100%',
   },
   text: {
     minWidth: 0,
     flex: 1,
-    fontSize: desktopRelationshipParity.textFontSize,
-    fontWeight: desktopRelationshipParity.textFontWeight,
+    fontSize: mobileInspectorReferenceRowLayoutContract.textFontSize,
+    fontWeight: mobileInspectorReferenceRowLayoutContract.textFontWeight,
   },
 })
 
