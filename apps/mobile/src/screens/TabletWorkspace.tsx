@@ -29,7 +29,12 @@ import {
 } from '../workspace/mobileTableOfContents'
 import { TabletEditorPanel } from './TabletEditorPanel'
 import { tabletScreenModeForWindow } from './tabletWorkspaceScreenMode'
-import type { MobileActionSheetQaTarget, TabletPanel, TabletWorkspaceChromeProps } from './tabletWorkspaceTypes'
+import type {
+  MobileActionSheetQaTarget,
+  TabletPanel,
+  TabletTransitionProbeMode,
+  TabletWorkspaceChromeProps,
+} from './tabletWorkspaceTypes'
 import { useTabletWorkspaceController } from './useTabletWorkspaceController'
 import { useMobileInspectorReferenceGroups } from './useMobileInspectorReferenceGroups'
 import { useInitialActionSheetQaTarget } from './useInitialActionSheetQaTarget'
@@ -82,7 +87,7 @@ export function TabletWorkspace({
   sourceSelectionProbe?: boolean
   snapshot: MobileWorkspaceSnapshot
   tableOfContentsProbe?: boolean
-  tabletTransitionProbe?: boolean
+  tabletTransitionProbe?: TabletTransitionProbeMode
   wysiwygAutocompleteProbe?: boolean
   wysiwygExternalLinkProbe?: boolean
   wysiwygFormatCommandProbe?: boolean
@@ -243,7 +248,7 @@ function TabletWorkspaceChrome(props: TabletWorkspaceChromeProps) {
 }
 
 function useTabletTransitionProbe(
-  enabled: boolean,
+  mode: TabletTransitionProbeMode,
   gestures: ReturnType<typeof useTabletPanelGestures>,
 ) {
   const actionsRef = useRef({
@@ -263,19 +268,40 @@ function useTabletTransitionProbe(
   }, [gestures.hideLeftChrome, gestures.hideProperties, gestures.showLeftChrome, gestures.showProperties])
 
   useEffect(() => {
-    if (!enabled) return
+    if (!mode) return
 
-    const timers = [
-      setTimeout(() => actionsRef.current.hideLeftChrome(), 1200),
-      setTimeout(() => actionsRef.current.showLeftChrome(), 2600),
-      setTimeout(() => actionsRef.current.hideProperties(), 4000),
-      setTimeout(() => actionsRef.current.showProperties(), 5400),
-    ]
+    const timers = tabletTransitionProbeTimers(mode, () => actionsRef.current)
 
     return () => {
       timers.forEach(clearTimeout)
     }
-  }, [enabled])
+  }, [mode])
+}
+
+function tabletTransitionProbeTimers(
+  mode: Exclude<TabletTransitionProbeMode, false>,
+  currentActions: () => {
+    hideLeftChrome: () => void
+    hideProperties: () => void
+    showLeftChrome: () => void
+    showProperties: () => void
+  },
+) {
+  if (mode === 'properties') {
+    return [
+      setTimeout(() => currentActions().hideProperties(), 1400),
+      setTimeout(() => currentActions().showProperties(), 3600),
+      setTimeout(() => currentActions().hideProperties(), 5800),
+      setTimeout(() => currentActions().showProperties(), 8000),
+    ]
+  }
+
+  return [
+    setTimeout(() => currentActions().hideLeftChrome(), 1200),
+    setTimeout(() => currentActions().showLeftChrome(), 2600),
+    setTimeout(() => currentActions().hideProperties(), 4000),
+    setTimeout(() => currentActions().showProperties(), 5400),
+  ]
 }
 
 type TabletTableOfContentsTargetRequest = MobileTableOfContentsTarget & { requestId: number }

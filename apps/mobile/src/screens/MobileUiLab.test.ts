@@ -5,6 +5,7 @@ import {
   requestedSelectedNoteId,
 } from './mobileUiLabSelectedNote'
 import { requestedActionSheetQaTarget } from './mobileActionSheetQaTarget'
+import { tabletTransitionProbeMode } from './tabletTransitionProbeMode'
 
 describe('requestedSelectedNoteId', () => {
   it('reads selectedNoteId and the shorter noteId alias from URL params', () => {
@@ -55,5 +56,28 @@ describe('mobileSnapshotWithRequestedSelectedNote', () => {
 
     expect(mobileSnapshotWithRequestedSelectedNote(snapshot, null)).toBe(snapshot)
     expect(mobileSnapshotWithRequestedSelectedNote(snapshot, 'missing.md')).toBe(snapshot)
+  })
+})
+
+describe('tabletTransitionProbeMode', () => {
+  it('lets the simulator environment override a stale Expo deep-link query', () => {
+    expect(tabletTransitionProbeMode({
+      envProbe: 'properties',
+      queryProbe: '1',
+    })).toBe('properties')
+  })
+
+  it('keeps URL-driven all-panel transition probes available', () => {
+    expect(tabletTransitionProbeMode({
+      envProbe: undefined,
+      queryProbe: 'all',
+    })).toBe('all')
+  })
+
+  it('disables unknown probe modes', () => {
+    expect(tabletTransitionProbeMode({
+      envProbe: undefined,
+      queryProbe: 'left',
+    })).toBe(false)
   })
 })

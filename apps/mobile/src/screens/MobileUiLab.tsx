@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { Linking, StyleSheet, useWindowDimensions, View } from 'react-native'
 import { PhoneWorkspace, type PhoneWorkspaceState } from './PhoneWorkspace'
 import { TabletWorkspace } from './TabletWorkspace'
+import type { TabletTransitionProbeMode } from './tabletWorkspaceTypes'
 import { readOnlyWorkspaceRepository, type ReadOnlyWorkspaceRequest } from '../workspace/readOnlyWorkspaceRepository'
 import {
   createDevVaultWorkspaceRepository,
@@ -88,6 +89,7 @@ import {
   requestedSelectedNoteId,
 } from './mobileUiLabSelectedNote'
 import { requestedActionSheetQaTarget } from './mobileActionSheetQaTarget'
+import { tabletTransitionProbeMode } from './tabletTransitionProbeMode'
 
 type DevVaultLoadState =
   | { status: 'idle' | 'loading' }
@@ -391,9 +393,11 @@ function layoutProbeEnabled(searchParams: URLSearchParams) {
   return searchParams.get('layoutProbe') === '1' || envFlagEnabled('EXPO_PUBLIC_TOLARIA_LAYOUT_PROBE')
 }
 
-function tabletTransitionProbeEnabled(searchParams: URLSearchParams) {
-  return searchParams.get('tabletTransitionProbe') === '1'
-    || envFlagEnabled('EXPO_PUBLIC_TOLARIA_TABLET_TRANSITION_PROBE')
+function tabletTransitionProbeEnabled(searchParams: URLSearchParams): TabletTransitionProbeMode {
+  return tabletTransitionProbeMode({
+    envProbe: envValue('EXPO_PUBLIC_TOLARIA_TABLET_TRANSITION_PROBE'),
+    queryProbe: searchParams.get('tabletTransitionProbe'),
+  })
 }
 
 function editorIdleSaveDisabled(searchParams: URLSearchParams) {
@@ -506,7 +510,7 @@ function mobileWorkspaceKey({
   sourceSelectionProbe: boolean
   mobileActionAdapterProbe: boolean
   tableOfContentsProbe: boolean
-  tabletTransitionProbe: boolean
+  tabletTransitionProbe: TabletTransitionProbeMode
   workspacePersistenceProbe: boolean
   wysiwygAutocompleteProbe: boolean
   wysiwygExternalLinkProbe: boolean
@@ -533,7 +537,7 @@ function mobileWorkspaceKey({
     flagKey(sourceSelectionProbe, 'source-selection-probe', 'no-source-selection-probe'),
     flagKey(mobileActionAdapterProbe, 'mobile-action-adapter-probe', 'no-mobile-action-adapter-probe'),
     flagKey(tableOfContentsProbe, 'table-of-contents-probe', 'no-table-of-contents-probe'),
-    flagKey(tabletTransitionProbe, 'tablet-transition-probe', 'no-tablet-transition-probe'),
+    tabletTransitionProbeKey(tabletTransitionProbe),
     flagKey(workspacePersistenceProbe, 'workspace-persistence-probe', 'no-workspace-persistence-probe'),
     flagKey(wysiwygAutocompleteProbe, 'wysiwyg-autocomplete-probe', 'no-wysiwyg-autocomplete-probe'),
     flagKey(wysiwygExternalLinkProbe, 'wysiwyg-external-link-probe', 'no-wysiwyg-external-link-probe'),
@@ -557,6 +561,11 @@ function mobileWorkspaceKey({
 
 function flagKey(enabled: boolean, enabledKey: string, disabledKey: string): string {
   return enabled ? enabledKey : disabledKey
+}
+
+function tabletTransitionProbeKey(mode: TabletTransitionProbeMode): string {
+  if (!mode) return 'no-tablet-transition-probe'
+  return `tablet-transition-probe-${mode}`
 }
 
 function scenarioIdOrDefault(scenarioId: string | null) {

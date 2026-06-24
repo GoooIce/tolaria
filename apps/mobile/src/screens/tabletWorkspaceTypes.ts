@@ -269,7 +269,7 @@ export type TabletWorkspaceChromeProps = {
   sourceIdleSave?: boolean
   sourceSelectionProbe?: boolean
   tableOfContentsProbe?: boolean
-  tabletTransitionProbe?: boolean
+  tabletTransitionProbe?: TabletTransitionProbeMode
   snapshot: MobileWorkspaceSnapshot
   vaultRootUri: string | null
   wysiwygAutocompleteProbe?: boolean
@@ -290,3 +290,5 @@ export type TabletWorkspaceChromeProps = {
   viewSortPropertyOptions: string[]
   wysiwygMutationProbe?: boolean
 }
+
+export type TabletTransitionProbeMode = false | 'all' | 'properties'
