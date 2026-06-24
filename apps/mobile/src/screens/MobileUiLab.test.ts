@@ -4,12 +4,26 @@ import {
   mobileSnapshotWithRequestedSelectedNote,
   requestedSelectedNoteId,
 } from './mobileUiLabSelectedNote'
+import { requestedActionSheetQaTarget } from './mobileActionSheetQaTarget'
 
 describe('requestedSelectedNoteId', () => {
   it('reads selectedNoteId and the shorter noteId alias from URL params', () => {
     expect(requestedSelectedNoteId(new URLSearchParams('selectedNoteId=note-a.md'))).toBe('note-a.md')
     expect(requestedSelectedNoteId(new URLSearchParams('noteId=note-b.md'))).toBe('note-b.md')
     expect(requestedSelectedNoteId(new URLSearchParams('selectedNoteId=%20'))).toBeNull()
+  })
+})
+
+describe('requestedActionSheetQaTarget', () => {
+  it('allows deterministic native QA entry points for workspace sheets', () => {
+    expect(requestedActionSheetQaTarget(new URLSearchParams('actionSheet=editView'))).toBe('editView')
+    expect(requestedActionSheetQaTarget(new URLSearchParams('actionSheet=editTypeSection'))).toBe('editTypeSection')
+    expect(requestedActionSheetQaTarget(new URLSearchParams('actionSheet=addProperty'))).toBe('addProperty')
+  })
+
+  it('ignores unknown action sheet targets', () => {
+    expect(requestedActionSheetQaTarget(new URLSearchParams('actionSheet=deleteEverything'))).toBeUndefined()
+    expect(requestedActionSheetQaTarget(new URLSearchParams(''))).toBeUndefined()
   })
 })
 

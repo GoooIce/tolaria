@@ -29,9 +29,10 @@ import {
 } from '../workspace/mobileTableOfContents'
 import { TabletEditorPanel } from './TabletEditorPanel'
 import { tabletScreenModeForWindow } from './tabletWorkspaceScreenMode'
-import type { TabletPanel, TabletWorkspaceChromeProps } from './tabletWorkspaceTypes'
+import type { MobileActionSheetQaTarget, TabletPanel, TabletWorkspaceChromeProps } from './tabletWorkspaceTypes'
 import { useTabletWorkspaceController } from './useTabletWorkspaceController'
 import { useMobileInspectorReferenceGroups } from './useMobileInspectorReferenceGroups'
+import { useInitialActionSheetQaTarget } from './useInitialActionSheetQaTarget'
 import {
   tabletLeftChromeDragOffset,
   tabletLeftChromeWidth,
@@ -43,6 +44,7 @@ export function TabletWorkspace({
   forceDesktopPanels = false,
   initialEditorEditing = true,
   initialEditorEditingMode = 'wysiwyg',
+  initialActionSheet,
   commandPaletteProbe = false,
   layoutProbe = false,
   onOpenNativeVault,
@@ -66,6 +68,7 @@ export function TabletWorkspace({
   forceDesktopPanels?: boolean
   initialEditorEditing?: boolean
   initialEditorEditingMode?: TabletWorkspaceChromeProps['initialEditorEditingMode']
+  initialActionSheet?: MobileActionSheetQaTarget
   commandPaletteProbe?: boolean
   layoutProbe?: boolean
   onOpenNativeVault?: () => void
@@ -88,6 +91,7 @@ export function TabletWorkspace({
 }) {
   const controller = useTabletWorkspaceController({ repository, repositoryRequest, snapshot })
   const { compactTablet, defaultPropertiesVisible } = useTabletScreenMode(forceDesktopPanels)
+  useInitialActionSheetQaTarget(controller.onOpenActionSheetQaTarget, initialActionSheet)
 
   return (
     <View style={styles.shellRoot}>

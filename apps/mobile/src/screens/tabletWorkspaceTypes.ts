@@ -32,6 +32,15 @@ import type { EditorEditingMode } from './TabletEditorPanel'
 import type { NativeTableOfContentsProof } from '../qa/nativeTableOfContentsProbe'
 
 export type TabletPanel = 'noteList' | 'properties' | 'sidebar'
+export type MobileActionSheetQaTarget =
+  | 'addProperty'
+  | 'addRelationship'
+  | 'createView'
+  | 'editTypeSection'
+  | 'editTypeVisibility'
+  | 'editView'
+  | 'search'
+
 export type TabletReadOnlyForm = {
   allNotesShowImages: boolean
   allNotesShowPdfs: boolean
@@ -181,6 +190,7 @@ export type TabletWorkspaceChromeProps = {
   onOpenSetNoteIcon: () => void
   onInitializeProperties: (noteId: NoteId) => void
   onOpenSearch: () => void
+  onOpenActionSheetQaTarget: (target: MobileActionSheetQaTarget) => void
   onOpenTableOfContents: () => void
   onTableOfContentsScrollProof?: (proof: NativeTableOfContentsProof) => void
   onNoteListFilterChange: (filter: MobileNoteListFilter) => void

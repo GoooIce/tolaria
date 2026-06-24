@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react'
-import { Pressable, StyleSheet, View } from 'react-native'
-import { Text } from '../ui/text'
+import { StyleSheet, View } from 'react-native'
 import { mobileText } from '../../i18n/mobileText'
-import { mobileColors, mobileSpace, mobileType } from '../../ui/tokens'
+import { mobileColors } from '../../ui/tokens'
+import { MobileButton } from '../../ui/MobileButton'
+import { mobileWorkspaceActionGroupLayoutContract } from './MobileWorkspaceActionSheetModel'
 
 type MoveActionsProps = {
   canMoveDown: boolean
@@ -73,8 +74,15 @@ function moveActionComponent<Props extends MoveActionsProps>(
 }
 
 function SectionActions({
+  canMoveDown,
+  canMoveUp,
+  downLabel,
+  downTestID,
+  onMoveDown,
+  onMoveUp,
   trailingAction,
-  ...props
+  upLabel,
+  upTestID,
 }: MoveActionsProps & {
   downLabel: string
   downTestID: string
@@ -84,31 +92,9 @@ function SectionActions({
 }) {
   return (
     <View style={styles.actions}>
-      <MoveActions {...props} />
-      {trailingAction}
-    </View>
-  )
-}
-
-function MoveActions({
-  canMoveDown,
-  canMoveUp,
-  downLabel,
-  downTestID,
-  onMoveDown,
-  onMoveUp,
-  upLabel,
-  upTestID,
-}: MoveActionsProps & {
-  downLabel: string
-  downTestID: string
-  upLabel: string
-  upTestID: string
-}) {
-  return (
-    <View style={styles.actions}>
       <MoveButton disabled={!canMoveUp} label={upLabel} testID={upTestID} onPress={onMoveUp} />
       <MoveButton disabled={!canMoveDown} label={downLabel} testID={downTestID} onPress={onMoveDown} />
+      {trailingAction}
     </View>
   )
 }
@@ -125,21 +111,15 @@ function MoveButton({
   testID: string
 }) {
   return (
-    <Pressable
+    <MobileButton
       accessibilityLabel={label}
-      accessibilityRole="button"
-      style={({ pressed }) => [
-        styles.button,
-        disabled ? styles.disabledButton : null,
-        pressed && !disabled ? styles.pressedButton : null,
-      ]}
+      disabled={disabled}
+      label={label}
+      style={styles.actionButton}
       testID={testID}
-      onPress={() => {
-        if (!disabled) onPress()
-      }}
-    >
-      <Text style={[styles.buttonText, disabled ? styles.disabledText : null]}>{label}</Text>
-    </Pressable>
+      variant="secondary"
+      onPress={onPress}
+    />
   )
 }
 
@@ -173,46 +153,33 @@ function DeleteButton({
   testID: string
 }) {
   return (
-    <Pressable
+    <MobileButton
       accessibilityLabel={label}
-      accessibilityRole="button"
-      style={({ pressed }) => [styles.button, pressed ? styles.pressedButton : null]}
+      label={label}
+      style={[styles.actionButton, styles.deleteButton]}
       testID={testID}
+      tone="danger"
+      variant="secondary"
       onPress={onPress}
-    >
-      <Text style={styles.deleteText}>{label}</Text>
-    </Pressable>
+    />
   )
 }
 
 const styles = StyleSheet.create({
   actions: {
+    alignItems: 'center',
+    alignSelf: 'stretch',
     flexDirection: 'row',
-    gap: mobileSpace.xs,
-    marginRight: 'auto',
+    flexWrap: 'wrap',
+    gap: mobileWorkspaceActionGroupLayoutContract.gap,
   },
-  button: {
-    borderRadius: 6,
-    paddingHorizontal: mobileSpace.sm,
-    paddingVertical: mobileSpace.xs,
+  actionButton: {
+    borderRadius: mobileWorkspaceActionGroupLayoutContract.radius,
+    minHeight: mobileWorkspaceActionGroupLayoutContract.minHeight,
+    paddingHorizontal: mobileWorkspaceActionGroupLayoutContract.paddingHorizontal,
+    paddingVertical: mobileWorkspaceActionGroupLayoutContract.paddingVertical,
   },
-  buttonText: {
-    color: mobileColors.textMuted,
-    fontSize: mobileType.body,
-    fontWeight: '500',
-  },
-  deleteText: {
-    color: mobileColors.red,
-    fontSize: mobileType.body,
-    fontWeight: '500',
-  },
-  disabledButton: {
-    opacity: 0.45,
-  },
-  disabledText: {
-    color: mobileColors.textFaint,
-  },
-  pressedButton: {
-    backgroundColor: mobileColors.graySoft,
+  deleteButton: {
+    backgroundColor: mobileColors.dangerSoft,
   },
 })

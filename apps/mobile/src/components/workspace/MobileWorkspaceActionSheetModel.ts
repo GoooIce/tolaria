@@ -16,6 +16,14 @@ export const mobileWorkspaceFormSectionLayoutContract = {
   radius: 8,
 } as const
 
+export const mobileWorkspaceActionGroupLayoutContract = {
+  gap: mobileSpace.xs,
+  minHeight: 32,
+  paddingHorizontal: mobileSpace.sm,
+  paddingVertical: mobileSpace.xs,
+  radius: 6,
+} as const
+
 export const mobileWorkspaceFormSheetAutoFocus = false
 export const mobileWorkspaceFormSheetMaxSuggestions = 3
 export const mobileWorkspaceRelationshipTargetMaxSuggestions = 2

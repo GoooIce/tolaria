@@ -87,6 +87,7 @@ import {
   mobileSnapshotWithRequestedSelectedNote,
   requestedSelectedNoteId,
 } from './mobileUiLabSelectedNote'
+import { requestedActionSheetQaTarget } from './mobileActionSheetQaTarget'
 
 type DevVaultLoadState =
   | { status: 'idle' | 'loading' }
@@ -158,6 +159,7 @@ export function MobileUiLab() {
       <TabletWorkspace
         key={workspaceKey}
         forceDesktopPanels={qa.forceDesktopPanels}
+        initialActionSheet={qa.initialActionSheet}
         initialEditorEditing={qa.initialEditorEditing}
         initialEditorEditingMode={qa.initialEditorEditingMode}
         commandPaletteProbe={qa.mobileCommandPaletteProbe}
@@ -188,6 +190,7 @@ export function MobileUiLab() {
       key={workspaceKey}
       initialEditorEditing={qa.initialEditorEditing}
       initialEditorEditingMode={qa.initialEditorEditingMode}
+      initialActionSheet={qa.initialActionSheet}
       commandPaletteProbe={qa.mobileCommandPaletteProbe}
       initialState={currentPhoneState(searchParams)}
       layoutProbe={qa.layoutProbe}
@@ -253,6 +256,7 @@ function mobileUiQaFlags(
 
   return {
     forceDesktopPanels: tabletPanelsMode(searchParams) === 'all',
+    initialActionSheet: requestedActionSheetQaTarget(searchParams),
     initialEditorEditing,
     initialEditorEditingMode,
     mobileCommandPaletteProbe: nativeMobileCommandPaletteProbeEnabled(searchParams),

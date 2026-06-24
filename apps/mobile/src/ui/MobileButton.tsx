@@ -7,40 +7,49 @@ import { mobileColors } from './tokens'
 
 type MobileButtonVariant = 'primary' | 'secondary' | 'ghost'
 type MobileButtonDensity = 'default' | 'status'
+type MobileButtonTone = 'default' | 'danger'
 
 export function MobileButton({
+  accessibilityLabel,
   density = 'default',
   disabled = false,
   icon,
   label,
   onPress,
   style,
+  testID,
+  tone = 'default',
   variant = 'secondary',
 }: {
+  accessibilityLabel?: string
   density?: MobileButtonDensity
   disabled?: boolean
   icon?: ReactNode
   label: string
   onPress?: () => void
   style?: StyleProp<ViewStyle>
+  testID?: string
+  tone?: MobileButtonTone
   variant?: MobileButtonVariant
 }) {
   const buttonVariant = buttonVariantByMobileVariant[variant]
   const buttonStyle = Platform.OS === 'web' ? style : [styles.base, buttonDensityStyles[density], style]
-  const labelStyle = Platform.OS === 'web' ? undefined : [labelDensityStyles[density], labelColorStyles[variant]]
+  const labelStyle = Platform.OS === 'web' ? undefined : [labelDensityStyles[density], labelColorStyles[variant], tone === 'danger' ? styles.labelDanger : null]
 
   return (
     <Button
+      accessibilityLabel={accessibilityLabel ?? label}
       className={cn(buttonDensityClassNames[density], buttonClassNames[variant])}
       disabled={disabled}
       onPress={onPress}
       size="sm"
       style={buttonStyle}
+      testID={testID}
       variant={buttonVariant}
     >
       {icon}
       <Text
-        className={cn(labelDensityClassNames[density], labelClassNames[variant])}
+        className={cn(labelDensityClassNames[density], tone === 'danger' ? 'text-destructive' : labelClassNames[variant])}
         numberOfLines={1}
         style={labelStyle}
       >
@@ -93,6 +102,9 @@ const styles = StyleSheet.create({
   labelDefault: {
     fontSize: 14,
     fontWeight: '500',
+  },
+  labelDanger: {
+    color: mobileColors.red,
   },
   labelStatus: {
     fontSize: 12,

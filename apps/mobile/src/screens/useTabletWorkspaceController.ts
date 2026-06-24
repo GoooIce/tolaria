@@ -43,7 +43,7 @@ import {
 } from '../workspace/mobilePropertyValues'
 import { mobileTypeNameFromSidebarLabel } from '../workspace/mobileTypeNames'
 import { useTabletWorkspaceNavigation } from './tabletWorkspaceNavigation'
-import type { TabletReadOnlyForm } from './tabletWorkspaceTypes'
+import type { MobileActionSheetQaTarget, TabletReadOnlyForm } from './tabletWorkspaceTypes'
 import {
   createTypedWorkspaceNote,
   createWorkspaceNote,
@@ -268,6 +268,13 @@ export function useTabletWorkspaceController({
     ...workspaceActionsContext,
     onCreateNoteDirect: createActions.onCreateNote,
   })
+  const openActionSheetQaTarget = useCallback((target: MobileActionSheetQaTarget) => {
+    openMobileActionSheetQaTarget({
+      actions: actionSheetActions,
+      target,
+      workspaceSnapshot,
+    })
+  }, [actionSheetActions, workspaceSnapshot])
   useHydrateSelectedNote({ applyEdit, repository, repositoryRequest, selectedNote })
 
   return {
@@ -298,8 +305,65 @@ export function useTabletWorkspaceController({
     onSelectFolder: navigation.selectFolder,
     onSelectNote: navigation.selectNote,
     onSelectSidebarItem: navigation.selectSidebarItem,
+    onOpenActionSheetQaTarget: openActionSheetQaTarget,
     onSearchQueryChange: setSearchQuery,
     onUndoWorkspaceEdit: undoWorkspaceEdit,
+  }
+}
+
+function openMobileActionSheetQaTarget({
+  actions,
+  target,
+  workspaceSnapshot,
+}: {
+  actions: ReturnType<typeof actionSheetWorkspaceActions>
+  target: MobileActionSheetQaTarget
+  workspaceSnapshot: MobileWorkspaceSnapshot
+}) {
+  if (target === 'addProperty') {
+    actions.onAddProperty()
+    return
+  }
+  if (target === 'addRelationship') {
+    actions.onAddRelationship()
+    return
+  }
+  if (target === 'createView') {
+    actions.onOpenCreateView()
+    return
+  }
+  if (target === 'editTypeVisibility') {
+    actions.onOpenTypeVisibility()
+    return
+  }
+  if (target === 'editView') {
+    const selection = firstSidebarItemSelection(workspaceSnapshot, 'views')
+    if (selection) actions.onOpenViewActions(selection)
+    return
+  }
+  if (target === 'editTypeSection') {
+    const selection = firstSidebarItemSelection(workspaceSnapshot, 'types')
+    if (selection) actions.onOpenTypeActions(selection)
+    return
+  }
+  actions.onOpenSearch()
+}
+
+function firstSidebarItemSelection(
+  snapshot: MobileWorkspaceSnapshot,
+  sectionId: string,
+): MobileSidebarItemSelection | null {
+  const item = snapshot.sidebarSections.find((section) => section.id === sectionId)?.items?.[0]
+  if (!item) return null
+
+  return {
+    count: item.count,
+    id: item.id,
+    label: item.label,
+    noteId: item.noteId,
+    sectionId,
+    typeName: item.typeName,
+    viewId: item.viewId,
   }
 }
 

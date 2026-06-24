@@ -35,6 +35,8 @@ import { WorkspaceActionSheetHost } from './TabletWorkspace'
 import { PhoneWorkspaceTransition } from './PhoneWorkspaceTransition'
 import { useTabletWorkspaceController } from './useTabletWorkspaceController'
 import { useMobileInspectorReferenceGroups } from './useMobileInspectorReferenceGroups'
+import { useInitialActionSheetQaTarget } from './useInitialActionSheetQaTarget'
+import type { MobileActionSheetQaTarget } from './tabletWorkspaceTypes'
 import {
   phoneWorkspaceDragOffset,
   phoneWorkspaceSidebarDrawerWidth,
@@ -48,6 +50,7 @@ export type { PhoneWorkspaceState } from './phoneWorkspaceTransitions'
 type PhoneWorkspaceProps = {
   initialEditorEditing?: boolean
   initialEditorEditingMode?: EditorEditingMode
+  initialActionSheet?: MobileActionSheetQaTarget
   commandPaletteProbe?: boolean
   initialState?: PhoneWorkspaceState
   layoutProbe?: boolean
@@ -92,6 +95,7 @@ type PhoneWorkspaceEditorOptions = {
 export function PhoneWorkspace(props: PhoneWorkspaceProps) {
   const { repository = fixtureReadOnlyWorkspaceRepository, repositoryRequest, snapshot } = props
   const controller = useTabletWorkspaceController({ repository, repositoryRequest, snapshot })
+  useInitialActionSheetQaTarget(controller.onOpenActionSheetQaTarget, props.initialActionSheet)
   return <PhoneWorkspaceChrome {...props} controller={controller} />
 }
 

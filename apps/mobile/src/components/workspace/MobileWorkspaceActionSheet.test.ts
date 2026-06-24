@@ -7,6 +7,7 @@ import {
   mobileWorkspaceRelationshipTargetMaxSuggestions,
   mobileWorkspaceFormSheetAutoFocus,
   mobileWorkspaceFormSheetMaxSuggestions,
+  mobileWorkspaceActionGroupLayoutContract,
   mobileWorkspaceFormSectionLayoutContract,
 } from './MobileWorkspaceActionSheetModel'
 
@@ -53,6 +54,16 @@ describe('mobile workspace action sheet', () => {
       gap: mobileSpace.sm,
       padding: mobileSpace.sm,
       radius: 8,
+    })
+  })
+
+  it('keeps reorder/delete action groups wrapped with fixed native touch height', () => {
+    expect(mobileWorkspaceActionGroupLayoutContract).toEqual({
+      gap: mobileSpace.xs,
+      minHeight: 32,
+      paddingHorizontal: mobileSpace.sm,
+      paddingVertical: mobileSpace.xs,
+      radius: 6,
     })
   })
 })
