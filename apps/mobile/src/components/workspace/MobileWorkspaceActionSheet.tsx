@@ -60,6 +60,7 @@ import { chipTone, noteTypeSoftColor, statusTone, tagTone } from './mobileWorksp
 import {
   mobileActionSheetLayoutContract,
   mobileSingleTextFieldSubmitDisabled,
+  mobileWorkspaceFormSheetAutoFocus,
 } from './MobileWorkspaceActionSheetModel'
 
 export type MobileWorkspaceAction =
@@ -461,7 +462,7 @@ function SingleTextFieldContent({ config }: { config: SingleTextFieldConfig }) {
   return (
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" style={styles.scrollArea}>
       <MobileTextInput
-        autoFocus
+        autoFocus={mobileWorkspaceFormSheetAutoFocus}
         label={inputLabel}
         placeholder={inputPlaceholder}
         testID={inputTestId}
@@ -620,7 +621,7 @@ function FolderActionsContent(props: MobileWorkspaceActionSheetProps) {
   return (
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" style={styles.scrollArea}>
       <MobileTextInput
-        autoFocus
+        autoFocus={mobileWorkspaceFormSheetAutoFocus}
         label={mobileText('sidebar.folder.newName')}
         placeholder={mobileText('sidebar.folder.newName')}
         testID="workspace-rename-folder-input"
@@ -883,7 +884,7 @@ function AddPropertyContent({
   return (
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" style={styles.scrollArea}>
       <MobileTextInput
-        autoFocus
+        autoFocus={mobileWorkspaceFormSheetAutoFocus}
         label={mobileText('inspector.properties.propertyName')}
         placeholder={mobileText('inspector.properties.propertyName')}
         testID="workspace-property-name-input"
@@ -940,7 +941,7 @@ function AddRelationshipContent({
   return (
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" style={styles.scrollArea}>
       <MobileTextInput
-        autoFocus
+        autoFocus={mobileWorkspaceFormSheetAutoFocus}
         label={mobileText('inspector.relationship.name')}
         placeholder={mobileText('inspector.relationship.name')}
         testID="workspace-relationship-name-input"
@@ -1060,7 +1061,7 @@ function SuggestionInputActionContent({ config }: { config: SuggestionInputActio
   return (
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" style={styles.scrollArea}>
       <MobileTextInput
-        autoFocus
+        autoFocus={mobileWorkspaceFormSheetAutoFocus}
         label={config.inputLabel}
         placeholder={config.inputPlaceholder}
         testID={config.inputTestId}

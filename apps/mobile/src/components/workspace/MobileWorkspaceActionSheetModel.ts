@@ -10,6 +10,8 @@ export const mobileActionSheetLayoutContract = {
   sheetMaxWidth: 640,
 } as const
 
+export const mobileWorkspaceFormSheetAutoFocus = false
+
 export function mobileSingleTextFieldSubmitDisabled({
   allowEmptyInput = false,
   inputValue,

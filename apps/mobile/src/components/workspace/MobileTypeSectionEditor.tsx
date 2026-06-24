@@ -16,6 +16,7 @@ import { MobileMetadataPicker } from './MobileMetadataPicker'
 import { MobileSortPicker } from './MobileSortPicker'
 import { MobileViewDisplayPropertiesPicker } from './MobileViewDisplayPropertiesPicker'
 import { MobileWorkspaceSuggestionList, type MobileWorkspaceSuggestionItem } from './MobileWorkspaceSuggestionList'
+import { mobileWorkspaceFormSheetAutoFocus } from './MobileWorkspaceActionSheetModel'
 
 type MobileTypeSectionEditorProps = {
   displayProperties: string[]
@@ -65,7 +66,7 @@ export function MobileTypeSectionEditor(props: MobileTypeSectionEditorProps) {
     <View style={styles.editor} testID="workspace-type-section-editor">
       <Text style={styles.typeName} testID="workspace-type-section-name">{props.typeName}</Text>
       <MobileTextInput
-        autoFocus
+        autoFocus={mobileWorkspaceFormSheetAutoFocus}
         label={mobileText('sidebar.section.typeName')}
         placeholder={props.typeName}
         testID="workspace-type-section-type-name-input"

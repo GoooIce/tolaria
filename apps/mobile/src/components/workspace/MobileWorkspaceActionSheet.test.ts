@@ -4,6 +4,7 @@ import { mobileSpace } from '../../ui/tokens'
 import {
   mobileActionSheetLayoutContract,
   mobileSingleTextFieldSubmitDisabled,
+  mobileWorkspaceFormSheetAutoFocus,
 } from './MobileWorkspaceActionSheetModel'
 
 describe('mobile workspace action sheet', () => {
@@ -33,5 +34,9 @@ describe('mobile workspace action sheet', () => {
       inputValue: '',
       submitDisabled: true,
     })).toBe(true)
+  })
+
+  it('opens workspace form sheets without forcing the native keyboard over the sheet', () => {
+    expect(mobileWorkspaceFormSheetAutoFocus).toBe(false)
   })
 })
