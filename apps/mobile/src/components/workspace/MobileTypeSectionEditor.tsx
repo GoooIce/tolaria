@@ -17,7 +17,10 @@ import { MobileSortPicker } from './MobileSortPicker'
 import { MobileViewDisplayPropertiesPicker } from './MobileViewDisplayPropertiesPicker'
 import { MobileWorkspaceSuggestionList } from './MobileWorkspaceSuggestionList'
 import type { MobileWorkspaceSuggestionItem } from './MobileWorkspaceSuggestionListModel'
-import { mobileWorkspaceFormSheetAutoFocus } from './MobileWorkspaceActionSheetModel'
+import {
+  mobileWorkspaceFormSectionLayoutContract,
+  mobileWorkspaceFormSheetAutoFocus,
+} from './MobileWorkspaceActionSheetModel'
 
 type MobileTypeSectionEditorProps = {
   displayProperties: string[]
@@ -281,7 +284,11 @@ const styles = StyleSheet.create({
     fontSize: mobileType.body,
   },
   section: {
-    gap: mobileSpace.xs,
+    gap: mobileWorkspaceFormSectionLayoutContract.gap,
+    borderColor: mobileColors.border,
+    borderRadius: mobileWorkspaceFormSectionLayoutContract.radius,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: mobileWorkspaceFormSectionLayoutContract.padding,
   },
   schemaInputs: {
     gap: mobileSpace.sm,

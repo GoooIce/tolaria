@@ -7,6 +7,7 @@ import {
   mobileWorkspaceRelationshipTargetMaxSuggestions,
   mobileWorkspaceFormSheetAutoFocus,
   mobileWorkspaceFormSheetMaxSuggestions,
+  mobileWorkspaceFormSectionLayoutContract,
 } from './MobileWorkspaceActionSheetModel'
 
 describe('mobile workspace action sheet', () => {
@@ -45,5 +46,13 @@ describe('mobile workspace action sheet', () => {
   it('bounds form sheet suggestions so the footer remains reachable on first open', () => {
     expect(mobileWorkspaceFormSheetMaxSuggestions).toBe(3)
     expect(mobileWorkspaceRelationshipTargetMaxSuggestions).toBe(2)
+  })
+
+  it('keeps nested form sections grouped with explicit native spacing', () => {
+    expect(mobileWorkspaceFormSectionLayoutContract).toEqual({
+      gap: mobileSpace.sm,
+      padding: mobileSpace.sm,
+      radius: 8,
+    })
   })
 })

@@ -10,6 +10,12 @@ export const mobileActionSheetLayoutContract = {
   sheetMaxWidth: 640,
 } as const
 
+export const mobileWorkspaceFormSectionLayoutContract = {
+  gap: mobileSpace.sm,
+  padding: mobileSpace.sm,
+  radius: 8,
+} as const
+
 export const mobileWorkspaceFormSheetAutoFocus = false
 export const mobileWorkspaceFormSheetMaxSuggestions = 3
 export const mobileWorkspaceRelationshipTargetMaxSuggestions = 2

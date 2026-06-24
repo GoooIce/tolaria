@@ -29,6 +29,7 @@ import {
   mobileViewFilterValueText,
   mobileViewFilterValueWithSuggestion,
 } from './MobileViewFilterValueModel'
+import { mobileWorkspaceFormSectionLayoutContract } from './MobileWorkspaceActionSheetModel'
 
 type FilterPath = string
 type FilterMode = 'all' | 'any'
@@ -424,7 +425,11 @@ const styles = StyleSheet.create({
     gap: mobileSpace.xs,
   },
   builder: {
-    gap: mobileSpace.sm,
+    gap: mobileWorkspaceFormSectionLayoutContract.gap,
+    borderColor: mobileColors.border,
+    borderRadius: mobileWorkspaceFormSectionLayoutContract.radius,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: mobileWorkspaceFormSectionLayoutContract.padding,
   },
   condition: {
     gap: mobileSpace.sm,

@@ -4,6 +4,7 @@ import { Text } from '../ui/text'
 import { mobileText } from '../../i18n/mobileText'
 import { MobileTextInput } from '../../ui/MobileTextInput'
 import { mobileColors, mobileSpace, mobileType } from '../../ui/tokens'
+import { mobileWorkspaceFormSectionLayoutContract } from './MobileWorkspaceActionSheetModel'
 
 type MobileViewDisplayPropertiesPickerProps = {
   options: string[]
@@ -161,9 +162,10 @@ const styles = StyleSheet.create({
     color: mobileColors.primary,
   },
   picker: {
-    gap: mobileSpace.sm,
+    gap: mobileWorkspaceFormSectionLayoutContract.gap,
     borderColor: mobileColors.border,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    paddingTop: mobileSpace.md,
+    borderRadius: mobileWorkspaceFormSectionLayoutContract.radius,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: mobileWorkspaceFormSectionLayoutContract.padding,
   },
 })
