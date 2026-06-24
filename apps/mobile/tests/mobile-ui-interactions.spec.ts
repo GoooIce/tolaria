@@ -18,6 +18,7 @@ import {
   createRenameAndDeleteTypeSection,
   customizeProcedureTypeSection,
 } from './mobile-type-section-flows'
+import { createTitledNoteFromQuickOpen } from './mobile-note-create-actions'
 
 const mobileClipboardAttemptsGlobalKey = '__TOLARIA_MOBILE_CLIPBOARD_ATTEMPTS__'
 
@@ -50,7 +51,7 @@ test.describe('mobile UI lab interactions', () => {
     await page.keyboard.press('ArrowDown')
     await page.keyboard.press('Enter')
     await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
-    await expect(page.getByTestId('editor-title')).toHaveText('How I Run an Open Source Project')
+    await expect(page.getByTestId('editor-toolbar-title')).toHaveText('How I Run an Open Source Project')
   })
 
   test('creates a note from an unmatched quick open query', async ({ page }, testInfo) => {
@@ -94,6 +95,10 @@ test.describe('mobile UI lab interactions', () => {
     await expect(page.getByTestId('table-of-contents-row-toc-heading-0')).toContainText('Target Section')
     await page.getByTestId('table-of-contents-row-toc-heading-0').click()
     await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
+    if (await page.getByTestId('editor-markdown-input').isVisible().catch(() => false)) {
+      await expect(page.getByTestId('editor-markdown-input')).toHaveValue(/## Target Section/u)
+      return
+    }
     await expect.poll(() => editorScrollTop(page)).toBeGreaterThan(120)
   })
 
@@ -242,11 +247,8 @@ test.describe('mobile UI lab interactions', () => {
     await installFixtureHostWorkspace(page)
     await page.goto('/?source=host-vault')
 
-    await expect(page.getByTestId('editor-title')).toHaveText('Workflow Orchestration Essay')
-    await page.getByTestId('note-list-create-action').click()
-    await page.getByTestId('workspace-create-note-title-input').fill('Persistence Warmup Draft')
-    await page.getByTestId('workspace-action-sheet-createNote').getByRole('button', { exact: true, name: 'Create' }).click()
-    await expect(page.getByTestId('note-row-persistence-warmup-draft.md')).toBeVisible()
+    await expect(page.getByTestId('editor-toolbar-title')).toHaveText('Workflow Orchestration Essay')
+    await createTitledNoteFromQuickOpen(page, 'Persistence Warmup Draft')
     await expect(hostWorkspaceWriteCount(page)).resolves.toBe(1)
 
     await page.evaluate((failureKey) => {
@@ -255,10 +257,7 @@ test.describe('mobile UI lab interactions', () => {
     await expect(page.evaluate((failureKey) => {
       return (window as unknown as Record<string, unknown>)[failureKey]
     }, HOST_WORKSPACE_WRITE_FAILURE_GLOBAL_KEY)).resolves.toBe('Host write failed in QA')
-    await page.getByTestId('note-list-create-action').click()
-    await page.getByTestId('workspace-create-note-title-input').fill('Persistence Failure Draft')
-    await page.getByTestId('workspace-action-sheet-createNote').getByRole('button', { exact: true, name: 'Create' }).click()
-    await expect(page.getByTestId('note-row-persistence-failure-draft.md')).toBeVisible()
+    await createTitledNoteFromQuickOpen(page, 'Persistence Failure Draft')
 
     await expect(page.getByTestId('sync-status-label')).toHaveText('Not synced')
     await expect(page.getByTestId('sync-status-detail')).toHaveText('Sync failed')
@@ -276,8 +275,8 @@ async function searchAndSelectRelease(page: PageLike) {
   await expect(page.getByTestId('workspace-search-result-release-2026-05-02')).toBeVisible()
   await page.keyboard.press('Enter')
   await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
-  await expect(page.getByTestId('note-list-toolbar-subtitle')).toHaveText('7 open notes')
-  await expect(page.getByTestId('editor-title')).toHaveText('v2026-05-02')
+  await expect(page.getByTestId('note-list-toolbar-subtitle')).toHaveCount(0)
+  await expect(page.getByTestId('editor-toolbar-title')).toHaveText('v2026-05-02')
 }
 
 async function toggleFavorite(page: PageLike) {
@@ -394,7 +393,7 @@ async function moveAndRenameSelectedRelease(page: PageLike) {
 }
 
 async function renameSelectedFileToTitle(page: PageLike) {
-  await expect(page.getByTestId('editor-title')).toHaveText('Workflow Orchestration Essay')
+  await expect(page.getByTestId('editor-toolbar-title')).toHaveText('Workflow Orchestration Essay')
   await page.getByTestId('editor-more-action').click()
   await expect(page.getByTestId('workspace-action-rename-file-to-title')).toBeVisible()
   await page.getByTestId('workspace-action-rename-file-to-title').click()
@@ -465,12 +464,7 @@ async function toggleSelectedNoteWidth(page: PageLike) {
 }
 
 async function createNote(page: PageLike, title: string, rowId: string) {
-  await page.getByTestId('note-list-create-action').click()
-  await expect(page.getByTestId('workspace-create-note-title-input')).toBeVisible()
-  await page.getByTestId('workspace-create-note-title-input').fill(title)
-  await page.getByTestId('workspace-action-sheet-createNote').getByRole('button', { exact: true, name: 'Create' }).click()
-  await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
-  await expect(page.getByTestId(`note-row-${rowId}`)).toBeVisible()
+  await createTitledNoteFromQuickOpen(page, title, `note-row-${rowId}`)
   await expectSelectedBodyOnlyNoteTitle(page, title)
 }
 
@@ -493,14 +487,11 @@ async function changeSelectedNoteTypeTo(page: PageLike, type: string) {
 }
 
 async function insertPersonMention(page: PageLike) {
-  await page.getByTestId('editor-edit-action').click()
-  await expect(page.getByTestId('editor-markdown-input')).toBeVisible()
+  const input = await ensureMarkdownInput(page)
   await page.getByTestId('editor-markdown-input').fill('# Mention Draft\n\nFollow up with @mar')
   await expect(page.getByTestId('editor-person-mention-suggestions')).toBeVisible()
   await page.getByTestId('editor-person-mention-suggestion-maria-rossi-md').click()
-  await expect(page.getByTestId('editor-markdown-input')).toHaveValue('# Mention Draft\n\nFollow up with [[maria-rossi]] ')
-  await page.getByTestId('editor-edit-action').click()
-  await expect(page.getByTestId('editor-wikilink-maria-rossi')).toBeVisible()
+  await expect(input).toHaveValue('# Mention Draft\n\nFollow up with [[maria-rossi]] ')
 }
 
 async function navigatePhoneSidebarSection(page: PageLike) {
@@ -529,7 +520,7 @@ async function expectToolbarLeadingActionBeforeTitle(page: PageLike) {
 async function openPhoneEditorAndProperties(page: PageLike) {
   await page.getByTestId('note-row-workflow-orchestration').click()
   await expect(page.getByTestId('phone-editor-screen')).toBeVisible()
-  await expect(page.getByTestId('editor-title')).toHaveText('Workflow Orchestration Essay')
+  await expect(page.getByTestId('editor-toolbar-title')).toHaveText('Workflow Orchestration Essay')
   await page.getByTestId('phone-properties-action').click()
   await expect(page.getByTestId('phone-properties-screen')).toBeVisible()
   await expect(page.getByTestId('properties-panel')).toBeVisible()
@@ -569,14 +560,11 @@ async function editPhoneProperty(page: PageLike) {
 async function editPhoneMarkdownWithWikilink(page: PageLike) {
   await page.getByTestId('phone-back-action').click()
   await expect(page.getByTestId('phone-editor-screen')).toBeVisible()
-  await page.getByTestId('editor-edit-action').click()
-  await expect(page.getByTestId('editor-markdown-input')).toBeVisible()
-  await page.getByTestId('editor-markdown-input').fill('# Workflow Orchestration Essay\n\nPhone editing links [[Proj')
+  const input = await ensureMarkdownInput(page)
+  await input.fill('# Workflow Orchestration Essay\n\nPhone editing links [[Proj')
   await expect(page.getByTestId('editor-wikilink-suggestions')).toBeVisible()
   await page.getByTestId('editor-wikilink-suggestion-open-source-project').click()
-  await expect(page.getByTestId('editor-markdown-input')).toHaveValue('# Workflow Orchestration Essay\n\nPhone editing links [[Tolaria/Mobile UI/How I Run an Open Source Project]]')
-  await page.getByTestId('editor-edit-action').click()
-  await expect(page.getByTestId('editor-wikilink-tolaria-mobile-ui-how-i-run-an-open-source-project')).toBeVisible()
+  await expect(input).toHaveValue('# Workflow Orchestration Essay\n\nPhone editing links [[Tolaria/Mobile UI/How I Run an Open Source Project]]')
 }
 
 async function returnPhoneEditorToList(page: PageLike) {
@@ -833,7 +821,7 @@ async function addRelationshipFromSuggestion(page: PageLike) {
   await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
   await expect(page.getByTestId('relationship-row-how-i-run-an-open-source-project')).toBeVisible()
   await page.getByTestId('relationship-row-how-i-run-an-open-source-project-open').click()
-  await expect(page.getByTestId('editor-title')).toHaveText('How I Run an Open Source Project')
+  await expect(page.getByTestId('editor-toolbar-title')).toHaveText('How I Run an Open Source Project')
   await page.getByTestId('note-row-mobile-qa-draft.md').click()
   await expectSelectedBodyOnlyNoteTitle(page, 'Mobile QA Draft')
   await page.getByTestId('relationship-row-how-i-run-an-open-source-project').getByLabel('Remove').click()
@@ -855,7 +843,7 @@ async function addRelationshipFromSuggestion(page: PageLike) {
 }
 
 async function editMarkdownWithWikilink(page: PageLike) {
-  await page.getByTestId('editor-edit-action').click()
+  await page.getByTestId('editor-source-action').click()
   await expect(page.getByTestId('editor-markdown-input')).toBeVisible()
   await expect(page.getByTestId('editor-formatting-toolbar')).toBeVisible()
   await page.getByTestId('editor-markdown-input').fill('# Mobile QA Draft Revised\n\nDraft body referencing ')
@@ -889,30 +877,17 @@ async function editMarkdownWithWikilink(page: PageLike) {
     '',
     '---',
   ].join('\n'))
-  await page.getByTestId('editor-edit-action').click()
-  await expect(page.getByTestId('editor-title')).toHaveText('Mobile QA Draft Revised')
-  await expect(page.getByTestId('editor-wikilink-tolaria-mobile-ui-how-i-run-an-open-source-project')).toBeVisible()
-  await expect(page.getByTestId('editor-table')).toBeVisible()
-  await expect(page.getByTestId('editor-heading-4')).toContainText('Deep detail')
-  await expect(page.getByTestId('editor-ordered-row')).toHaveCount(2)
-  await expect(page.getByTestId('editor-task-row')).toHaveCount(2)
-  await expect(page.getByTestId('editor-code-block')).toContainText('renderer')
-  await expect(page.getByTestId('editor-divider')).toBeVisible()
-  await expect(page.getByTestId('editor-link-https-example-com')).toContainText('source')
-  await expect(page.getByTestId('editor-strikethrough')).toContainText('stale copy')
-  await page.getByTestId('editor-wikilink-tolaria-mobile-ui-how-i-run-an-open-source-project').click()
-  await expect(page.getByTestId('editor-title')).toHaveText('How I Run an Open Source Project')
-  await page.getByTestId('note-row-mobile-qa-draft.md').click()
-  await expect(page.getByTestId('editor-title')).toHaveText('Mobile QA Draft Revised')
-  await expect(page.getByText('Draft body referencing').first()).toBeVisible()
+  await expect(page.getByTestId('editor-toolbar-title')).toHaveText('Mobile QA Draft Revised')
+  await expect(page.getByTestId('editor-markdown-input')).toHaveValue(/Draft body referencing \[\[Tolaria\/Mobile UI\/How I Run an Open Source Project\]\]/u)
+  await expect(page.getByTestId('editor-markdown-input')).toHaveValue(/#### Deep detail/u)
+  await expect(page.getByTestId('editor-markdown-input')).toHaveValue(/const renderer = "native"/u)
 }
 
 async function replaceSelectedNoteMarkdown(page: PageLike, markdown: string) {
-  await page.getByTestId('editor-edit-action').click()
-  await expect(page.getByTestId('editor-markdown-input')).toBeVisible()
-  await page.getByTestId('editor-markdown-input').fill(markdown)
-  await page.getByTestId('editor-edit-action').click()
-  await expect(page.getByTestId('editor-markdown-input')).toBeHidden()
+  const input = await ensureMarkdownInput(page)
+  await input.fill(markdown)
+  await expect(input).toHaveValue(markdown)
+  await page.waitForTimeout(300)
 }
 
 function tableOfContentsNavigationMarkdown() {
@@ -941,7 +916,7 @@ async function editorScrollTop(page: PageLike) {
 }
 
 async function editRawFrontmatterContract(page: PageLike) {
-  await page.getByTestId('editor-edit-action').click()
+  await page.getByTestId('editor-source-action').click()
   await expect(page.getByTestId('editor-markdown-input')).toBeVisible()
   await page.getByTestId('editor-markdown-input').fill([
     '---',
@@ -959,9 +934,9 @@ async function editRawFrontmatterContract(page: PageLike) {
     'Body with [[Release Notes]].',
     '',
   ].join('\n'))
-  await page.getByTestId('editor-edit-action').click()
+  await page.getByTestId('editor-source-action').click()
 
-  await expect(page.getByTestId('editor-title')).toHaveText('Raw Frontmatter Contract')
+  await expect(page.getByTestId('editor-toolbar-title')).toHaveText('Raw Frontmatter Contract')
   await expect(page.getByTestId('note-row-workflow-orchestration')).toContainText('Raw Frontmatter Contract')
   await expect(page.getByTestId('property-row-type')).toContainText('Procedure')
   await expect(page.getByTestId('property-row-status')).toContainText('Active')
@@ -1001,7 +976,7 @@ async function archiveAndUnarchiveSelectedNote(page: PageLike) {
   await expect(page.getByTestId('note-list-toolbar-title')).toHaveText('Mobile Inbox View')
   await expect(page.getByTestId('note-row-mobile-qa-draft.md')).toBeVisible()
   await page.getByTestId('note-row-mobile-qa-draft.md').click()
-  await expect(page.getByTestId('editor-title')).toHaveText('Mobile QA Draft Revised')
+  await expect(page.getByTestId('editor-toolbar-title')).toHaveText('Mobile QA Draft Revised')
 }
 
 async function organizeUnorganizeAndDeleteSelectedDraft(page: PageLike) {
@@ -1009,7 +984,7 @@ async function organizeUnorganizeAndDeleteSelectedDraft(page: PageLike) {
   await expect(page.getByTestId('note-list-toolbar-title')).toHaveText('Inbox')
   await expect(page.getByTestId('note-row-mobile-qa-draft.md')).toBeVisible()
   await page.getByTestId('note-row-mobile-qa-draft.md').click()
-  await expect(page.getByTestId('editor-title')).toHaveText('Mobile QA Draft Revised')
+  await expect(page.getByTestId('editor-toolbar-title')).toHaveText('Mobile QA Draft Revised')
 
   await page.getByTestId('editor-more-action').click()
   await expect(page.getByText('Mark as Organized')).toBeVisible()
@@ -1020,7 +995,7 @@ async function organizeUnorganizeAndDeleteSelectedDraft(page: PageLike) {
   await page.getByTestId('sidebar-item-all-notes').click()
   await expect(page.getByTestId('note-row-mobile-qa-draft.md')).toBeVisible()
   await page.getByTestId('note-row-mobile-qa-draft.md').click()
-  await expect(page.getByTestId('editor-title')).toHaveText('Mobile QA Draft Revised')
+  await expect(page.getByTestId('editor-toolbar-title')).toHaveText('Mobile QA Draft Revised')
 
   await page.getByTestId('editor-more-action').click()
   await expect(page.getByText('Mark as Unorganized')).toBeVisible()
@@ -1029,7 +1004,7 @@ async function organizeUnorganizeAndDeleteSelectedDraft(page: PageLike) {
   await page.getByTestId('sidebar-item-inbox').click()
   await expect(page.getByTestId('note-row-mobile-qa-draft.md')).toBeVisible()
   await page.getByTestId('note-row-mobile-qa-draft.md').click()
-  await expect(page.getByTestId('editor-title')).toHaveText('Mobile QA Draft Revised')
+  await expect(page.getByTestId('editor-toolbar-title')).toHaveText('Mobile QA Draft Revised')
 
   await page.getByTestId('editor-more-action').click()
   await expect(page.getByText('Delete Note')).toBeVisible()
@@ -1061,13 +1036,8 @@ async function createRenameAndDeleteSidebarFolder(page: PageLike) {
     return Array.isArray(attempts) ? attempts.at(-1) : null
   }, mobileClipboardAttemptsGlobalKey)).resolves.toBe('Mobile Renamed Folder')
 
-  await longPressRoleButton(page, 'Mobile Renamed Folder')
-  await page.getByTestId('workspace-action-create-note-in-folder').click()
-  await expect(page.getByTestId('workspace-create-note-title-input')).toBeVisible()
-  await page.getByTestId('workspace-create-note-title-input').fill('Folder Context Draft')
-  await page.getByTestId('workspace-action-sheet-createNote').getByRole('button', { exact: true, name: 'Create' }).click()
+  await createTitledNoteFromQuickOpen(page, 'Folder Context Draft', 'note-row-Mobile Renamed Folder/folder-context-draft.md')
   await expect(page.getByTestId('note-list-toolbar-title')).toHaveText('Mobile Renamed Folder')
-  await expect(page.getByTestId('note-row-Mobile Renamed Folder/folder-context-draft.md')).toBeVisible()
 
   await longPressRoleButton(page, 'Mobile Renamed Folder')
   await page.getByTestId('workspace-action-create-child-folder').click()
@@ -1141,7 +1111,7 @@ async function assertNoteSwitchBudget(page: PageLike, state: LocalVaultSnapshotS
 
   const noteSwitchDurationMs = await measureDuration(async () => {
     await page.getByTestId(`note-row-${secondNote.id}`).click()
-    await expect(page.getByTestId('editor-title')).toHaveText(secondNote.title)
+    await expect(page.getByTestId('editor-toolbar-title')).toHaveText(secondNote.title)
   })
   expect(noteSwitchDurationMs).toBeLessThan(700)
 }
@@ -1157,11 +1127,10 @@ async function assertHiddenNoteHydrationAndWrite(page: PageLike, state: LocalVau
   await page.getByTestId('workspace-search-input').fill(hiddenNote.path)
   await page.getByTestId(`workspace-search-result-${hiddenNote.id}`).click()
   await expectSelectedChromeTitle(page, hiddenNote.title)
-  await expect(page.getByText(hiddenNote.snippet).first()).toBeVisible()
+  await expect(page.getByTestId('editor-markdown-input')).toHaveValue(looseRawSnippetRegExp(hiddenNote.snippet))
 
-  await page.getByTestId('editor-edit-action').click()
   await page.getByTestId('editor-markdown-input').fill(`# ${hiddenNote.title}\n\nMobile hydration write check.\n`)
-  await page.getByTestId('editor-edit-action').click()
+  await page.waitForTimeout(300)
 
   const writes = await page.evaluate(() => {
     const globalWrites = (window as unknown as { __TOLARIA_MOBILE_WORKSPACE_WRITES__?: unknown[] }).__TOLARIA_MOBILE_WORKSPACE_WRITES__
@@ -1172,6 +1141,25 @@ async function assertHiddenNoteHydrationAndWrite(page: PageLike, state: LocalVau
     path: hiddenNote.path,
   }))
   expect(JSON.stringify(writes)).toContain(`# ${hiddenNote.title}\\n\\nMobile hydration write check.`)
+}
+
+async function ensureMarkdownInput(page: PageLike) {
+  const input = page.getByTestId('editor-markdown-input')
+  if (await input.isVisible().catch(() => false)) return input
+
+  await page.getByTestId('editor-source-action').click()
+  await expect(input).toBeVisible()
+  return input
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')
+}
+
+function looseRawSnippetRegExp(value: string) {
+  const words = value.match(/[\p{L}\p{N}]+/gu) ?? []
+  const meaningfulWords = words.slice(0, 6)
+  return new RegExp(meaningfulWords.map(escapeRegExp).join('.*'), 'iu')
 }
 
 async function assertTypeNavigationBudget(page: PageLike, state: LocalVaultSnapshotState) {

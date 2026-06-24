@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { createTitledNoteFromQuickOpen } from './mobile-note-create-actions'
 import { workspaceScenarioForId } from '../src/fixtures/workspaceFixtures'
 import {
   HOST_WORKSPACE_NOTE_CONTENTS_GLOBAL_KEY,
@@ -54,10 +55,7 @@ test.describe('phone property action parity', () => {
 })
 
 async function createPhonePropertyNote(page: Page) {
-  await page.getByTestId('note-list-create-action').click()
-  await page.getByTestId('workspace-create-note-title-input').fill('Phone Property Matrix')
-  await page.getByTestId('workspace-action-sheet-createNote').getByRole('button', { exact: true, name: 'Create' }).click()
-  await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
+  await createTitledNoteFromQuickOpen(page, 'Phone Property Matrix')
   await page.getByTestId('note-row-phone-property-matrix.md').click()
   await expect(page.getByTestId('phone-editor-screen')).toBeVisible()
   await expect(page.getByTestId('editor-toolbar-title')).toHaveText('Phone Property Matrix')

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { createTitledNoteFromQuickOpen, noteRowSlug } from './mobile-note-create-actions'
 
 test.describe('phone whiteboard action parity', () => {
   test('edits desktop-compatible tldraw fences from phone More actions', async ({ page }, testInfo) => {
@@ -13,17 +14,14 @@ test.describe('phone whiteboard action parity', () => {
 })
 
 async function createPhoneNote(page: Page, title: string) {
-  await page.getByTestId('note-list-create-action').click()
-  await page.getByTestId('workspace-create-note-title-input').fill(title)
-  await page.getByTestId('workspace-action-sheet-createNote').getByRole('button', { exact: true, name: 'Create' }).click()
-  await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
+  await createTitledNoteFromQuickOpen(page, title)
   await page.getByTestId(`note-row-${noteRowSlug(title)}.md`).click()
   await expect(page.getByTestId('phone-editor-screen')).toBeVisible()
   await expect(page.getByTestId('editor-toolbar-title')).toHaveText(title)
 }
 
 async function writeWhiteboardFence(page: Page) {
-  await page.getByTestId('editor-edit-action').click()
+  await page.getByTestId('editor-source-action').click()
   await expect(page.getByTestId('editor-markdown-input')).toBeVisible()
   await page.getByTestId('editor-markdown-input').fill([
     '# Phone Whiteboard Source',
@@ -32,7 +30,7 @@ async function writeWhiteboardFence(page: Page) {
     '{}',
     '```',
   ].join('\n'))
-  await page.getByTestId('editor-edit-action').click()
+  await page.getByTestId('editor-source-action').click()
   await expect(page.getByTestId('editor-toolbar-title')).toHaveText('Phone Whiteboard Source')
 }
 
@@ -66,9 +64,6 @@ async function assertWhiteboardFenceSource(page: Page) {
   await expect(page.getByTestId('editor-markdown-input')).toHaveValue(/"type": "text"/u)
 }
 
-function noteRowSlug(title: string) {
-  return title.trim().toLowerCase().replace(/\s+/gu, '-')
-}
 
 function desktopStoreSnapshot({ name }: { name: string }) {
   return {

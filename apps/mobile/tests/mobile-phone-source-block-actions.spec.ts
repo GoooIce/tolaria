@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { createTitledNoteFromQuickOpen, noteRowSlug } from './mobile-note-create-actions'
 
 test.describe('phone source block action parity', () => {
   test('edits desktop-compatible source blocks from phone More actions', async ({ page }, testInfo) => {
@@ -15,17 +16,14 @@ test.describe('phone source block action parity', () => {
 })
 
 async function createPhoneNote(page: Page, title: string) {
-  await page.getByTestId('note-list-create-action').click()
-  await page.getByTestId('workspace-create-note-title-input').fill(title)
-  await page.getByTestId('workspace-action-sheet-createNote').getByRole('button', { exact: true, name: 'Create' }).click()
-  await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
+  await createTitledNoteFromQuickOpen(page, title)
   await page.getByTestId(`note-row-${noteRowSlug(title)}.md`).click()
   await expect(page.getByTestId('phone-editor-screen')).toBeVisible()
   await expect(page.getByTestId('editor-toolbar-title')).toHaveText(title)
 }
 
 async function writeSourceBlocks(page: Page) {
-  await page.getByTestId('editor-edit-action').click()
+  await page.getByTestId('editor-source-action').click()
   await expect(page.getByTestId('editor-markdown-input')).toBeVisible()
   await page.getByTestId('editor-markdown-input').fill([
     '# Phone Source Blocks',
@@ -43,8 +41,8 @@ async function writeSourceBlocks(page: Page) {
     '  A --> B',
     '```',
   ].join('\n'))
-  await page.getByTestId('editor-edit-action').click()
-  await expect(page.getByTestId('editor-title')).toHaveText('Phone Source Blocks')
+  await page.getByTestId('editor-source-action').click()
+  await expect(page.getByTestId('editor-toolbar-title')).toHaveText('Phone Source Blocks')
 }
 
 async function editCodeBlock(page: Page) {
@@ -90,8 +88,4 @@ async function assertSourceBlocks(page: Page) {
   await expect(page.getByTestId('editor-markdown-input')).toHaveValue(/```ts title="Typed phone code"\nconst phoneAnswer: number = 42\n```/u)
   await expect(page.getByTestId('editor-markdown-input')).toHaveValue(/\$\$\nE = mc\^2\n\$\$/u)
   await expect(page.getByTestId('editor-markdown-input')).toHaveValue(/```mermaid title="Updated phone graph"\nflowchart TD\n {2}Start --> Done\n```/u)
-}
-
-function noteRowSlug(title: string) {
-  return title.trim().toLowerCase().replace(/\s+/gu, '-')
 }

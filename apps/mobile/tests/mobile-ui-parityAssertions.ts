@@ -178,6 +178,12 @@ async function assertPropertiesParity(page: Page) {
 }
 
 async function assertEditorParity(page: Page) {
+  const sourceInput = page.getByTestId('editor-markdown-input')
+  if (await sourceInput.isVisible().catch(() => false)) {
+    await assertSourceEditorParity(page, sourceInput)
+    return
+  }
+
   const titleBlock = page.getByTestId('editor-title-block')
   const title = page.getByTestId('editor-title')
   const paragraph = page.getByTestId('editor-paragraph').first()
@@ -203,6 +209,18 @@ async function assertEditorParity(page: Page) {
   await expectCssValue({ locator: quote, property: 'border-left-width', expected: '3px' })
   await expectCssValue({ locator: quote, property: 'padding-left', expected: `${desktopEditorParity.quotePaddingLeft}px` })
   await expectCssValue({ locator: quoteText, property: 'font-style', expected: 'italic' })
+}
+
+async function assertSourceEditorParity(page: Page, sourceInput: Locator) {
+  await expect(page.getByTestId('editor-markdown-form')).toBeVisible()
+  await expect(page.getByTestId('editor-formatting-toolbar')).toBeVisible()
+  await expect(sourceInput).toBeVisible()
+  await expect(sourceInput).toHaveValue(/# Workflow Orchestration Essay/u)
+
+  await expectCssValue({ locator: sourceInput, property: 'font-size', expected: `${desktopEditorParity.bodyFontSize}px` })
+  await expectCssValue({ locator: sourceInput, property: 'line-height', expected: `${desktopEditorParity.bodyLineHeight}px` })
+  await expectCssValue({ locator: sourceInput, property: 'padding-left', expected: '12px' })
+  await expectCssValue({ locator: sourceInput, property: 'padding-top', expected: '12px' })
 }
 
 async function assertStatusBarParity(page: Page) {

@@ -138,7 +138,7 @@ test.describe('mobile UI lab screenshots', () => {
   test('captures a selected-note state on tablet layouts', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name === 'phone-portrait', 'Phone layout captures the scrollable tablet preview only.')
 
-    await page.goto('/')
+    await page.goto('/?editorMode=read')
 
     const openSourceProjectNote = page.getByText('How I Run an Open Source Project').first()
 
@@ -197,7 +197,7 @@ test.describe('mobile UI lab screenshots', () => {
   test('matches the tablet landscape pixel baseline', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'tablet-landscape', 'Pixel baseline is scoped to the primary iPad reference layout.')
 
-    await page.goto('/')
+    await page.goto('/?editorMode=read')
 
     await expect(page).toHaveScreenshot('tablet-landscape-parity-baseline.png', {
       animations: 'disabled',
@@ -226,7 +226,7 @@ test.describe('mobile UI lab screenshots', () => {
     await swipeHorizontally(page, { x: 480, y: 220 }, { x: 330, y: 220 })
     await expect(noteListTitle).toBeHidden()
 
-    await swipeHorizontally(page, { x: 270, y: 220 }, { x: 410, y: 220 })
+    await swipeHorizontally(page, { x: 8, y: 220 }, { x: 160, y: 220 })
     await expect(noteListTitle).toBeVisible()
 
     await expect(propertiesTitle).toBeVisible()

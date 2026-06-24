@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { createTitledNoteFromQuickOpen } from './mobile-note-create-actions'
 import { longPressTestId } from './mobile-phone-test-gestures'
 
 test.describe('phone workspace editing parity', () => {
@@ -97,14 +98,12 @@ async function customizePhoneTypeSectionAndCreateTemplateNote(page: Page) {
   await expect(page.getByTestId('phone-note-list-screen')).toBeVisible()
   await expect(page.getByTestId('note-list-toolbar-title')).toHaveText('Phone Runbooks')
   await expect(page.getByTestId('note-row-open-source-project').getByText('Project Board')).toBeVisible()
-  await page.getByTestId('note-list-create-action').click()
-  await page.getByTestId('workspace-create-note-title-input').fill('Phone Runbook From Type')
-  await page.getByTestId('workspace-action-sheet-createNote').getByRole('button', { exact: true, name: 'Create' }).click()
+  await createTitledNoteFromQuickOpen(page, 'Phone Runbook From Type')
   await expect(page.getByTestId('note-row-phone-runbook-from-type.md')).toBeVisible()
   await page.getByTestId('note-row-phone-runbook-from-type.md').click()
   await expect(page.getByTestId('phone-editor-screen')).toBeVisible()
-  await expect(page.getByTestId('editor-heading-2')).toContainText('Phone Runbook')
-  await expect(page.getByTestId('editor-paragraph')).toContainText('Phone type template body.')
+  await expect(page.getByTestId('editor-markdown-input')).toHaveValue(/## Phone Runbook/u)
+  await expect(page.getByTestId('editor-markdown-input')).toHaveValue(/Phone type template body\./u)
   await page.getByTestId('phone-properties-action').click()
   await expect(page.getByTestId('property-row-priority')).toContainText('High')
   await expect(page.getByTestId('relationship-row-workflow-orchestration-essay')).toBeVisible()
@@ -144,7 +143,7 @@ async function addSuggestedPhoneRelationship(page: Page) {
 
   await page.getByTestId('relationship-row-how-i-run-an-open-source-project-open').click()
   await expect(page.getByTestId('phone-editor-screen')).toBeVisible()
-  await expect(page.getByTestId('editor-title')).toHaveText('How I Run an Open Source Project')
+  await expect(page.getByTestId('editor-toolbar-title')).toHaveText('How I Run an Open Source Project')
 
   await page.getByTestId('phone-back-action').click()
   await expect(page.getByTestId('phone-note-list-screen')).toBeVisible()
@@ -159,10 +158,7 @@ async function addSuggestedPhoneRelationship(page: Page) {
 
 async function createPhoneSourceNoteProperties(page: Page, title: string) {
   await page.goto('/')
-  await page.getByTestId('note-list-create-action').click()
-  await page.getByTestId('workspace-create-note-title-input').fill(title)
-  await page.getByTestId('workspace-action-sheet-createNote').getByRole('button', { exact: true, name: 'Create' }).click()
-  await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
+  await createTitledNoteFromQuickOpen(page, title)
   await page.getByTestId(`note-row-${noteRowSlug(title)}.md`).click()
   await expect(page.getByTestId('phone-editor-screen')).toBeVisible()
   await expectBodyOnlyPhoneNote(page, title)

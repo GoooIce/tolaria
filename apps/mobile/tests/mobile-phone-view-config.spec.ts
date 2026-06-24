@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { longPressTestId } from './mobile-phone-test-gestures'
+import { longPressMouseTestId, longPressTestId } from './mobile-phone-test-gestures'
 
 test.describe('phone saved view configuration parity', () => {
   test('creates, edits, and deletes a filtered phone saved view', async ({ page }, testInfo) => {
@@ -94,7 +94,7 @@ test.describe('phone saved view configuration parity', () => {
     await page.getByTestId('sidebar-item-all-notes').click()
     await expect(page.getByTestId('note-list-toolbar-title')).toHaveText('All Notes')
     await openPhoneSidebar(page)
-    await longPressTestId(page, 'sidebar-item-all-notes')
+    await longPressMouseTestId(page, 'sidebar-item-all-notes')
     await expect(page.getByTestId('workspace-action-sheet-editPrimaryListProperties')).toBeVisible()
     await page.getByTestId('workspace-primary-property-search-input').fill('Pri')
     await page.getByTestId('workspace-primary-property-option-priority').click()

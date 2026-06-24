@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { createTitledNoteFromQuickOpen } from './mobile-note-create-actions'
 
 test.describe('mobile table action parity', () => {
   test('edits desktop-compatible markdown tables from tablet More actions', async ({ page }, testInfo) => {
@@ -13,17 +14,12 @@ test.describe('mobile table action parity', () => {
 })
 
 async function createTabletNote(page: Page, title: string) {
-  await page.getByTestId('note-list-create-action').click()
-  await expect(page.getByTestId('workspace-create-note-title-input')).toBeVisible()
-  await page.getByTestId('workspace-create-note-title-input').fill(title)
-  await page.getByTestId('workspace-action-sheet-createNote').getByRole('button', { exact: true, name: 'Create' }).click()
-  await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
-  await expect(page.getByTestId(`note-row-${noteRowSlug(title)}.md`)).toBeVisible()
+  await createTitledNoteFromQuickOpen(page, title)
   await expect(page.getByTestId('editor-toolbar-title')).toHaveText(title)
 }
 
 async function writeMarkdownTable(page: Page) {
-  await page.getByTestId('editor-edit-action').click()
+  await page.getByTestId('editor-source-action').click()
   await expect(page.getByTestId('editor-markdown-input')).toBeVisible()
   await page.getByTestId('editor-markdown-input').fill([
     '# Table Source',
@@ -32,8 +28,8 @@ async function writeMarkdownTable(page: Page) {
     '| :--- | ---: |',
     '| Editor | Mobile |',
   ].join('\n'))
-  await page.getByTestId('editor-edit-action').click()
-  await expect(page.getByTestId('editor-title')).toHaveText('Table Source')
+  await page.getByTestId('editor-source-action').click()
+  await expect(page.getByTestId('editor-toolbar-title')).toHaveText('Table Source')
 }
 
 async function editMarkdownTable(page: Page) {
@@ -63,8 +59,4 @@ async function assertMarkdownTableSource(page: Page) {
   await expect(page.getByTestId('editor-markdown-input')).toHaveValue(/\| :--- \| :---: \| :--- \|/u)
   await expect(page.getByTestId('editor-markdown-input')).toHaveValue(/\| Editor \| Native \| Covered \|/u)
   await expect(page.getByTestId('editor-markdown-input')).toHaveValue(/\| Inspector \| Properties \| Ready \|/u)
-}
-
-function noteRowSlug(title: string) {
-  return title.trim().toLowerCase().replace(/\s+/gu, '-')
 }

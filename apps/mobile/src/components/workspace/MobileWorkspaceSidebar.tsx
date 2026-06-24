@@ -435,7 +435,10 @@ function SidebarItem(props: SidebarItemProps) {
       ]}
       testID={`sidebar-item-${slug}`}
     >
-      <View {...probeProps(layoutProbe, `${metricId}.content`)} style={styles.itemContent}>
+      <View
+        {...probeProps(layoutProbe, `${metricId}.content`)}
+        style={[styles.itemContent, sidebarItemContentHeight(Boolean(count))]}
+      >
         {icon}
         <Text
           {...probeProps(layoutProbe, `${metricId}.label`)}
@@ -672,4 +675,9 @@ function sidebarItemPadding(hasCount: boolean) {
     paddingRight: padding.right,
     paddingTop: padding.top,
   }
+}
+
+function sidebarItemContentHeight(hasCount: boolean) {
+  const minHeight = hasCount ? desktopSidebarParity.itemContentHeight.withCount : desktopSidebarParity.itemContentHeight.regular
+  return { height: minHeight, minHeight }
 }

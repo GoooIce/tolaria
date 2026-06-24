@@ -41,7 +41,7 @@ import {
 
 export function TabletWorkspace({
   forceDesktopPanels = false,
-  initialEditorEditing = false,
+  initialEditorEditing = true,
   initialEditorEditingMode = 'wysiwyg',
   commandPaletteProbe = false,
   layoutProbe = false,

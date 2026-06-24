@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { longPressTestId } from './mobile-phone-test-gestures'
+import { longPressMouseTestId } from './mobile-phone-test-gestures'
 
 test.describe('phone favorite action parity', () => {
   test('reorders favorite rows from the phone sidebar', async ({ page }, testInfo) => {
@@ -10,7 +10,7 @@ test.describe('phone favorite action parity', () => {
     await openPhoneSidebar(page)
     await expectFavoriteBefore(page, 'open-source-project', 'workflow-orchestration')
 
-    await longPressTestId(page, 'sidebar-item-favorite-open-source-project')
+    await longPressMouseTestId(page, 'sidebar-item-favorite-open-source-project')
     await expect(page.getByTestId('workspace-action-sheet-editFavorite')).toBeVisible()
     await page.getByTestId('workspace-move-favorite-down-action').click()
 

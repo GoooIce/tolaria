@@ -6,7 +6,7 @@ test.describe('mobile note neighborhood actions', () => {
 
     await page.goto('/?scenario=markdown-heavy')
     await page.getByTestId('note-row-workflow-orchestration').click()
-    await expect(page.getByTestId('editor-title')).toHaveText('Workflow Orchestration Essay')
+    await expect(page.getByTestId('editor-toolbar-title')).toHaveText('Workflow Orchestration Essay')
 
     await page.getByTestId('editor-more-action').click()
     await expect(page.getByText("Open note's neighborhood")).toBeVisible()

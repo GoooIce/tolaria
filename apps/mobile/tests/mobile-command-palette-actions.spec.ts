@@ -7,6 +7,7 @@ import {
   HOST_WORKSPACE_WRITES_GLOBAL_KEY,
 } from '../src/workspace/readOnlyWorkspaceRepository'
 import type { MobileWorkspaceWrite } from '../src/workspace/mobileWorkspaceEditing'
+import { createTitledNoteFromQuickOpen, noteRowSlug } from './mobile-note-create-actions'
 
 const mobileClipboardAttemptsGlobalKey = '__TOLARIA_MOBILE_CLIPBOARD_ATTEMPTS__'
 const mobileFileRevealAttemptsGlobalKey = '__TOLARIA_MOBILE_FILE_REVEAL_ATTEMPTS__'
@@ -104,11 +105,7 @@ test.describe('mobile command palette actions', () => {
     const rowTestId = `note-row-${noteRowSlug(title)}.md`
 
     await page.goto('/')
-    await page.getByTestId('note-list-create-action').click()
-    await page.getByTestId('workspace-create-note-title-input').fill(title)
-    await page.getByTestId('workspace-action-sheet-createNote').getByRole('button', { exact: true, name: 'Create' }).click()
-    await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
-    await expect(page.getByTestId(rowTestId)).toBeVisible()
+    await createTitledNoteFromQuickOpen(page, title, rowTestId)
 
     await openCommandPalette(page)
     await runCommand(page, 'reload vault', 'vault-reload')
@@ -157,11 +154,7 @@ test.describe('mobile command palette actions', () => {
     await page.getByTestId('mobile-command-palette-command-set-default-note-width-normal').click()
     await expect(page.getByTestId('mobile-command-palette')).toBeHidden()
 
-    await page.getByTestId('note-list-create-action').click()
-    await page.getByTestId('workspace-create-note-title-input').fill(title)
-    await page.getByTestId('workspace-action-sheet-createNote').getByRole('button', { exact: true, name: 'Create' }).click()
-    await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
-    await expect(page.getByTestId(rowTestId)).toBeVisible()
+    await createTitledNoteFromQuickOpen(page, title, rowTestId)
 
     await openPhoneCommandPalette(page)
     await runCommand(page, 'reload vault', 'vault-reload')
@@ -252,10 +245,6 @@ async function assertSourceEditorDraftSavesFromCommandPalette(page: Page, option
       kind: 'saveNote',
     }),
   ])
-}
-
-function noteRowSlug(title: string) {
-  return title.trim().toLowerCase().replace(/\s+/gu, '-')
 }
 
 async function latestClipboardAttempt(page: Page) {

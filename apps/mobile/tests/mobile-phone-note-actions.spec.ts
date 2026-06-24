@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { createTitledNoteFromQuickOpen } from './mobile-note-create-actions'
 
 test.describe('phone note action parity', () => {
   test('creates a note from an unmatched phone quick open query', async ({ page }, testInfo) => {
@@ -32,10 +33,7 @@ test.describe('phone note action parity', () => {
 
 async function createPhoneNote(page: Page, title: string) {
   await page.goto('/')
-  await page.getByTestId('note-list-create-action').click()
-  await page.getByTestId('workspace-create-note-title-input').fill(title)
-  await page.getByTestId('workspace-action-sheet-createNote').getByRole('button', { exact: true, name: 'Create' }).click()
-  await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
+  await createTitledNoteFromQuickOpen(page, title)
   await page.getByTestId(`note-row-${noteRowSlug(title)}.md`).click()
   await expect(page.getByTestId('phone-editor-screen')).toBeVisible()
   await expectBodyOnlyPhoneNote(page, title)
@@ -169,7 +167,7 @@ async function archiveOrganizeAndDeletePhoneNote(page: Page) {
   await page.getByTestId('workspace-action-delete-note').click()
   await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
   await expect(page.getByTestId('phone-editor-screen')).toBeVisible()
-  await expect(page.getByTestId('editor-title')).toHaveText('Workflow Orchestration Essay')
+  await expect(page.getByTestId('editor-toolbar-title')).toHaveText('Workflow Orchestration Essay')
   await page.getByTestId('phone-back-action').click()
   await expect(page.getByTestId('phone-note-list-screen')).toBeVisible()
   await expect(phoneActionRow(page)).toBeHidden()

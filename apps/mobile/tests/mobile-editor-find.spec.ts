@@ -29,8 +29,8 @@ async function replaceLowerPriorityWithQuiet(page: Page) {
   await expect(page.getByTestId('workspace-find-count')).toHaveText('No matches')
   await page.getByTestId('workspace-action-sheet-toolbar').getByRole('button', { name: 'Cancel' }).click()
   await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
-  await expect(page.getByText('dates, and quiet chrome.')).toBeVisible()
-  await expect(page.getByText('dates, and lower-priority chrome.')).toBeHidden()
+  await expect(page.getByTestId('editor-markdown-input')).toHaveValue(/dates, and quiet chrome\./u)
+  await expect(page.getByTestId('editor-markdown-input')).not.toHaveValue(/dates, and lower-priority chrome\./u)
   await undoAndRedoLastEditorChange(page)
 }
 
@@ -38,14 +38,14 @@ async function undoAndRedoLastEditorChange(page: Page) {
   await openMoreActions(page)
   await page.getByTestId('workspace-action-undo-edit').click()
   await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
-  await expect(page.getByText('dates, and lower-priority chrome.')).toBeVisible()
-  await expect(page.getByText('dates, and quiet chrome.')).toBeHidden()
+  await expect(page.getByTestId('editor-markdown-input')).toHaveValue(/dates, and lower-priority chrome\./u)
+  await expect(page.getByTestId('editor-markdown-input')).not.toHaveValue(/dates, and quiet chrome\./u)
 
   await openMoreActions(page)
   await page.getByTestId('workspace-action-redo-edit').click()
   await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
-  await expect(page.getByText('dates, and quiet chrome.')).toBeVisible()
-  await expect(page.getByText('dates, and lower-priority chrome.')).toBeHidden()
+  await expect(page.getByTestId('editor-markdown-input')).toHaveValue(/dates, and quiet chrome\./u)
+  await expect(page.getByTestId('editor-markdown-input')).not.toHaveValue(/dates, and lower-priority chrome\./u)
 }
 
 async function openMoreActions(page: Page) {

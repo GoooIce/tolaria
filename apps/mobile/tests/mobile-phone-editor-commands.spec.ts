@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { MOBILE_ATTACHMENT_IMPORTS_GLOBAL_KEY } from '../src/workspace/mobileAttachmentImport'
+import { createTitledNoteFromQuickOpen } from './mobile-note-create-actions'
 
 test.describe('phone editor command parity', () => {
   test('exercises phone source editor autocomplete and formatting commands', async ({ page }, testInfo) => {
@@ -40,16 +41,13 @@ async function assertPhoneSourceFrontmatterWarning(page: Page) {
 
 async function createPhoneCommandDraft(page: Page) {
   await createPhoneNote(page, 'Phone Editor Commands')
-  await page.getByTestId('editor-edit-action').click()
+  await page.getByTestId('editor-source-action').click()
   await expect(page.getByTestId('editor-markdown-input')).toBeVisible()
   await expect(page.getByTestId('editor-formatting-toolbar')).toBeVisible()
 }
 
 async function createPhoneNote(page: Page, title: string) {
-  await page.getByTestId('note-list-create-action').click()
-  await page.getByTestId('workspace-create-note-title-input').fill(title)
-  await page.getByTestId('workspace-action-sheet-createNote').getByRole('button', { exact: true, name: 'Create' }).click()
-  await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
+  await createTitledNoteFromQuickOpen(page, title)
   await page.getByTestId(`note-row-${noteRowSlug(title)}.md`).click()
   await expect(page.getByTestId('phone-editor-screen')).toBeVisible()
   await expectBodyOnlyPhoneNote(page, title)
@@ -148,7 +146,8 @@ async function applyPhoneFormattingCommands(page: Page) {
 }
 
 async function assertRenderedPhoneMarkdown(page: Page) {
-  await page.getByTestId('editor-markdown-input').fill([
+  const input = page.getByTestId('editor-markdown-input')
+  await input.fill([
     '# Phone Editor Commands',
     '',
     'Follow up with [[phone-person-target]] and [[Tolaria/Mobile UI/How I Run an Open Source Project]].',
@@ -161,13 +160,13 @@ async function assertRenderedPhoneMarkdown(page: Page) {
     '| --- | --- |',
     '| Phone | Parity |',
   ].join('\n'))
-  await page.getByTestId('editor-edit-action').click()
-  await expect(page.getByTestId('editor-title')).toHaveText('Phone Editor Commands')
-  await expect(page.getByTestId('editor-wikilink-phone-person-target')).toBeVisible()
-  await expect(page.getByTestId('editor-wikilink-tolaria-mobile-ui-how-i-run-an-open-source-project')).toBeVisible()
-  await expect(page.getByTestId('editor-heading-2')).toContainText('Section title')
-  await expect(page.getByTestId('editor-task-row')).toBeVisible()
-  await expect(page.getByTestId('editor-table')).toBeVisible()
+  await expect(page.getByTestId('editor-toolbar-title')).toHaveText('Phone Editor Commands')
+  await expect(input).toHaveValue(/\[\[phone-person-target\]\]/u)
+  await expect(input).toHaveValue(/\[\[Tolaria\/Mobile UI\/How I Run an Open Source Project\]\]/u)
+  await expect(input).toHaveValue(/## Section title/u)
+  await expect(input).toHaveValue(/- \[ \] Follow up/u)
+  await expect(input).toHaveValue(/\| Phone \| Parity \|/u)
+  await page.waitForTimeout(300)
 }
 
 async function openPhoneTableOfContents(page: Page) {

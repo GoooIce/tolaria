@@ -244,7 +244,7 @@ function SourceEditorInput({
       <Input
         multiline
         scrollEnabled
-        className="border-0 bg-transparent"
+        className="border-0 bg-transparent py-3 text-[15px]"
         underlineColorAndroid="transparent"
         placeholderTextColor={mobileColors.textFaint}
         selectionColor={mobileColors.primary}

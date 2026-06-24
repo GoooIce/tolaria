@@ -143,6 +143,7 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
     blocks,
     bullets,
     compact,
+    initialEditing = true,
     initialEditingMode = 'wysiwyg',
     layoutProbe: layoutProbeEnabled = false,
     leading,
@@ -189,7 +190,7 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
 
   const fileMode = editorFileMode(note)
   const plainText = fileMode === 'text'
-  const effectiveEditing = fileMode !== 'binary'
+  const effectiveEditing = fileMode !== 'binary' && initialEditing
   const effectiveEditingMode = plainText ? 'source' : editingMode
   const contentProps: EditorContentProps = {
     blocks,

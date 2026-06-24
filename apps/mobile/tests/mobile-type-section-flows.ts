@@ -1,4 +1,5 @@
 import { expect, type Locator, type Page } from '@playwright/test'
+import { createTitledNoteFromQuickOpen } from './mobile-note-create-actions'
 
 export async function createRenameAndDeleteTypeSection(page: Page) {
   await page.getByTestId('sidebar-section-create-types').click()
@@ -11,7 +12,7 @@ export async function createRenameAndDeleteTypeSection(page: Page) {
   await expect(decisionSection).toContainText('Decisions')
   await expect(decisionSection.getByTestId('sidebar-item-type-decision-count')).toHaveText('0')
   await expect(page.getByTestId('note-list-toolbar-title')).toHaveText('Decisions')
-  await expect(page.getByTestId('note-list-toolbar-subtitle')).toHaveText('0')
+  await expect(page.getByTestId('note-list-toolbar-subtitle')).toHaveCount(0)
 
   await longPressTestId(page, 'sidebar-item-type-decision')
   await expect(page.getByTestId('workspace-action-sheet-editTypeSection')).toBeVisible()
@@ -91,14 +92,12 @@ async function createRunbookFromTypeDefaults(page: Page, runbooksSection: Locato
   await runbooksSection.click()
   await expect(page.getByTestId('note-list-toolbar-title')).toHaveText('Runbooks')
   await expect(page.getByTestId('note-row-open-source-project').getByText('Project Board')).toBeVisible()
-  await page.getByTestId('note-list-create-action').click()
-  await page.getByTestId('workspace-create-note-title-input').fill('Runbook From Type Defaults')
-  await page.getByTestId('workspace-action-sheet-createNote').getByRole('button', { exact: true, name: 'Create' }).click()
+  await createTitledNoteFromQuickOpen(page, 'Runbook From Type Defaults')
   await expect(page.getByTestId('note-row-runbook-from-type-defaults.md')).toBeVisible()
   await expect(page.getByTestId('property-row-priority')).toContainText('High')
   await expect(page.getByTestId('relationship-row-workflow-orchestration-essay')).toBeVisible()
-  await expect(page.getByTestId('editor-heading-2')).toContainText('Checklist')
-  await expect(page.getByTestId('editor-paragraph')).toContainText('Template body from the Procedure type.')
+  await expect(page.getByTestId('editor-markdown-input')).toHaveValue(/## Checklist/u)
+  await expect(page.getByTestId('editor-markdown-input')).toHaveValue(/Template body from the Procedure type\./u)
 }
 
 async function longPressTestId(page: Page, testId: string) {

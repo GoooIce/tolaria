@@ -4,6 +4,10 @@ export async function longPressTestId(page: Page, testId: string) {
   await longPressLocator(page, page.getByTestId(testId), testId)
 }
 
+export async function longPressMouseTestId(page: Page, testId: string) {
+  await longPressLocatorWithMouse(page, page.getByTestId(testId), testId)
+}
+
 export async function longPressRoleButton(page: Page, name: string) {
   await longPressLocatorWithMouse(page, page.getByRole('button', { name }).first(), name)
 }

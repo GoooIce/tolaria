@@ -8,6 +8,7 @@ import {
   HOST_WORKSPACE_WRITES_GLOBAL_KEY,
 } from '../src/workspace/readOnlyWorkspaceRepository'
 import { longPressRoleButton } from './mobile-phone-test-gestures'
+import { createTitledNoteFromQuickOpen } from './mobile-note-create-actions'
 
 test.describe('mobile host path operation persistence', () => {
   test('persists host folder and note path operations as desktop-compatible writes', async ({ page }, testInfo) => {
@@ -75,12 +76,7 @@ async function renameHostFolder(page: Page) {
 }
 
 async function createHostNoteInFolder(page: Page) {
-  await longPressRoleButton(page, 'Host Ops Renamed')
-  await page.getByTestId('workspace-action-create-note-in-folder').click()
-  await page.getByTestId('workspace-create-note-title-input').fill('Host Path Draft')
-  await page.getByTestId('workspace-action-sheet-createNote').getByRole('button', { exact: true, name: 'Create' }).click()
-  await expect(page.getByTestId('workspace-action-sheet')).toBeHidden()
-  await expect(page.getByTestId('note-row-Host Ops Renamed/host-path-draft.md')).toBeVisible()
+  await createTitledNoteFromQuickOpen(page, 'Host Path Draft', 'note-row-Host Ops Renamed/host-path-draft.md')
 }
 
 async function moveHostNoteToTolariaFolder(page: Page) {

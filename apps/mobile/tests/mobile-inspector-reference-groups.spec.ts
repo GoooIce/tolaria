@@ -9,6 +9,6 @@ test.describe('mobile inspector reference groups', () => {
     await expect(page.getByTestId('inspector-reference-group-referenced-by')).toContainText('Referenced by')
     await expect(page.getByTestId('inspector-reference-row-markdown-renderer-parity')).toBeVisible()
     await page.getByTestId('inspector-reference-row-markdown-renderer-parity').click()
-    await expect(page.getByTestId('editor-title')).toHaveText('Markdown Renderer Parity')
+    await expect(page.getByTestId('editor-toolbar-title')).toHaveText('Markdown Renderer Parity')
   })
 })
