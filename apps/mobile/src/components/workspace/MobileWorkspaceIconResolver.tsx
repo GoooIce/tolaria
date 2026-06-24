@@ -1,5 +1,6 @@
 import * as PhosphorIcons from 'phosphor-react-native'
 import type { Icon } from 'phosphor-react-native'
+import { normalizeIconKey } from './MobileWorkspaceIconNames'
 
 export function mobilePhosphorIconElement(
   icon: string | null | undefined,
@@ -26,11 +27,6 @@ export function mobilePhosphorIconKey(value: string | null | undefined): string 
   if (alias) return alias
 
   return phosphorIconComponents[normalized] ? normalized : null
-}
-
-export function normalizeIconKey(value: string | null | undefined): string | null {
-  const normalized = value?.trim().toLowerCase().replace(/[^a-z0-9]+/gu, '')
-  return normalized || null
 }
 
 export function requiredMobilePhosphorIcon(key: string): Icon {

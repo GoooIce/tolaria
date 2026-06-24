@@ -42,6 +42,7 @@ import {
   shouldShowMobileRelationshipCreateTarget,
 } from '../../workspace/mobileWorkspaceSuggestions'
 import { MobileTypeIcon } from './MobileWorkspaceIcons'
+import { mobileTypeConfiguredIcon } from './MobileWorkspaceIconNames'
 import { MobileMetadataPicker } from './MobileMetadataPicker'
 import { MobileSortPicker } from './MobileSortPicker'
 import { MobilePropertyValueEditor } from './MobilePropertyValueEditor'
@@ -64,7 +65,6 @@ export type MobileWorkspaceAction =
   | 'addRelationship'
   | 'changeNoteType'
   | 'createFolder'
-  | 'createNote'
   | 'createType'
   | 'createView'
   | 'editFolder'
@@ -306,7 +306,6 @@ const actionContentByAction: Record<MobileWorkspaceAction, (props: MobileWorkspa
   addRelationship: (props) => <AddRelationshipContent {...props} />,
   changeNoteType: (props) => <RetargetNoteContent {...props} retargetAction="changeType" />,
   createFolder: (props) => <SingleTextFieldContent config={singleTextFieldConfig(props)} />,
-  createNote: (props) => <SingleTextFieldContent config={singleTextFieldConfig(props)} />,
   createType: (props) => <SingleTextFieldContent config={singleTextFieldConfig(props)} />,
   createView: (props) => <SingleTextFieldContent config={singleTextFieldConfig(props)} />,
   editFolder: (props) => <FolderActionsContent {...props} />,
@@ -341,6 +340,7 @@ function SearchContent({
   onSearchQueryChange,
   onSelectNote,
   searchQuery,
+  typeDefinitions,
 }: MobileWorkspaceActionSheetProps) {
   const searchResults = useMemo(() => mobileQuickOpenResults(notes, searchQuery), [notes, searchQuery])
   const [selectedResultIndex, setSelectedResultIndex] = useState(0)
@@ -420,7 +420,14 @@ function SearchContent({
             subtitle={note.snippet}
             testID={`workspace-search-result-${note.id}`}
             title={note.title}
-            trailing={<MobileTypeIcon size={16} tone={note.typeTone} type={note.type} />}
+            trailing={(
+              <MobileTypeIcon
+                configuredIcon={mobileTypeConfiguredIcon(note.type, typeDefinitions)}
+                size={16}
+                tone={note.typeTone}
+                type={note.type}
+              />
+            )}
             onPress={() => selectResult(note)}
           />
         ))}
@@ -568,17 +575,7 @@ function singleTextFieldConfig(props: MobileWorkspaceActionSheetProps) {
     }
   }
 
-  return {
-    allowEmptyInput: true,
-    inputLabel: mobileText('command.note.newNote'),
-    inputPlaceholder: mobileText('noteList.createNote'),
-    inputTestId: 'workspace-create-note-title-input',
-    inputValue: props.createTitle,
-    onCancel: props.onClose,
-    onChangeText: props.onCreateTitleChange,
-    onSubmit: () => props.onCreateNote(),
-    submitLabel: mobileText('common.create'),
-  }
+  throw new Error(`Unsupported single-text action: ${props.action}`)
 }
 
 function viewFilterBuilder(props: MobileWorkspaceActionSheetProps) {
@@ -972,7 +969,12 @@ function AddRelationshipContent({
               testID={`workspace-relationship-note-suggestion-${note.id}`}
               onPress={() => onRelationshipNoteSelect(note.title, `[[${mobileWikilinkTargetForNote(note, selectedNote)}]]`)}
             >
-              <MobileTypeIcon size={16} tone={note.typeTone} type={note.type} />
+              <MobileTypeIcon
+                configuredIcon={mobileTypeConfiguredIcon(note.type, typeDefinitions)}
+                size={16}
+                tone={note.typeTone}
+                type={note.type}
+              />
               <Text numberOfLines={1} style={styles.suggestionTitle}>{note.title}</Text>
               <MobileChip label={note.type} tone={chipTone(note.typeTone)} />
             </Pressable>
@@ -1153,7 +1155,6 @@ const actionTitleByAction: Record<MobileWorkspaceAction, () => string> = {
   addRelationship: () => mobileText('inspector.relationship.addRelationship').replace(/^\+\s*/, ''),
   changeNoteType: () => mobileText('command.note.changeType'),
   createFolder: () => mobileText('sidebar.action.createFolder'),
-  createNote: () => mobileText('command.note.newNote'),
   createType: () => mobileText('sidebar.action.createType'),
   createView: () => mobileText('viewDialog.title.create'),
   editFolder: () => mobileText('sidebar.action.renameFolder'),

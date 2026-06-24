@@ -6,6 +6,7 @@ import { mobileText } from '../../i18n/mobileText'
 import { mobileColors, mobileSpace, mobileType } from '../../ui/tokens'
 import type { MobileTypeDefinitions } from '../../workspace/mobileWorkspaceModel'
 import { MobileTypeIcon } from './MobileWorkspaceIcons'
+import { mobileTypeConfiguredIcon } from './MobileWorkspaceIconNames'
 
 type MobileTypeVisibilityEditorProps = {
   typeDefinitions?: MobileTypeDefinitions
@@ -38,7 +39,12 @@ export function MobileTypeVisibilityEditor({
               testID={`workspace-type-visibility-${slugifyTypeVisibilityId(typeName)}`}
               onPress={() => onToggleTypeVisibility(typeName)}
             >
-              <MobileTypeIcon size={15} tone={tone} type={typeName} />
+              <MobileTypeIcon
+                configuredIcon={mobileTypeConfiguredIcon(typeName, typeDefinitions)}
+                size={15}
+                tone={tone}
+                type={typeName}
+              />
               <View style={styles.visibilityText}>
                 <Text numberOfLines={1} style={styles.visibilityLabel}>{label}</Text>
                 <Text style={styles.visibilityDescription}>{mobileText('sidebar.section.showInSidebar')}</Text>

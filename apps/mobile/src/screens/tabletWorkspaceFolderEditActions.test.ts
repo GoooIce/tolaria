@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { createWorkspaceNoteInFolderEdit } from './tabletWorkspaceCreateActions'
 import {
   createFolderEditFromForm,
   deleteFolderEdit,
@@ -31,5 +32,13 @@ describe('tablet workspace folder edit actions', () => {
       type: 'deleteFolder',
     })
     expect(deleteFolderEdit('')).toBeNull()
+  })
+
+  it('creates folder notes directly without opening a title form', () => {
+    expect(createWorkspaceNoteInFolderEdit('Tolaria/Mobile UI')).toEqual({
+      defaults: { folderPath: 'Tolaria/Mobile UI' },
+      title: '',
+      type: 'createNote',
+    })
   })
 })

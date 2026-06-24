@@ -104,6 +104,14 @@ export function createWorkspaceView({
   closeAction()
 }
 
+export function createWorkspaceNoteInFolderEdit(folderPath: string): MobileWorkspaceEdit {
+  return {
+    defaults: { folderPath },
+    title: '',
+    type: 'createNote',
+  }
+}
+
 function createWorkspaceNoteFromDefaults({
   applyEdit,
   closeAction,

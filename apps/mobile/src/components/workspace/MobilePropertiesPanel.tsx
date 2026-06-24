@@ -20,6 +20,7 @@ import {
   type MobileInspectorRelationshipSlot,
 } from '../../workspace/mobileInspectorSchema'
 import { MobileTypeIcon } from './MobileWorkspaceIcons'
+import { mobileTypeConfiguredIcon } from './MobileWorkspaceIconNames'
 import { chipTone, noteTypeColor, noteTypeSoftColor, statusTone, tagTone } from './mobileWorkspaceTone'
 import { MobileFrontmatterStateNotice } from './MobileFrontmatterStateNotice'
 import { mobileRelationshipValueMetricSegments } from './MobilePropertiesPanelModel'
@@ -155,7 +156,7 @@ function NoteProperties({
           onFixInvalidFrontmatter={onFixInvalidFrontmatter}
           onInitializeProperties={() => onInitializeProperties(note.id)}
         />
-        <ReferenceGroups groups={referenceGroups} onSelectNote={onSelectNote} />
+        <ReferenceGroups groups={referenceGroups} typeDefinitions={typeDefinitions} onSelectNote={onSelectNote} />
       </>
     )
   }
@@ -227,6 +228,7 @@ function NoteProperties({
             relationship={relationship}
             onRemoveRelationship={onRemoveRelationship}
             onEnterNeighborhood={onEnterNeighborhood}
+            typeDefinitions={typeDefinitions}
             onSelectNote={onSelectNote}
           />
         </PropertySection>
@@ -240,7 +242,7 @@ function NoteProperties({
       ))}
       <PropertyActionRow label={mobileText('inspector.properties.addProperty')} testID="property-action-add-property" onPress={() => onAddProperty()} />
       <PropertyActionRow label={mobileText('inspector.relationship.addRelationship')} testID="property-action-add-relationship" onPress={() => onAddRelationship()} />
-      <ReferenceGroups groups={referenceGroups} onSelectNote={onSelectNote} />
+      <ReferenceGroups groups={referenceGroups} typeDefinitions={typeDefinitions} onSelectNote={onSelectNote} />
     </>
   )
 }
@@ -571,10 +573,12 @@ function RelationshipValues({
   onEnterNeighborhood,
   onSelectNote,
   relationship,
+  typeDefinitions,
 }: {
   layoutProbe: MobileLayoutProbe
   noteId: string
   relationship: MobileRelationship
+  typeDefinitions?: MobileTypeDefinitions
   onRemoveRelationship: (noteId: string, key: string, ref: string) => void
   onEnterNeighborhood?: (noteId: string) => void
   onSelectNote: (noteId: string) => void
@@ -608,7 +612,12 @@ function RelationshipValues({
                 if (value.id) onEnterNeighborhood?.(value.id)
               }}
             >
-              <MobileTypeIcon size={desktopRelationshipParity.iconSize} tone={value.typeTone} type={value.type} />
+              <MobileTypeIcon
+                configuredIcon={mobileTypeConfiguredIcon(value.type, typeDefinitions)}
+                size={desktopRelationshipParity.iconSize}
+                tone={value.typeTone}
+                type={value.type}
+              />
               <Text
                 numberOfLines={1}
                 {...propertyProbe(layoutProbe, `properties.relationship.${rowSegment}`, 'text')}
@@ -643,9 +652,11 @@ function propertyProbe(layoutProbe: MobileLayoutProbe | undefined, metricId: str
 
 function ReferenceGroups({
   groups,
+  typeDefinitions,
   onSelectNote,
 }: {
   groups: MobileNeighborhoodGroup[]
+  typeDefinitions?: MobileTypeDefinitions
   onSelectNote: (noteId: string) => void
 }) {
   if (groups.length === 0) return null
@@ -658,7 +669,7 @@ function ReferenceGroups({
           label={referenceGroupLabel(group)}
           testID={`inspector-reference-group-${group.id}`}
         >
-          <ReferenceValues group={group} onSelectNote={onSelectNote} />
+          <ReferenceValues group={group} typeDefinitions={typeDefinitions} onSelectNote={onSelectNote} />
         </PropertySection>
       ))}
     </View>
@@ -667,9 +678,11 @@ function ReferenceGroups({
 
 function ReferenceValues({
   group,
+  typeDefinitions,
   onSelectNote,
 }: {
   group: MobileNeighborhoodGroup
+  typeDefinitions?: MobileTypeDefinitions
   onSelectNote: (noteId: string) => void
 }) {
   return (
@@ -683,7 +696,13 @@ function ReferenceValues({
           testID={`inspector-reference-row-${testIdSegment(note.title)}`}
           onPress={() => onSelectNote(note.id)}
         >
-          <MobileTypeIcon fileKind={note.fileKind} size={desktopRelationshipParity.iconSize} tone={note.typeTone} type={note.type} />
+          <MobileTypeIcon
+            configuredIcon={mobileTypeConfiguredIcon(note.type, typeDefinitions)}
+            fileKind={note.fileKind}
+            size={desktopRelationshipParity.iconSize}
+            tone={note.typeTone}
+            type={note.type}
+          />
           <Text numberOfLines={1} style={[referenceStyles.text, relationshipTextTone(note.typeTone)]}>
             {note.title}
           </Text>

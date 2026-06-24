@@ -7,6 +7,7 @@ import { buildMobileFilePathForRelativePath } from '../workspace/mobileNoteFileP
 import { revealMobileFolderPath } from '../workspace/mobileNoteFileReveal'
 import type { TabletReadOnlyForm } from './tabletWorkspaceTypes'
 import type { TabletSidebarSelection } from './tabletWorkspaceNavigation'
+import { createWorkspaceNoteInFolderEdit } from './tabletWorkspaceCreateActions'
 import {
   createFolderEditFromForm,
   deleteFolderEdit,
@@ -67,11 +68,11 @@ export function folderWorkspaceActions({
       updateReadOnlyForm,
     }),
     onOpenCreateNoteInFolder: () => openCreateNoteInFolder({
+      applyEdit,
+      closeAction,
       folderPath: readOnlyForm.editingFolderPath,
       folderName: readOnlyForm.folderName,
       selectFolder,
-      setOpenAction,
-      updateReadOnlyForm,
     }),
     onRenameFolder: () => commitFolderEdit({
       applyEdit,
@@ -117,22 +118,22 @@ function openCreateFolderAction({
 }
 
 function openCreateNoteInFolder({
+  applyEdit,
+  closeAction,
   folderPath,
   folderName,
   selectFolder,
-  setOpenAction,
-  updateReadOnlyForm,
 }: {
+  applyEdit: ApplyWorkspaceEdit
+  closeAction: CloseWorkspaceAction
   folderPath: string
   folderName: string
   selectFolder: SelectFolder
-  setOpenAction: SetOpenAction
-  updateReadOnlyForm: ReadOnlyFormUpdater
 }) {
   if (!folderPath) return
-  updateReadOnlyForm('createTitle', '')
   selectFolder({ id: folderPath, name: folderName || mobileFolderName(folderPath) })
-  setOpenAction('createNote')
+  applyEdit(createWorkspaceNoteInFolderEdit(folderPath))
+  closeAction()
 }
 
 export function copyMobileFolderPath({

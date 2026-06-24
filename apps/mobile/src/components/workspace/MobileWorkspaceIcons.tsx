@@ -3,17 +3,19 @@ import { Text } from '../ui/text'
 import type { MobileFileKind, MobileTone } from '../../workspace/mobileWorkspaceModel'
 import {
   mobilePhosphorIconElement,
-  normalizeIconKey,
   requiredMobilePhosphorIcon,
 } from './MobileWorkspaceIconResolver'
+import { mobileTypeIconCandidates } from './MobileWorkspaceIconNames'
 import { noteTypeColor } from './mobileWorkspaceTone'
 
 export function MobileTypeIcon({
+  configuredIcon,
   size,
   tone,
   type,
   fileKind,
 }: {
+  configuredIcon?: string | null
   fileKind?: MobileFileKind
   size: number
   tone: MobileTone
@@ -29,7 +31,12 @@ export function MobileTypeIcon({
     return <FileTextIcon color={color} size={size} />
   }
 
-  return mobilePhosphorIconElement(mobileTypeIconKey(type), { color, size }) ?? <FileTextIcon color={color} size={size} />
+  for (const icon of mobileTypeIconCandidates(type, configuredIcon)) {
+    const iconElement = mobilePhosphorIconElement(icon, { color, size })
+    if (iconElement) return iconElement
+  }
+
+  return <FileTextIcon color={color} size={size} />
 }
 
 export function MobileNoteIcon({
@@ -71,22 +78,6 @@ function mobileNoteIconElement(
   },
 ) {
   return mobilePhosphorIconElement(icon, props)
-}
-
-function mobileTypeIconKey(type: string): string {
-  const normalizedType = normalizeIconKey(type)
-  const semanticIcon = semanticTypeIconKey(normalizedType)
-  if (semanticIcon) return semanticIcon
-
-  return type
-}
-
-function semanticTypeIconKey(normalizedType: string | null): string | null {
-  if (!normalizedType) return null
-  if (normalizedType.includes('release')) return 'archive'
-  if (normalizedType.includes('procedure')) return 'stacksimple'
-  if (normalizedType.includes('project')) return 'folderopen'
-  return null
 }
 
 function isRemoteIcon(value: string) {

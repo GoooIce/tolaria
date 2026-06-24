@@ -16,6 +16,7 @@ import type { MobileNeighborhood, MobileNeighborhoodGroup } from '../../workspac
 import type { MobileNote, MobilePropertyDisplayMode, MobileTypeDefinitions } from '../../workspace/mobileWorkspaceModel'
 import { MobileNoteListBulkActionBar } from './MobileNoteListBulkActionBar'
 import { MobileTypeIcon } from './MobileWorkspaceIcons'
+import { mobileTypeConfiguredIcon } from './MobileWorkspaceIconNames'
 import {
   addMobileNoteListSelection,
   mobileNoteListSelectionIsArchived,
@@ -454,7 +455,15 @@ function noteRow({
       subtitle={note.snippet}
       testID={`note-row-${note.id}`}
       title={note.title}
-      trailing={<MobileTypeIcon fileKind={note.fileKind} size={16} tone={note.typeTone} type={note.type} />}
+      trailing={(
+        <MobileTypeIcon
+          configuredIcon={mobileTypeConfiguredIcon(note.type, typeDefinitions)}
+          fileKind={note.fileKind}
+          size={16}
+          tone={note.typeTone}
+          type={note.type}
+        />
+      )}
       onLongPress={onBeginSelection ? () => onBeginSelection(note.id) : undefined}
       onPress={() => onSelectNote(note.id)}
     />
