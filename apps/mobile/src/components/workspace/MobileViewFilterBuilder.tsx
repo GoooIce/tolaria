@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { Pressable, StyleSheet, View } from 'react-native'
-import { Plus, WarningCircle, X } from 'phosphor-react-native'
+import { CheckCircle, Plus, WarningCircle, X } from 'phosphor-react-native'
 import { Text } from '../ui/text'
 import { mobileText } from '../../i18n/mobileText'
 import { MobileButton } from '../../ui/MobileButton'
@@ -29,7 +29,11 @@ import {
   mobileViewFilterValueText,
   mobileViewFilterValueWithSuggestion,
 } from './MobileViewFilterValueModel'
-import { mobileWorkspaceFormSectionLayoutContract } from './MobileWorkspaceActionSheetModel'
+import {
+  mobileWorkspaceFilterControlLayoutContract,
+  mobileWorkspaceFormSheetMaxSuggestions,
+  mobileWorkspaceFormSectionLayoutContract,
+} from './MobileWorkspaceActionSheetModel'
 
 type FilterPath = string
 type FilterMode = 'all' | 'any'
@@ -130,9 +134,14 @@ function GroupHeader({
 }) {
   return (
     <View style={styles.groupHeader}>
-      <Pressable accessibilityRole="button" style={styles.modeButton} testID="workspace-view-filter-mode-toggle" onPress={onToggleMode}>
-        <Text style={styles.modeButtonText}>{mobileText(mode === 'all' ? 'viewDialog.filter.and' : 'viewDialog.filter.or')}</Text>
-      </Pressable>
+      <MobileButton
+        density="compact"
+        label={mobileText(mode === 'all' ? 'viewDialog.filter.and' : 'viewDialog.filter.or')}
+        style={styles.modeButton}
+        testID="workspace-view-filter-mode-toggle"
+        variant="secondary"
+        onPress={onToggleMode}
+      />
       <Text style={styles.groupHint}>{mobileText(mode === 'all' ? 'viewDialog.filter.matchAll' : 'viewDialog.filter.matchAny')}</Text>
       {onRemove ? (
         <IconPressable accessibilityLabel={mobileText('common.remove')} testID="workspace-view-filter-remove-group" onPress={onRemove}>
@@ -213,6 +222,7 @@ function FilterConditionEditor({
       />
       <MobileWorkspaceSuggestionList
         labels={fieldSuggestions}
+        maxVisibleItems={mobileWorkspaceFormSheetMaxSuggestions}
         testID={`workspace-view-filter-field-suggestions-${pathId}`}
         testIDPrefix={`workspace-view-filter-field-suggestion-${pathId}`}
         onSelect={(field) => onChange({ ...condition, field })}
@@ -232,6 +242,7 @@ function FilterConditionEditor({
           <FilterValueFeedback invalidRegex={invalidRegex} datePreviewLabel={datePreviewLabel} pathId={pathId} />
           <MobileWorkspaceSuggestionList
             items={valueSuggestions}
+            maxVisibleItems={mobileWorkspaceFormSheetMaxSuggestions}
             testID={`workspace-view-filter-value-suggestions-${pathId}`}
             testIDPrefix={`workspace-view-filter-value-suggestion-${pathId}`}
             onSelect={(value) => onChange({ ...condition, value: mobileViewFilterValueWithSuggestion(condition, value) })}
@@ -318,15 +329,17 @@ function OperatorPill({
   testID: string
 }) {
   return (
-    <Pressable
+    <MobileButton
       accessibilityLabel={label}
       accessibilityRole="button"
+      density="compact"
+      icon={<CheckCircle color={active ? mobileColors.primary : mobileColors.textFaint} size={13} weight={active ? 'fill' : 'regular'} />}
+      label={label}
       style={[styles.operatorPill, active ? styles.operatorPillActive : null]}
       testID={testID}
+      variant="secondary"
       onPress={onPress}
-    >
-      <Text style={[styles.operatorText, active ? styles.operatorTextActive : null]}>{label}</Text>
-    </Pressable>
+    />
   )
 }
 
@@ -339,8 +352,8 @@ function GroupActions({
 }) {
   return (
     <View style={styles.actions}>
-      <MobileButton icon={<Plus color={mobileColors.textMuted} size={12} />} label={mobileText('viewDialog.filter.addFilter')} variant="ghost" onPress={onAddCondition} />
-      <MobileButton icon={<Plus color={mobileColors.textMuted} size={12} />} label={mobileText('viewDialog.filter.addGroup')} variant="ghost" onPress={onAddGroup} />
+      <MobileButton density="compact" icon={<Plus color={mobileColors.textMuted} size={12} />} label={mobileText('viewDialog.filter.addFilter')} variant="ghost" onPress={onAddCondition} />
+      <MobileButton density="compact" icon={<Plus color={mobileColors.textMuted} size={12} />} label={mobileText('viewDialog.filter.addGroup')} variant="ghost" onPress={onAddGroup} />
     </View>
   )
 }
@@ -487,16 +500,12 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   modeButton: {
+    minHeight: mobileWorkspaceFilterControlLayoutContract.minHeight,
+    backgroundColor: mobileColors.control,
     borderColor: mobileColors.borderStrong,
-    borderRadius: 999,
+    borderRadius: mobileWorkspaceFilterControlLayoutContract.radius,
     borderWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: mobileSpace.sm,
-    paddingVertical: mobileSpace.xs,
-  },
-  modeButtonText: {
-    color: mobileColors.text,
-    fontSize: mobileType.micro,
-    fontWeight: '600',
+    paddingHorizontal: mobileWorkspaceFilterControlLayoutContract.paddingHorizontal,
   },
   nestedGroup: {
     borderLeftColor: mobileColors.borderStrong,
@@ -507,28 +516,21 @@ const styles = StyleSheet.create({
     gap: mobileSpace.sm,
   },
   operatorPill: {
+    minHeight: mobileWorkspaceFilterControlLayoutContract.minHeight,
+    backgroundColor: mobileColors.control,
     borderColor: mobileColors.border,
-    borderRadius: 999,
+    borderRadius: mobileWorkspaceFilterControlLayoutContract.radius,
     borderWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: mobileSpace.sm,
-    paddingVertical: mobileSpace.xs,
+    paddingHorizontal: mobileWorkspaceFilterControlLayoutContract.paddingHorizontal,
   },
   operatorPillActive: {
     backgroundColor: mobileColors.primarySoft,
     borderColor: mobileColors.primary,
   },
-  operatorText: {
-    color: mobileColors.textMuted,
-    fontSize: mobileType.caption,
-    fontWeight: '500',
-  },
-  operatorTextActive: {
-    color: mobileColors.primary,
-  },
   operatorWrap: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: mobileSpace.xs,
+    gap: mobileWorkspaceFilterControlLayoutContract.gap,
   },
   valuePreview: {
     color: mobileColors.textMuted,

@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, View } from 'react-native'
 import { Text } from '../ui/text'
 import { mobileColors, mobileSpace, mobileType } from '../../ui/tokens'
 import { visibleMobileWorkspaceSuggestions, type MobileWorkspaceSuggestionItem } from './MobileWorkspaceSuggestionListModel'
+import { mobileWorkspaceSuggestionRowLayoutContract } from './MobileWorkspaceActionSheetModel'
 
 export function MobileWorkspaceSuggestionList({
   items,
@@ -35,7 +36,7 @@ export function MobileWorkspaceSuggestionList({
           onPress={() => onSelect(item.value, item)}
         >
           <Text numberOfLines={1} style={styles.title}>{humanizeSuggestionLabel(item.label)}</Text>
-          <Text numberOfLines={1} style={styles.meta}>{item.meta ?? item.value}</Text>
+          {item.meta ? <Text numberOfLines={1} style={styles.meta}>{item.meta}</Text> : null}
         </Pressable>
       ))}
     </View>
@@ -64,18 +65,26 @@ const styles = StyleSheet.create({
     gap: mobileSpace.xs,
   },
   meta: {
-    maxWidth: 160,
+    maxWidth: 140,
+    flexShrink: 0,
     color: mobileColors.textMuted,
     fontSize: mobileType.caption,
+    textAlign: 'right',
   },
   row: {
-    minHeight: 34,
+    minHeight: mobileWorkspaceSuggestionRowLayoutContract.minHeight,
+    minWidth: 0,
+    alignSelf: 'stretch',
     alignItems: 'center',
     flexDirection: 'row',
     gap: mobileSpace.sm,
-    borderRadius: 6,
-    paddingHorizontal: mobileSpace.sm,
-    paddingVertical: mobileSpace.xs,
+    width: '100%',
+    backgroundColor: mobileColors.control,
+    borderColor: mobileColors.border,
+    borderRadius: mobileWorkspaceSuggestionRowLayoutContract.radius,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: mobileWorkspaceSuggestionRowLayoutContract.paddingHorizontal,
+    paddingVertical: mobileWorkspaceSuggestionRowLayoutContract.paddingVertical,
   },
   rowPressed: {
     backgroundColor: mobileColors.graySoft,

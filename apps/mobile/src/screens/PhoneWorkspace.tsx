@@ -372,6 +372,7 @@ function PhoneWorkspaceRoot({
           tableOfContentsTarget={tableOfContentsTarget}
         />
       </PhoneWorkspaceTransition>
+      <MobileSyncStatusBar sync={controller.snapshot.sync} onOpenLocalVault={onOpenNativeVault} />
       <WorkspaceActionSheetHost
         {...controller}
         compactTablet
@@ -383,7 +384,6 @@ function PhoneWorkspaceRoot({
         onEnterNeighborhood={navigation.openNeighborhoodList}
         onSelectTableOfContentsTarget={selectTableOfContentsTarget}
       />
-      <MobileSyncStatusBar sync={controller.snapshot.sync} onOpenLocalVault={onOpenNativeVault} />
       {commandPaletteElement}
     </View>
   )

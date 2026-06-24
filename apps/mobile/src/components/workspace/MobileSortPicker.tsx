@@ -7,7 +7,10 @@ import { MobileButton } from '../../ui/MobileButton'
 import { MobileTextInput } from '../../ui/MobileTextInput'
 import { mobileColors, mobileSpace, mobileType } from '../../ui/tokens'
 import { MobileWorkspaceSuggestionList } from './MobileWorkspaceSuggestionList'
-import { mobileWorkspaceSortPickerLayoutContract } from './MobileWorkspaceActionSheetModel'
+import {
+  mobileWorkspaceFormSheetMaxSuggestions,
+  mobileWorkspaceSortPickerLayoutContract,
+} from './MobileWorkspaceActionSheetModel'
 import {
   mobileCustomPropertySortValue,
   mobileCustomSortFromValue,
@@ -40,13 +43,15 @@ export function MobileSortPicker({
   const customSort = mobileCustomSortFromValue(selectedSort)
   const [customField, setCustomField] = useState(customSort.field)
   const builtInSort = builtInSortFromValue(selectedSort)
+  const hasCustomField = customField.trim().length > 0
   const selectedDirection = builtInSort?.direction ?? 'desc'
   const customDirection = customSort.direction ?? 'asc'
   const customSuggestions = useMemo(() => {
+    if (!hasCustomField) return []
     return customPropertyOptions
       .filter((property) => mobileSortFieldMatches(property, customField))
-      .slice(0, 6)
-  }, [customField, customPropertyOptions])
+      .slice(0, mobileWorkspaceFormSheetMaxSuggestions)
+  }, [customField, customPropertyOptions, hasCustomField])
 
   const selectCustomSort = (field: string, direction: MobileSortDirection = customDirection) => {
     const trimmedField = field.trim()
@@ -101,26 +106,29 @@ export function MobileSortPicker({
         />
         <MobileWorkspaceSuggestionList
           labels={customSuggestions}
+          maxVisibleItems={mobileWorkspaceFormSheetMaxSuggestions}
           testID={`${testIDPrefix}-custom-field-suggestions`}
           testIDPrefix={`${testIDPrefix}-custom-field-suggestion`}
           onSelect={(field) => selectCustomSort(field)}
         />
-        <View style={styles.customDirectionRow}>
-          <CustomDirectionButton
-            disabled={customField.trim().length === 0}
-            label={mobileText('noteList.sort.ascending')}
-            selected={selectedSort === mobileCustomPropertySortValue(customField, 'asc')}
-            testID={`${testIDPrefix}-custom-asc`}
-            onPress={() => selectCustomSort(customField, 'asc')}
-          />
-          <CustomDirectionButton
-            disabled={customField.trim().length === 0}
-            label={mobileText('noteList.sort.descending')}
-            selected={selectedSort === mobileCustomPropertySortValue(customField, 'desc')}
-            testID={`${testIDPrefix}-custom-desc`}
-            onPress={() => selectCustomSort(customField, 'desc')}
-          />
-        </View>
+        {hasCustomField ? (
+          <View style={styles.customDirectionRow}>
+            <CustomDirectionButton
+              disabled={false}
+              label={mobileText('noteList.sort.ascending')}
+              selected={selectedSort === mobileCustomPropertySortValue(customField, 'asc')}
+              testID={`${testIDPrefix}-custom-asc`}
+              onPress={() => selectCustomSort(customField, 'asc')}
+            />
+            <CustomDirectionButton
+              disabled={false}
+              label={mobileText('noteList.sort.descending')}
+              selected={selectedSort === mobileCustomPropertySortValue(customField, 'desc')}
+              testID={`${testIDPrefix}-custom-desc`}
+              onPress={() => selectCustomSort(customField, 'desc')}
+            />
+          </View>
+        ) : null}
       </View>
     </View>
   )

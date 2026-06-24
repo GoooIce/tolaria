@@ -5,11 +5,14 @@ import {
   mobileActionSheetLayoutContract,
   mobileSingleTextFieldSubmitDisabled,
   mobileWorkspaceRelationshipTargetMaxSuggestions,
+  mobileActionSheetLongFormHeight,
   mobileWorkspaceFormSheetAutoFocus,
   mobileWorkspaceFormSheetMaxSuggestions,
   mobileWorkspaceActionGroupLayoutContract,
+  mobileWorkspaceFilterControlLayoutContract,
   mobileWorkspaceFormSectionLayoutContract,
   mobileWorkspaceSortPickerLayoutContract,
+  mobileWorkspaceSuggestionRowLayoutContract,
 } from './MobileWorkspaceActionSheetModel'
 
 describe('mobile workspace action sheet', () => {
@@ -17,11 +20,17 @@ describe('mobile workspace action sheet', () => {
     expect(mobileActionSheetLayoutContract).toEqual({
       contentGap: mobileSpace.md,
       contentPadding: mobileSpace.lg,
+      longFormSheetMinHeight: 320,
       overlayPaddingHorizontal: mobileSpace.xl,
       overlayPaddingVertical: desktopPanelParity.toolbarHeight + mobileSpace.xl,
       sheetMaxHeight: '84%',
       sheetMaxWidth: 640,
     })
+  })
+
+  it('derives long form sheet height from native window bounds', () => {
+    expect(mobileActionSheetLongFormHeight(800)).toBe(800 - (mobileActionSheetLayoutContract.overlayPaddingVertical * 2))
+    expect(mobileActionSheetLongFormHeight(360)).toBe(320)
   })
 
   it('allows title-less note creation while keeping required field guards', () => {
@@ -74,6 +83,26 @@ describe('mobile workspace action sheet', () => {
       optionMinHeight: 32,
       optionRadius: 6,
       optionTextSize: 12,
+    })
+  })
+
+  it('keeps form suggestion rows rendered as bordered native rows', () => {
+    expect(mobileWorkspaceSuggestionRowLayoutContract).toEqual({
+      gap: mobileSpace.xs,
+      minHeight: 34,
+      paddingHorizontal: mobileSpace.sm,
+      paddingVertical: mobileSpace.xs,
+      radius: 6,
+    })
+  })
+
+  it('keeps filter controls on compact native button metrics', () => {
+    expect(mobileWorkspaceFilterControlLayoutContract).toEqual({
+      gap: mobileSpace.xs,
+      minHeight: 32,
+      paddingHorizontal: mobileSpace.sm,
+      paddingVertical: mobileSpace.xs,
+      radius: 6,
     })
   })
 })

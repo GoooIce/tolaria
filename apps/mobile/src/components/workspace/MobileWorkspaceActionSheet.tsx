@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { Pressable, ScrollView, StyleSheet, View, type NativeSyntheticEvent, type TextInputKeyPressEventData } from 'react-native'
+import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions, type NativeSyntheticEvent, type TextInputKeyPressEventData } from 'react-native'
 import { ArrowSquareOut, CheckCircle, ClipboardText, FilePlus, FolderOpen, Trash } from 'phosphor-react-native'
 import { Text } from '../ui/text'
 import { mobileText } from '../../i18n/mobileText'
@@ -58,6 +58,7 @@ import { MobileWorkspaceSuggestionList } from './MobileWorkspaceSuggestionList'
 import type { MobileWorkspaceSuggestionItem } from './MobileWorkspaceSuggestionListModel'
 import { chipTone, noteTypeSoftColor, statusTone, tagTone } from './mobileWorkspaceTone'
 import {
+  mobileActionSheetLongFormHeight,
   mobileActionSheetLayoutContract,
   mobileSingleTextFieldSubmitDisabled,
   mobileWorkspaceRelationshipTargetMaxSuggestions,
@@ -287,10 +288,19 @@ type SuggestionInputActionConfig = {
 type RetargetNoteAction = 'changeType' | 'moveFolder'
 
 export function MobileWorkspaceActionSheet(props: MobileWorkspaceActionSheetProps) {
+  const { height: windowHeight } = useWindowDimensions()
+  const longFormSheetHeight = mobileActionSheetLongFormHeight(windowHeight)
+  const longFormSheetStyle = usesLongFormSheet(props.action)
+    ? { height: longFormSheetHeight, maxHeight: longFormSheetHeight }
+    : null
+
   return (
     <View style={styles.overlay} testID="workspace-action-sheet">
       <Pressable accessibilityLabel={mobileText('common.cancel')} style={styles.backdrop} testID="workspace-action-sheet-backdrop" onPress={props.onClose} />
-      <MobilePanel style={sheetStyles.sheet} testID={`workspace-action-sheet-${props.action}`}>
+      <MobilePanel
+        style={[sheetStyles.sheet, longFormSheetStyle]}
+        testID={`workspace-action-sheet-${props.action}`}
+      >
         <MobileToolbar testID="workspace-action-sheet-toolbar">
           <MobileToolbarTitle title={actionTitle(props.action, props.propertyName)} />
           <MobileToolbarSpacer />
@@ -304,6 +314,13 @@ export function MobileWorkspaceActionSheet(props: MobileWorkspaceActionSheetProp
 
 function ActionContent(props: MobileWorkspaceActionSheetProps) {
   return actionContentByAction[props.action](props)
+}
+
+function usesLongFormSheet(action: MobileWorkspaceAction) {
+  return action === 'createView'
+    || action === 'editView'
+    || action === 'editTypeSection'
+    || action === 'editPrimaryListProperties'
 }
 
 const actionContentByAction: Record<MobileWorkspaceAction, (props: MobileWorkspaceActionSheetProps) => ReactNode> = {
@@ -1220,9 +1237,10 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
+    elevation: 1000,
     paddingHorizontal: mobileActionSheetLayoutContract.overlayPaddingHorizontal,
     paddingVertical: mobileActionSheetLayoutContract.overlayPaddingVertical,
-    zIndex: 20,
+    zIndex: 1000,
   },
   resultList: {
     borderColor: mobileColors.border,
@@ -1230,6 +1248,7 @@ const styles = StyleSheet.create({
   },
   scrollArea: {
     flexShrink: 1,
+    minHeight: 0,
   },
   suggestionList: {
     gap: mobileSpace.xs,

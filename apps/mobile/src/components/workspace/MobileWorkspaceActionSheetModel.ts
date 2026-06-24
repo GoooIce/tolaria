@@ -6,6 +6,7 @@ export const mobileActionSheetLayoutContract = {
   contentPadding: mobileSpace.lg,
   overlayPaddingHorizontal: mobileSpace.xl,
   overlayPaddingVertical: desktopPanelParity.toolbarHeight + mobileSpace.xl,
+  longFormSheetMinHeight: 320,
   sheetMaxHeight: '84%',
   sheetMaxWidth: 640,
 } as const
@@ -31,9 +32,30 @@ export const mobileWorkspaceSortPickerLayoutContract = {
   optionTextSize: 12,
 } as const
 
+export const mobileWorkspaceSuggestionRowLayoutContract = {
+  gap: mobileSpace.xs,
+  minHeight: 34,
+  paddingHorizontal: mobileSpace.sm,
+  paddingVertical: mobileSpace.xs,
+  radius: 6,
+} as const
+
+export const mobileWorkspaceFilterControlLayoutContract = {
+  gap: mobileSpace.xs,
+  minHeight: 32,
+  paddingHorizontal: mobileSpace.sm,
+  paddingVertical: mobileSpace.xs,
+  radius: 6,
+} as const
+
 export const mobileWorkspaceFormSheetAutoFocus = false
 export const mobileWorkspaceFormSheetMaxSuggestions = 3
 export const mobileWorkspaceRelationshipTargetMaxSuggestions = 2
+
+export function mobileActionSheetLongFormHeight(windowHeight: number) {
+  const availableHeight = windowHeight - (mobileActionSheetLayoutContract.overlayPaddingVertical * 2)
+  return Math.max(0, Math.min(windowHeight, Math.max(mobileActionSheetLayoutContract.longFormSheetMinHeight, availableHeight)))
+}
 
 export function mobileSingleTextFieldSubmitDisabled({
   allowEmptyInput = false,

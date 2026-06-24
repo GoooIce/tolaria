@@ -1,7 +1,8 @@
-import { Pressable, StyleSheet, View } from 'react-native'
+import { StyleSheet, View } from 'react-native'
 import { CheckCircle } from 'phosphor-react-native'
 import { Text } from '../ui/text'
 import { mobileText } from '../../i18n/mobileText'
+import { MobileButton } from '../../ui/MobileButton'
 import { MobileTextInput } from '../../ui/MobileTextInput'
 import { mobileColors, mobileSpace, mobileType } from '../../ui/tokens'
 import { mobileWorkspaceFormSectionLayoutContract } from './MobileWorkspaceActionSheetModel'
@@ -64,21 +65,18 @@ function PropertyOption({
   testIDPrefix: string
 }) {
   return (
-    <Pressable
+    <MobileButton
       accessibilityLabel={label}
       accessibilityRole="checkbox"
       accessibilityState={{ checked: selected }}
-      style={({ pressed }) => [
-        styles.option,
-        selected ? styles.optionSelected : null,
-        pressed ? styles.optionPressed : null,
-      ]}
+      density="compact"
+      icon={<CheckCircle color={selected ? mobileColors.primary : mobileColors.textFaint} size={14} weight={selected ? 'fill' : 'regular'} />}
+      label={label}
+      style={[styles.option, selected ? styles.optionSelected : null]}
       testID={`${testIDPrefix}-option-${testIdSegment(label)}`}
+      variant="secondary"
       onPress={onPress}
-    >
-      <CheckCircle color={selected ? mobileColors.primary : mobileColors.textFaint} size={16} weight={selected ? 'fill' : 'regular'} />
-      <Text numberOfLines={1} style={[styles.optionText, selected ? styles.optionTextSelected : null]}>{label}</Text>
-    </Pressable>
+    />
   )
 }
 
@@ -135,31 +133,20 @@ const styles = StyleSheet.create({
   },
   option: {
     minHeight: 32,
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: mobileSpace.sm,
+    alignSelf: 'stretch',
+    justifyContent: 'flex-start',
+    backgroundColor: mobileColors.control,
+    borderColor: mobileColors.border,
     borderRadius: 6,
+    borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: mobileSpace.sm,
-    paddingVertical: mobileSpace.xs,
   },
   optionList: {
     gap: mobileSpace.xs,
   },
-  optionPressed: {
-    backgroundColor: mobileColors.graySoft,
-  },
   optionSelected: {
     backgroundColor: mobileColors.primarySoft,
-  },
-  optionText: {
-    minWidth: 0,
-    flex: 1,
-    color: mobileColors.textMuted,
-    fontSize: mobileType.body,
-    fontWeight: '500',
-  },
-  optionTextSelected: {
-    color: mobileColors.primary,
+    borderColor: mobileColors.primary,
   },
   picker: {
     gap: mobileWorkspaceFormSectionLayoutContract.gap,

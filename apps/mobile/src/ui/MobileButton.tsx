@@ -6,11 +6,13 @@ import { cn } from '../components/ui/utils'
 import { mobileColors } from './tokens'
 
 type MobileButtonVariant = 'primary' | 'secondary' | 'ghost'
-type MobileButtonDensity = 'default' | 'status'
+type MobileButtonDensity = 'default' | 'compact' | 'status'
 type MobileButtonTone = 'default' | 'danger'
 
 export function MobileButton({
   accessibilityLabel,
+  accessibilityRole,
+  accessibilityState,
   density = 'default',
   disabled = false,
   icon,
@@ -22,6 +24,8 @@ export function MobileButton({
   variant = 'secondary',
 }: {
   accessibilityLabel?: string
+  accessibilityRole?: ButtonProps['accessibilityRole']
+  accessibilityState?: ButtonProps['accessibilityState']
   density?: MobileButtonDensity
   disabled?: boolean
   icon?: ReactNode
@@ -39,6 +43,8 @@ export function MobileButton({
   return (
     <Button
       accessibilityLabel={accessibilityLabel ?? label}
+      accessibilityRole={accessibilityRole}
+      accessibilityState={accessibilityState}
       className={cn(buttonDensityClassNames[density], buttonClassNames[variant])}
       disabled={disabled}
       onPress={onPress}
@@ -72,6 +78,7 @@ const buttonClassNames: Record<MobileButtonVariant, string> = {
 }
 
 const buttonDensityClassNames: Record<MobileButtonDensity, string> = {
+  compact: 'min-h-8 rounded-md px-2 py-1 active:opacity-75',
   default: 'min-h-9 rounded-md px-3 active:opacity-75',
   status: 'h-6 min-h-0 rounded-sm px-1 py-0.5 active:opacity-75',
 }
@@ -83,6 +90,7 @@ const labelClassNames: Record<MobileButtonVariant, string> = {
 }
 
 const labelDensityClassNames: Record<MobileButtonDensity, string> = {
+  compact: 'text-xs font-medium',
   default: 'text-sm font-medium',
   status: 'text-xs font-medium',
 }
@@ -99,8 +107,18 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     paddingHorizontal: 12,
   },
+  compact: {
+    minHeight: 32,
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
   labelDefault: {
     fontSize: 14,
+    fontWeight: '500',
+  },
+  labelCompact: {
+    fontSize: 12,
     fontWeight: '500',
   },
   labelDanger: {
@@ -129,6 +147,7 @@ const styles = StyleSheet.create({
 })
 
 const buttonDensityStyles = {
+  compact: styles.compact,
   default: styles.default,
   status: styles.status,
 } as const
@@ -140,6 +159,7 @@ const labelColorStyles = {
 } as const
 
 const labelDensityStyles = {
+  compact: styles.labelCompact,
   default: styles.labelDefault,
   status: styles.labelStatus,
 } as const
