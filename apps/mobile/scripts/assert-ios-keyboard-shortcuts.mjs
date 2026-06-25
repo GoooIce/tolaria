@@ -2,6 +2,8 @@
 /* global console, process, setTimeout */
 
 import { spawnSync } from 'node:child_process'
+import { existsSync, readdirSync, statSync } from 'node:fs'
+import { join } from 'node:path'
 import { waitForNativeProof } from './native-ios-proof-logs.mjs'
 import { assertNativeQaOpenUrl } from '../src/qa/nativeQaUrls.ts'
 import {
@@ -17,8 +19,19 @@ import {
 
 const defaultExpoGoBundleId = 'host.exp.Exponent'
 const defaultLogWindow = '90s'
+const defaultKeyDelivery = 'auto'
 const nativeKeyboardShortcutProbeEnvironmentName = 'TOLARIA_MOBILE_KEYBOARD_SHORTCUT_PROBE'
 const proofPollTimeoutMs = 18000
+const shortcutProofs = [
+  { id: 'command-palette', keyCodes: [227, 14], sendAppleScript: () => pressCommandKey('k') },
+  { id: 'find-in-note', keyCodes: [227, 9], sendAppleScript: () => pressCommandKey('f') },
+  { id: 'search-o', keyCodes: [227, 18], sendAppleScript: () => pressCommandKey('o') },
+  { id: 'search-p', keyCodes: [227, 19], sendAppleScript: () => pressCommandKey('p') },
+  { id: 'raw-editor', keyCodes: [227, 49], sendAppleScript: () => pressCommandKeyCode(42) },
+  { id: 'create-note', keyCodes: [227, 17], sendAppleScript: () => pressCommandKey('n') },
+  { id: 'next-note', keyCodes: [81], sendAppleScript: () => pressKeyCode(125) },
+  { id: 'previous-note', keyCodes: [82], sendAppleScript: () => pressKeyCode(126) },
+]
 
 function printHelp() {
   console.log(`Assert native iOS Simulator keyboard shortcuts.
@@ -29,6 +42,8 @@ Usage:
 Options:
   --device <udid>   Simulator UDID. Defaults to MOBILE_QA_SIMULATOR_UDID, then the booted iPad.
   --bundle-id <id>  Launch this native app bundle with QA launch args instead of opening an Expo URL.
+  --key-delivery <auto|hid|applescript>
+                    Keyboard event backend. Defaults to ${defaultKeyDelivery}; HID uses xcodebuildmcp/AXe.
   --last <duration> log show window when no URL is opened. Defaults to ${defaultLogWindow}.
   --open-url <url>  Open an Expo native URL before collecting logs.
   --phone           Prefer a booted iPhone simulator when --device is not provided.
@@ -42,6 +57,7 @@ function readConfig(args) {
     device: readOption(args, '--device', process.env.MOBILE_QA_SIMULATOR_UDID),
     bundleId: readOption(args, '--bundle-id', process.env.MOBILE_QA_NATIVE_BUNDLE_ID),
     help: args.includes('--help'),
+    keyDelivery: readOption(args, '--key-delivery', process.env.MOBILE_QA_KEY_DELIVERY ?? defaultKeyDelivery),
     last: readOption(args, '--last', defaultLogWindow),
     openUrl: readOption(args, '--open-url', undefined),
     phone: args.includes('--phone'),
@@ -83,10 +99,27 @@ function selectDevice(requestedDevice, preferPhone) {
   return selected.udid
 }
 
-async function openProbeUrl(device, { bundleId, openUrl, waitMs }) {
+function assertKnownKeyDelivery(value) {
+  if (value === 'auto' || value === 'hid' || value === 'applescript') return value
+  throw new Error(`Unsupported --key-delivery value: ${value}`)
+}
+
+async function openProbeUrl(device, config) {
+  const { bundleId, keyDelivery, openUrl } = config
   assertNativeQaOpenUrl(openUrl, 'Native iOS keyboard shortcut proof')
 
-  const probeUrl = keyboardShortcutProbeUrl(openUrl)
+  const delivery = assertKnownKeyDelivery(keyDelivery)
+  if (delivery !== 'applescript' && bundleId) {
+    try {
+      await sendKeyboardShortcutProofsWithHid(device, config)
+      return
+    } catch (error) {
+      if (delivery === 'hid') throw error
+      console.warn(`Falling back to AppleScript keyboard delivery after HID failure: ${error.message}`)
+    }
+  }
+
+  const probeUrl = keyboardShortcutProbeUrl(openUrl, 'applescript')
   if (bundleId) {
     launchNativeProbe(device, bundleId, probeUrl)
   } else {
@@ -95,8 +128,17 @@ async function openProbeUrl(device, { bundleId, openUrl, waitMs }) {
     openSimulatorUrl(device, probeUrl)
   }
 
-  await sleep(Math.max(waitMs, 9000))
-  await sendKeyboardShortcutSequence()
+  await sleep(Math.max(config.waitMs, 9000))
+  await sendKeyboardShortcutSequenceWithAppleScript()
+}
+
+async function sendKeyboardShortcutProofsWithHid(device, { bundleId, openUrl, waitMs }) {
+  for (const shortcut of shortcutProofs) {
+    launchNativeProbe(device, bundleId, keyboardShortcutProbeUrl(openUrl, shortcut.id))
+    await sleep(Math.max(waitMs, 4500))
+    sendHidKeySequence(device, shortcut.keyCodes)
+    await sleep(650)
+  }
 }
 
 function launchNativeProbe(device, bundleId, probeUrl) {
@@ -133,8 +175,9 @@ function isSimulatorOpenUrlTimeout(error) {
     && error.message.includes('Operation timed out')
 }
 
-function keyboardShortcutProbeUrl(openUrl) {
-  return appendQueryParam(appendQueryParam(openUrl, 'mobileKeyboardShortcutProbe', '1'), 'qaRun', Date.now().toString())
+function keyboardShortcutProbeUrl(openUrl, id) {
+  const qaRun = `${Date.now().toString()}-${id}`
+  return appendQueryParam(appendQueryParam(openUrl, 'mobileKeyboardShortcutProbe', '1'), 'qaRun', qaRun)
 }
 
 function launchSearchFromUrl(url) {
@@ -149,21 +192,79 @@ function terminateExpoGo(device) {
   tryRun('xcrun', ['simctl', 'terminate', device, bundleId])
 }
 
-async function sendKeyboardShortcutSequence() {
-  const sequence = [
-    () => pressCommandKey('k'),
-    () => pressCommandKey('f'),
-    () => pressCommandKey('o'),
-    () => pressCommandKey('p'),
-    () => pressCommandKeyCode(42),
-    () => pressCommandKey('n'),
-    () => pressKeyCode(126),
-    () => pressKeyCode(125),
-  ]
-
-  for (const send of sequence) {
-    send()
+async function sendKeyboardShortcutSequenceWithAppleScript() {
+  for (const shortcut of shortcutProofs) {
+    shortcut.sendAppleScript()
     await sleep(350)
+  }
+}
+
+function sendHidKeySequence(device, keyCodes) {
+  const invocation = xcodebuildMcpInvocation()
+  run(invocation.command, [
+    ...invocation.args,
+    'ui-automation',
+    'key-sequence',
+    '--simulator-id',
+    device,
+    '--key-codes',
+    keyCodes.join(','),
+    '--delay',
+    '0.2',
+    '--output',
+    'json',
+  ])
+}
+
+function xcodebuildMcpInvocation() {
+  if (process.env.XCODEBUILDMCP_BIN) {
+    return { args: [], command: process.env.XCODEBUILDMCP_BIN }
+  }
+
+  const localBinary = commandPath('xcodebuildmcp')
+  if (localBinary) return { args: [], command: localBinary }
+
+  const cachedBinary = cachedXcodebuildMcpBinary()
+  if (cachedBinary) return { args: [], command: cachedBinary }
+
+  return {
+    args: ['exec', '--yes', 'xcodebuildmcp@latest', '--'],
+    command: 'npm',
+  }
+}
+
+function commandPath(command) {
+  const result = spawnSync('sh', ['-lc', `command -v ${command}`], { encoding: 'utf8' })
+  return result.status === 0 ? result.stdout.trim() : ''
+}
+
+function cachedXcodebuildMcpBinary() {
+  const cacheRoot = npmCachePath()
+  if (!cacheRoot) return ''
+
+  const npxRoot = join(cacheRoot, '_npx')
+  if (!existsSync(npxRoot)) return ''
+
+  const candidates = readdirSync(npxRoot)
+    .map((entry) => join(npxRoot, entry, 'node_modules', '.bin', 'xcodebuildmcp'))
+    .filter(existsSync)
+    .sort((left, right) => mtimeMs(right) - mtimeMs(left))
+
+  return candidates[0] ?? ''
+}
+
+function npmCachePath() {
+  if (process.env.npm_config_cache) return process.env.npm_config_cache
+
+  const result = spawnSync('npm', ['config', 'get', 'cache'], { encoding: 'utf8' })
+  return result.status === 0 ? result.stdout.trim() : ''
+}
+
+function mtimeMs(path) {
+  try {
+    return statSync(path).mtimeMs
+  } catch {
+    return 0
   }
 }
 
@@ -230,6 +331,7 @@ function sleep(ms) {
 
 async function main() {
   const config = readConfig(process.argv.slice(2))
+  assertKnownKeyDelivery(config.keyDelivery)
   if (config.help) {
     printHelp()
     return

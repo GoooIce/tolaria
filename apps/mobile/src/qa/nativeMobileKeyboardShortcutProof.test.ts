@@ -3,6 +3,7 @@ import {
   assertNativeMobileKeyboardShortcutProofs,
   nativeMobileKeyboardShortcutActionProof,
   nativeMobileKeyboardShortcutLogLine,
+  nativeMobileKeyboardShortcutLogPrefix,
   nativeMobileKeyboardShortcutProbeEnabled,
   parseNativeMobileKeyboardShortcutProofs,
   type NativeMobileKeyboardShortcutProof,
@@ -26,6 +27,24 @@ describe('native mobile keyboard shortcut proof', () => {
     ]
 
     expect(parseNativeMobileKeyboardShortcutProofs(proofs.map(nativeMobileKeyboardShortcutLogLine).join('\n'))).toEqual(proofs)
+  })
+
+  it('parses simulator log-show octal escapes for the backslash shortcut key', () => {
+    const line = [
+      nativeMobileKeyboardShortcutLogPrefix,
+      '{"action":"toggleRawEditor","code":"Backslash","kind":"action","key":"\\134\\134","metaKey":true,"source":"native"}',
+    ].join(' ')
+
+    expect(parseNativeMobileKeyboardShortcutProofs(line)).toEqual([
+      {
+        action: 'toggleRawEditor',
+        code: 'Backslash',
+        kind: 'action',
+        key: '\\\\',
+        metaKey: true,
+        source: 'native',
+      },
+    ])
   })
 
   it('requires the native bridge and every desktop shortcut action', () => {

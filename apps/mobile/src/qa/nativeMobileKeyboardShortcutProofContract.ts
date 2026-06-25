@@ -88,6 +88,14 @@ function parseProofLine(line: KeyboardShortcutProofLine): NativeMobileKeyboardSh
   try {
     return parsedProof(JSON.parse(rawJson))
   } catch {
+    return parsedProofFromSimulatorLog(rawJson)
+  }
+}
+
+function parsedProofFromSimulatorLog(rawJson: string) {
+  try {
+    return parsedProof(JSON.parse(rawJson.replace(/\\134/g, '\\\\')))
+  } catch {
     return null
   }
 }
