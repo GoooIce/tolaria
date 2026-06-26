@@ -315,6 +315,19 @@
       "route": { "kind": "filter", "value": "changes" },
       "menuOwned": true
     },
+    "goGraph": {
+      "id": "go-graph",
+      "route": { "kind": "filter", "value": "graph" },
+      "shortcut": {
+        "combo": "command-or-ctrl",
+        "key": "g",
+        "code": "KeyG",
+        "display": "⌘G",
+        "accelerator": "CmdOrCtrl+G",
+        "requiresManualNativeAcceleratorQa": true
+      },
+      "menuOwned": true
+    },
     "goInbox": {
       "id": "go-inbox",
       "route": { "kind": "filter", "value": "inbox" },
@@ -509,6 +522,7 @@
         { "kind": "command", "command": "goArchived", "label": "Archived" },
         { "kind": "command", "command": "goChanges", "label": "Changes" },
         { "kind": "command", "command": "goInbox", "label": "Inbox" },
+        { "kind": "command", "command": "goGraph", "label": "Graph" },
         { "kind": "separator" },
         { "kind": "command", "command": "viewGoBack", "label": "Go Back" },
         { "kind": "command", "command": "viewGoForward", "label": "Go Forward" }
