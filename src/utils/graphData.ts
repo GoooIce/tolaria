@@ -76,3 +76,67 @@ export function entriesToGraph(
 
   return { nodes, links }
 }
+
+/**
+ * Build a 1-hop adjacency map from links (Phase 2 hover-highlight support).
+ * Each node id maps to the set of its direct neighbors.
+ */
+export function buildAdjacency(
+  links: ReadonlyArray<{ source: string; target: string }>,
+): Map<string, Set<string>> {
+  const adj = new Map<string, Set<string>>()
+  for (const { source, target } of links) {
+    if (!adj.has(source)) adj.set(source, new Set())
+    if (!adj.has(target)) adj.set(target, new Set())
+    adj.get(source)!.add(target)
+    adj.get(target)!.add(source)
+  }
+  return adj
+}
+
+/** A node aggregated from collapsing a type group (Phase 3). */
+export interface CollapsedGroup {
+  type: string
+  members: GraphNode[]
+  superNode: GraphNode
+}
+
+/**
+ * Collapse nodes by their `isA` type into super-nodes (Phase 3 aggregation).
+ * Nodes whose type is in `collapsedTypes` are grouped; others stay individual.
+ * Returns the merged node list (supers + individuals) and the group details.
+ */
+export function collapseNodesByType(
+  nodes: GraphNode[],
+  collapsedTypes: ReadonlySet<string>,
+): { nodes: GraphNode[]; groups: CollapsedGroup[] } {
+  const collapsedGroups: CollapsedGroup[] = []
+  const normalNodes: GraphNode[] = []
+  for (const node of nodes) {
+    const type = node.entry.isA
+    if (type && collapsedTypes.has(type)) {
+      const existing = collapsedGroups.find((g) => g.type === type)
+      if (existing) {
+        existing.members.push(node)
+      } else {
+        collapsedGroups.push({
+          type,
+          members: [node],
+          superNode: {
+            id: `__type__${type}`,
+            label: `${type} (${1})`,
+            color: node.color,
+            entry: node.entry,
+          },
+        })
+      }
+    } else {
+      normalNodes.push(node)
+    }
+  }
+  // Fix member counts in labels now that groups are complete.
+  for (const group of collapsedGroups) {
+    group.superNode.label = `${group.type} (${group.members.length})`
+  }
+  return { nodes: [...normalNodes, ...collapsedGroups.map((g) => g.superNode)], groups: collapsedGroups }
+}

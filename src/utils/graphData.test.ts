@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { VaultEntry } from '../types'
-import { entriesToGraph } from './graphData'
+import { entriesToGraph, buildAdjacency, collapseNodesByType } from './graphData'
 
 const makeEntry = (overrides: Partial<VaultEntry> = {}): VaultEntry => ({
   path: '/vault/note.md',
@@ -176,5 +176,80 @@ describe('entriesToGraph', () => {
     const { nodes, links } = entriesToGraph([])
     expect(nodes).toEqual([])
     expect(links).toEqual([])
+  })
+})
+
+describe('buildAdjacency', () => {
+  it('maps each node to its 1-hop neighbors (undirected)', () => {
+    const links = [
+      { source: 'a', target: 'b' },
+      { source: 'b', target: 'c' },
+    ]
+    const adj = buildAdjacency(links)
+    expect(adj.get('a')).toEqual(new Set(['b']))
+    expect(adj.get('b')).toEqual(new Set(['a', 'c']))
+    expect(adj.get('c')).toEqual(new Set(['b']))
+  })
+
+  it('returns empty map for no links', () => {
+    expect(buildAdjacency([]).size).toBe(0)
+  })
+
+  it('handles isolated nodes in links gracefully', () => {
+    const adj = buildAdjacency([{ source: 'x', target: 'y' }])
+    expect(adj.size).toBe(2)
+    expect(adj.get('x')).toEqual(new Set(['y']))
+  })
+
+  it('produces neighbor sets usable for hover-highlight highlight decisions', () => {
+    // Triangle: a-b, b-c, c-a — hovering 'a' should highlight a,b,c
+    const links = [
+      { source: 'a', target: 'b' },
+      { source: 'b', target: 'c' },
+      { source: 'c', target: 'a' },
+    ]
+    const adj = buildAdjacency(links)
+    const hovered = 'a'
+    const highlightIds = new Set([hovered, ...(adj.get(hovered) ?? [])])
+    expect(highlightIds).toEqual(new Set(['a', 'b', 'c']))
+  })
+})
+
+describe('collapseNodesByType', () => {
+  it('groups nodes by type when type is in collapsedTypes', () => {
+    const { nodes } = entriesToGraph([
+      makeEntry({ path: '/p1.md', title: 'P1', isA: 'Project' }),
+      makeEntry({ path: '/p2.md', title: 'P2', isA: 'Project' }),
+      makeEntry({ path: '/n1.md', title: 'N1', isA: 'Note' }),
+    ])
+    const collapsed = new Set(['Project'])
+    const { nodes: result, groups } = collapseNodesByType(nodes, collapsed)
+    // 1 super-node (Project) + 1 normal node (Note)
+    expect(result).toHaveLength(2)
+    expect(groups).toHaveLength(1)
+    expect(groups[0].type).toBe('Project')
+    expect(groups[0].members).toHaveLength(2)
+    expect(groups[0].superNode.id).toBe('__type__Project')
+    expect(groups[0].superNode.label).toBe('Project (2)')
+  })
+
+  it('leaves all nodes individual when collapsedTypes is empty', () => {
+    const { nodes } = entriesToGraph([
+      makeEntry({ path: '/p1.md', title: 'P1', isA: 'Project' }),
+      makeEntry({ path: '/n1.md', title: 'N1', isA: 'Note' }),
+    ])
+    const { nodes: result, groups } = collapseNodesByType(nodes, new Set())
+    expect(result).toHaveLength(2)
+    expect(groups).toHaveLength(0)
+  })
+
+  it('super-node id is clickable-toggleable (expand/collapse contract)', () => {
+    const { nodes } = entriesToGraph([
+      makeEntry({ path: '/p1.md', title: 'P1', isA: 'Project' }),
+    ])
+    const { nodes: result } = collapseNodesByType(nodes, new Set(['Project']))
+    expect(result[0].id.startsWith('__type__')).toBe(true)
+    // Stripping the prefix yields the original type, enabling toggle.
+    expect(result[0].id.replace('__type__', '')).toBe('Project')
   })
 })

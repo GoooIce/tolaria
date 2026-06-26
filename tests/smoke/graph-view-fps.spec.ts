@@ -2,14 +2,13 @@ import { test, expect } from '@playwright/test'
 import { triggerMenuCommand } from './testBridge'
 
 /**
- * Graph view FPS benchmark — Phase 1 acceptance criterion #7.
+ * Graph view FPS benchmark — Phase 3 acceptance criterion #13.
  *
- * Verifies a 1500-node synthetic graph renders at ≥30 FPS. Uses a synthetic
- * entry set injected directly into the in-memory graph data (the fixture vault
- * is too small for a meaningful perf test). We bypass the vault loader by
- * evaluating entriesToGraph in-page and measuring the canvas animation rate.
+ * Verifies a 5000-node synthetic graph renders at ≥30 FPS with viewport-aware
+ * rendering. Uses a synthetic entry set injected directly into the force-graph
+ * instance (the fixture vault is too small for a meaningful perf test).
  */
-const TARGET_NODES = 1500
+const TARGET_NODES = 5000
 const MIN_FPS = 30
 const SAMPLE_MS = 2000
 
@@ -27,7 +26,7 @@ function syntheticGraphScript(): string {
   return JSON.stringify({ nodes, links })
 }
 
-test('1500-node graph renders at ≥30 FPS @smoke', async ({ page }) => {
+test('5000-node graph renders at ≥30 FPS @smoke', async ({ page }) => {
   test.setTimeout(60_000)
 
   await page.goto('/', { waitUntil: 'domcontentloaded' })

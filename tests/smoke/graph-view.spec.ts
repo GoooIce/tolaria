@@ -60,4 +60,26 @@ test.describe('Graph view @smoke', () => {
 
     await expect(noteList.getByText(/Favorites/)).toBeVisible({ timeout: 5_000 })
   })
+
+  test('clicking a node opens the note in the editor', async ({ page }) => {
+    await triggerMenuCommand(page, 'go-graph')
+    const graphCanvas = page.getByTestId('graph-canvas')
+    await expect(graphCanvas).toBeVisible({ timeout: 10_000 })
+    await expect(graphCanvas.locator('canvas')).toHaveCount(1, { timeout: 5_000 })
+
+    // Wait for the force-graph instance to initialize with data.
+    await page.waitForTimeout(2000)
+
+    // Programmatically trigger a node click via the test hook (canvas
+    // coordinate clicks are unreliable across viewport sizes).
+    await page.evaluate(() => {
+      const hook = (window as unknown as { __graphViewTestClickNode?: (id?: string) => void }).__graphViewTestClickNode
+      if (hook) hook()
+    })
+
+    // After clicking a node, the editor pane shows the opened note's content.
+    const editor = page.locator('.app__editor')
+    await expect(editor).toBeVisible({ timeout: 10_000 })
+    await expect(editor.locator('.bn-editor').first()).toBeVisible({ timeout: 10_000 })
+  })
 })

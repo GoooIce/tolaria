@@ -6,7 +6,7 @@ import ForceGraphBase, {
 } from 'force-graph'
 import { MagnifyingGlass, X, Funnel, FolderOpen, Star, Archive } from '@phosphor-icons/react'
 import type { VaultEntry } from '../types'
-import { entriesToGraph, type GraphNode } from '../utils/graphData'
+import { entriesToGraph, buildAdjacency, collapseNodesByType, type GraphNode } from '../utils/graphData'
 import { translate, type AppLocale } from '../lib/i18n'
 import { Input } from './ui/input'
 import { Button } from './ui/button'
@@ -49,20 +49,6 @@ interface VisibleFilter {
   showArchived: boolean
 }
 
-/** Collapse a Set<string> of node ids into its neighbors (1-hop) for hover highlight. */
-function buildAdjacency(
-  links: { source: string; target: string }[],
-): Map<string, Set<string>> {
-  const adj = new Map<string, Set<string>>()
-  for (const { source, target } of links) {
-    if (!adj.has(source)) adj.set(source, new Set())
-    if (!adj.has(target)) adj.set(target, new Set())
-    adj.get(source)!.add(target)
-    adj.get(target)!.add(source)
-  }
-  return adj
-}
-
 export function GraphView({ entries, onOpenNote, onToggleFavorite, onArchive, locale = 'en' }: GraphViewProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const fgRef = useRef<GraphInstance | null>(null)
@@ -96,7 +82,6 @@ export function GraphView({ entries, onOpenNote, onToggleFavorite, onArchive, lo
 
   /** Apply Phase-2 filters + Phase-3 type aggregation to produce the renderable graph. */
   const renderedGraph = useMemo(() => {
-    const collapsed = collapsedTypes
     const visibleNodes = baseGraph.nodes.filter((node) => {
       const e = node.entry
       if (filter.showFavoritesOnly && !e.favorite) return false
@@ -105,31 +90,12 @@ export function GraphView({ entries, onOpenNote, onToggleFavorite, onArchive, lo
       return true
     })
 
-    // Phase 3: collapsed types → aggregate super-nodes.
-    const collapsedGroups = new Map<string, GraphNode[]>()
-    const normalNodes: GraphNode[] = []
-    for (const node of visibleNodes) {
-      if (node.entry.isA && collapsed.has(node.entry.isA)) {
-        const key = node.entry.isA
-        if (!collapsedGroups.has(key)) collapsedGroups.set(key, [])
-        collapsedGroups.get(key)!.push(node)
-      } else {
-        normalNodes.push(node)
-      }
-    }
-
-    const superNodes: GraphNode[] = Array.from(collapsedGroups.entries()).map(([type, group]) => ({
-      id: `__type__${type}`,
-      label: `${type} (${group.length})`,
-      color: group[0].color,
-      entry: group[0].entry, // representative; real members accessed via group
-    }))
-
-    const nodeIdSet = new Set<string>([...normalNodes, ...superNodes].map((n) => n.id))
+    const { nodes: aggregatedNodes } = collapseNodesByType(visibleNodes, collapsedTypes)
+    const nodeIdSet = new Set(aggregatedNodes.map((n) => n.id))
     const visibleLinks = baseGraph.links.filter(
       (l) => nodeIdSet.has(l.source) && nodeIdSet.has(l.target),
     )
-    return { nodes: [...normalNodes, ...superNodes], links: visibleLinks }
+    return { nodes: aggregatedNodes, links: visibleLinks }
   }, [baseGraph, filter, collapsedTypes])
 
   // --- hover neighborhood highlight (Phase 2) ---
@@ -223,6 +189,18 @@ export function GraphView({ entries, onOpenNote, onToggleFavorite, onArchive, lo
         setContextMenuNode(n)
       })
     fgRef.current = fg
+    // Expose a test hook to programmatically simulate a node click (used by
+    // Playwright smoke tests where canvas-coordinate clicks are unreliable).
+    if (typeof window !== 'undefined') {
+      ;(window as unknown as { __graphViewTestClickNode?: (id?: string) => void }).__graphViewTestClickNode = (id?: string) => {
+        const nodes = fg.graphData().nodes as Array<NodeObject & { id?: string }>
+        const target = id ? nodes.find((n) => n.id === id) : nodes[0]
+        if (target) {
+          const n = asGraphNode(target)
+          if (!n.id.startsWith('__type__')) onOpenNote(n.entry)
+        }
+      }
+    }
     return () => {
       fg._destructor()
       fgRef.current = null
