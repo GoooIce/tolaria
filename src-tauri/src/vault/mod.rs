@@ -182,6 +182,7 @@ pub fn parse_md_file(path: &Path, git_dates: Option<(u64, u64)>) -> Result<Vault
         properties,
         has_h1,
         file_kind: "markdown".to_string(),
+        is_index: frontmatter.is_index.unwrap_or(false),
     })
 }
 

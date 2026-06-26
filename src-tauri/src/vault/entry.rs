@@ -91,6 +91,10 @@ pub struct VaultEntry {
     /// Determines how the frontend renders and opens the file.
     #[serde(rename = "fileKind", default = "default_file_kind")]
     pub file_kind: String,
+    /// Whether this note is an index/hub note, excluded from the note list
+    /// and quick-open. Wikilinks still resolve to it. Defaults to false.
+    #[serde(default)]
+    pub is_index: bool,
 }
 
 fn default_file_kind() -> String {

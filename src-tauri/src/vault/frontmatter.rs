@@ -63,6 +63,12 @@ pub(crate) struct Frontmatter {
     pub favorite_index: Option<i64>,
     #[serde(rename = "_list_properties_display", default)]
     pub list_properties_display: Option<Vec<String>>,
+    #[serde(
+        rename = "_index",
+        default,
+        deserialize_with = "deserialize_bool_or_string"
+    )]
+    pub is_index: Option<bool>,
 }
 
 /// Custom deserializer for boolean fields that may arrive as strings.
