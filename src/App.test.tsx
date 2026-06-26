@@ -530,9 +530,10 @@ describe('App', () => {
   it('loads and displays vault entries in sidebar', async () => {
     render(<App />)
     await waitFor(() => {
-      // Entries appear in both Sidebar and NoteList
+      // Entries appear in both Sidebar and NoteList. "Software Development"
+      // has alias "Dev", which displayLabel now surfaces as the label.
       expect(screen.getAllByText('Test Project').length).toBeGreaterThan(0)
-      expect(screen.getAllByText('Software Development').length).toBeGreaterThan(0)
+      expect(screen.getAllByText('Dev').length).toBeGreaterThan(0)
     }, { timeout: SLOW_APP_READY_TIMEOUT_MS })
   })
 
