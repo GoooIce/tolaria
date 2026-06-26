@@ -26,10 +26,10 @@ mod basics;
 mod complex_frontmatter;
 #[path = "mod_tests/display_metadata.rs"]
 mod display_metadata;
-#[path = "mod_tests/index_metadata.rs"]
-mod index_metadata;
 #[path = "mod_tests/folder_and_file_kind.rs"]
 mod folder_and_file_kind;
+#[path = "mod_tests/index_metadata.rs"]
+mod index_metadata;
 #[path = "mod_tests/journal_type_visibility.rs"]
 mod journal_type_visibility;
 #[path = "mod_tests/real_vault_consistency.rs"]

@@ -50,10 +50,7 @@ fn test_parse_index_truthy_string_values() {
 
 #[test]
 fn test_index_not_in_relationships_or_properties() {
-    let entry = parse_index_entry(
-        "index.md",
-        "---\n_index: true\ntype: Note\n---\n# Index\n",
-    );
+    let entry = parse_index_entry("index.md", "---\n_index: true\ntype: Note\n---\n# Index\n");
     assert!(!entry.relationships.contains_key("_index"));
     assert!(!entry.properties.contains_key("_index"));
 }
