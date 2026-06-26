@@ -15,6 +15,7 @@ These frontmatter field names have special meaning in Tolaria's UI:
 | Field | Meaning | UI behavior |
 |---|---|---|
 | `title:` | Legacy display-title fallback for older notes | Used only when a note has no H1; new notes do not write it automatically |
+| `aliases:` | Alternative names for the note | First non-blank alias is shown as the navigation label (`displayLabel`); all aliases match wikilink resolution. See [ADR-0145](adr/0145-alias-display-labels-and-index-notes.md) |
 | `type:` | Entity type (Project, Person, Quarter…) | Type chip in note list + sidebar grouping |
 | `status:` | Lifecycle stage (active, done, blocked…) | Colored chip in note list + editor header |
 | `icon:` | Per-note icon (emoji, Phosphor name, or HTTP/HTTPS image URL) | Rendered on note title surfaces; editable from the Properties panel |
@@ -48,6 +49,7 @@ _color: blue              # color assigned to a type
 _order: 10                # sort order in the sidebar
 _sidebar_label: Projects  # override label in sidebar
 _width: wide              # rich-editor width override for this note
+_index: true              # structural index note: hidden from lists/inbox/favorites/quick-open, still linkable (ADR-0145)
 ```
 
 **This convention is universal** — apply it to all future system-level frontmatter fields. When a new feature needs to store configuration in a note's frontmatter (especially in Type notes), use `_field_name` to keep it hidden from normal user-facing surfaces while still stored on-disk as plain text.
@@ -132,7 +134,7 @@ interface VaultEntry {
   filename: string          // Just the filename
   title: string             // From first # heading, or filename fallback
   isA: string | null        // Entity type: Project, Procedure, Person, etc. (from frontmatter `type:` field)
-  aliases: string[]         // Alternative names for wikilink resolution
+  aliases: string[]         // Alternative names; first non-blank alias is the navigation label (displayLabel), all match wikilinks
   belongsTo: string[]       // Parent relationships (wikilinks)
   relatedTo: string[]       // Related entity links (wikilinks)
   relationships: Record<string, string[]>  // All frontmatter fields containing wikilinks
@@ -151,6 +153,7 @@ interface VaultEntry {
   trashedAt: number | null  // Kept for backward compatibility (Trash system removed)
   properties: Record<string, VaultPropertyValue>  // Scalar and scalar-array custom properties
   fileKind?: 'markdown' | 'text' | 'binary'  // Controls editor/raw/preview behavior
+  isIndex?: boolean         // Structural index note (`_index: true`): hidden from lists/quick-open, still linkable (ADR-0145)
 }
 ```
 
