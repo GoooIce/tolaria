@@ -155,6 +155,12 @@ thread_local! {
 
 #[cfg(test)]
 fn apply_test_git_config_env(command: &mut Command) {
+    // Force a C locale so git always emits English output, regardless of the
+    // developer's LANG/LC_ALL. Several tests match git's stderr verbatim and
+    // would otherwise fail under non-English locales (e.g. zh_CN prints
+    // "致命错误：" instead of "fatal:").
+    command.env("LC_ALL", "C");
+    command.env("LANGUAGE", "");
     TEST_GIT_CONFIG_ENV.with(|env| {
         if let Some(config) = env.borrow().as_ref() {
             command.env("GIT_CONFIG_GLOBAL", &config.global);
@@ -448,6 +454,33 @@ mod tests {
         assert_eq!(
             parse_github_repo_path(url),
             expected.map(ToString::to_string)
+        );
+    }
+
+    /// Git must emit English output in tests regardless of the developer's
+    /// locale, because several tests match git's stderr verbatim.
+    /// See `apply_test_git_config_env` for the LC_ALL=C pin.
+    #[test]
+    fn test_git_command_emits_english_under_non_english_locale() {
+        let _guard = GitConfigEnvGuard::isolated();
+        let dir = TempDir::new().unwrap();
+
+        // Run a git command guaranteed to fail on an empty repo, then check
+        // the localized prefix of its stderr. Under LC_ALL=C git prints
+        // "fatal:" / "error:"; under zh_CN it prints "致命错误：" etc.
+        let output = git_command()
+            .args(["log"])
+            .current_dir(dir.path())
+            .output()
+            .unwrap();
+        assert!(
+            !output.status.success(),
+            "git log should fail on empty repo"
+        );
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        assert!(
+            stderr.contains("fatal:") || stderr.contains("error:"),
+            "git stderr must be English (LC_ALL=C); got: {stderr}"
         );
     }
 
