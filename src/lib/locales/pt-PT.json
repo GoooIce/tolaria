@@ -391,6 +391,7 @@
   "git.toast.commitFailed": "Falha no commit: {error}",
   "git.toast.missingAuthor": "Defina um autor Git antes de o AutoGit poder fazer o commit. Execute git config --global user.name \"O seu nome\" e git config --global user.email you@example.com.",
   "graph.archive": "Archive",
+  "graph.clearSearch": "Clear search",
   "graph.collapse": "Collapse",
   "graph.expand": "Expand",
   "graph.favorite": "Favorite",

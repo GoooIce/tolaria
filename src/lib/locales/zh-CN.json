@@ -391,6 +391,7 @@
   "git.toast.commitFailed": "提交失败：{error}",
   "git.toast.missingAuthor": "设置 Git 作者后，AutoGit 才能提交。运行 git config --global user.name \"Your Name\" 和 git config --global user.email you@example.com。",
   "graph.archive": "归档",
+  "graph.clearSearch": "清除搜索",
   "graph.collapse": "折叠",
   "graph.expand": "展开",
   "graph.favorite": "收藏",

@@ -391,6 +391,7 @@
   "git.toast.commitFailed": "Pamylka kamita: {error}",
   "git.toast.missingAuthor": "Zadajcie aŭtara Git, pierš čym AutoGit zmoža stvarać kamity. Vykanajcie git config --global user.name \"Your Name\" i git config --global user.email you@example.com.",
   "graph.archive": "Archive",
+  "graph.clearSearch": "Clear search",
   "graph.collapse": "Collapse",
   "graph.expand": "Expand",
   "graph.favorite": "Favorite",

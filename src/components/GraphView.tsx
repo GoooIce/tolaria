@@ -256,13 +256,15 @@ export function GraphView({ entries, onOpenNote, onToggleFavorite, onArchive, lo
             className="h-8 pl-7 pr-7 text-xs"
           />
           {search && (
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-1 top-1/2 h-6 w-6 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               onClick={() => setSearch('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              aria-label={t('graph.clearSearch')}
             >
               <X size={14} />
-            </button>
+            </Button>
           )}
         </div>
         <Button
@@ -340,10 +342,11 @@ export function GraphView({ entries, onOpenNote, onToggleFavorite, onArchive, lo
         {hoveredNode && <span className="truncate">{hoveredNode.label}</span>}
       </div>
 
-      {/* context menu (Phase 2) — right-click actions */}
+      {/* context menu (Phase 2) — right-click actions. The trigger is invisible
+          because the menu is opened programmatically via contextMenuNode state. */}
       <DropdownMenu open={!!contextMenuNode} onOpenChange={(o) => !o && setContextMenuNode(null)}>
         <DropdownMenuTrigger asChild>
-          <button className="pointer-events-none absolute opacity-0" />
+          <Button variant="ghost" size="icon" className="pointer-events-none absolute h-0 w-0 opacity-0" aria-hidden />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
           <DropdownMenuItem

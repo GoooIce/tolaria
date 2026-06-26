@@ -391,6 +391,7 @@
   "git.toast.commitFailed": "커밋 실패: {error}",
   "git.toast.missingAuthor": "AutoGit이 커밋하기 전에 Git 작성자를 설정하세요. git config --global user.name \"Your Name\" 및 git config --global user.email you@example.com을 실행하세요.",
   "graph.archive": "Archive",
+  "graph.clearSearch": "Clear search",
   "graph.collapse": "Collapse",
   "graph.expand": "Expand",
   "graph.favorite": "Favorite",
