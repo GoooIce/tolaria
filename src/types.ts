@@ -66,6 +66,10 @@ export interface VaultEntry {
   /** File kind: "markdown", "text", or "binary". Determines editor behavior.
    *  Defaults to "markdown" when absent (for backwards compatibility). */
   fileKind?: 'markdown' | 'text' | 'binary'
+  /** Whether this note is an index/hub note, excluded from the note list,
+   *  quick-open, inbox, and favorites. Wikilinks still resolve to it.
+   *  Defaults to false when absent (for backwards compatibility). */
+  isIndex?: boolean
 }
 
 export interface WorkspaceIdentity {

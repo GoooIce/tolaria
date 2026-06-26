@@ -3,6 +3,7 @@ import { ArrowUpRight } from '@phosphor-icons/react'
 import { entryStatusTitle } from './shared'
 import { StatusSuffix } from './LinkButton'
 import { NoteTitleIcon } from '../NoteTitleIcon'
+import { displayLabel } from '../../utils/noteLabel'
 
 export interface BacklinkItem {
   entry: VaultEntry
@@ -26,7 +27,7 @@ function BacklinkEntry({ entry, context, onNavigate }: {
         style={isDimmed ? { color: 'var(--muted-foreground)' } : undefined}
       >
         <NoteTitleIcon icon={entry.icon} size={14} />
-        {entry.title}
+        {displayLabel(entry)}
         <StatusSuffix isArchived={entry.archived} />
       </span>
       {context && (

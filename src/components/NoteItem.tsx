@@ -7,6 +7,7 @@ import {
   File, FileDashed, FilePdf, ImageSquare, SpeakerHigh, Video,
 } from '@phosphor-icons/react'
 import { getTypeColor, getTypeLightColor } from '../utils/typeColors'
+import { displayLabel } from '../utils/noteLabel'
 import { resolveIcon } from '../utils/iconRegistry'
 import { getDisplayDate } from '../utils/noteListHelpers'
 import { formatTimestampForDateDisplay } from '../utils/dateDisplay'
@@ -300,7 +301,7 @@ function NoteTitleRow({
     >
       {hasStatusDot(noteStatus) && !isBinary && <StatusDot noteStatus={noteStatus} />}
       <NoteTitleIcon icon={entry.icon} size={15} className="mr-1" testId="note-title-icon" />
-      {entry.title}
+      {displayLabel(entry)}
       {!isBinary && <StateBadge archived={entry.archived} />}
     </div>
   )

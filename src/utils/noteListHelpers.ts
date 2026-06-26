@@ -445,6 +445,10 @@ export function buildRelationshipGroups(
 
 const isActive = (e: VaultEntry) => !e.archived
 const isMarkdown = (e: VaultEntry) => e.fileKind === 'markdown' || !e.fileKind
+/** Index/hub notes (frontmatter `_index: true`) are hidden from lists,
+ *  inbox, and favorites. Wikilinks still resolve to them. */
+const isListExcluded = (e: VaultEntry) => Boolean(e.isIndex)
+const isListVisible = (e: VaultEntry) => !isListExcluded(e)
 const ATTACHMENTS_FOLDER = 'attachments'
 
 function applySubFilter(entries: VaultEntry[], subFilter: NoteListFilter): VaultEntry[] {
@@ -467,6 +471,7 @@ export function isAllNotesEntry(
   entry: VaultEntry,
   allNotesFileVisibility: AllNotesFileVisibility = DEFAULT_ALL_NOTES_FILE_VISIBILITY,
 ): boolean {
+  if (isListExcluded(entry)) return false
   if (isMarkdown(entry)) return !isInFolder(entry.path, ATTACHMENTS_FOLDER)
   return isOptionalAllNotesFileVisible(entry, allNotesFileVisibility)
 }
@@ -547,9 +552,9 @@ function filterByKind(
 }
 
 function filterByFilterType(entries: VaultEntry[], filter: string): VaultEntry[] {
-  if (filter === 'all') return entries.filter(isActive)
-  if (filter === 'archived') return entries.filter((e) => e.archived)
-  if (filter === 'favorites') return entries.filter((e) => e.favorite && !e.archived)
+  if (filter === 'all') return entries.filter((e) => isActive(e) && isListVisible(e))
+  if (filter === 'archived') return entries.filter((e) => e.archived && isListVisible(e))
+  if (filter === 'favorites') return entries.filter((e) => e.favorite && !e.archived && isListVisible(e))
   if (filter === 'pulse') return []
   return []
 }
@@ -600,11 +605,12 @@ export function countAllNotesByFilter(
 
 // --- Inbox ---
 
-/** Check if entry belongs in the Inbox (markdown only, not organized, not archived, not a Type). */
+/** Check if entry belongs in the Inbox (markdown only, not organized, not archived, not a Type, not an index note). */
 export function isInboxEntry(entry: VaultEntry): boolean {
   if (!isMarkdown(entry)) return false
   if (entry.archived) return false
   if (entry.isA === 'Type') return false
+  if (isListExcluded(entry)) return false
   return !entry.organized
 }
 

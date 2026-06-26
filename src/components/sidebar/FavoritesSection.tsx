@@ -7,6 +7,7 @@ import {
   SortableContext, arrayMove, useSortable, verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import { displayLabel } from '../../utils/noteLabel'
 import { buildTypeEntryMap, getTypeColor, getTypeLightColor } from '../../utils/typeColors'
 import { NoteTitleIcon } from '../NoteTitleIcon'
 import { isSelectionActive } from '../SidebarParts'
@@ -71,7 +72,7 @@ function SortableFavoriteItem({
         <div className="flex min-w-0 flex-1 items-center" style={{ gap: 4 }}>
           <NoteTitleIcon icon={icon} size={16} color={typeColor} />
           <span className="min-w-0 truncate border-0 bg-transparent p-0 text-left text-[13px] font-medium" style={{ marginLeft: 4, color: isActive ? typeColor : undefined }}>
-            {entry.title}
+            {displayLabel(entry)}
           </span>
         </div>
       </button>

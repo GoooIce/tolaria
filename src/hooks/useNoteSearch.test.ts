@@ -293,7 +293,9 @@ describe('useNoteSearch', () => {
       makeEntry({ path: '/vault/rn.md', title: 'Refactoring Notes', aliases: ['ref'], modifiedAt: 1700000001 }),
     ]
     const { result } = renderHook(() => useNoteSearch(ranked, 'ref'))
-    expect(result.current.results[0].title).toBe('Refactoring Notes')
+    expect(result.current.results[0].entry.path).toBe('/vault/rn.md')
+    // displayLabel prefers the first alias, so the surfaced label is "ref".
+    expect(result.current.results[0].title).toBe('ref')
   })
 
   it('does not exclude archived notes from results', () => {

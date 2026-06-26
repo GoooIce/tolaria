@@ -3,6 +3,7 @@ const SYSTEM_METADATA_ALIAS_GROUPS = {
   _favorite: ['_favorite'],
   _favorite_index: ['_favorite_index'],
   _icon: ['_icon', 'icon'],
+  _index: ['_index'],
   _list_properties_display: ['_list_properties_display'],
   _organized: ['_organized'],
   _order: ['_order', 'order'],

@@ -5,6 +5,7 @@ import { getTypeColor, getTypeLightColor, buildTypeEntryMap } from '../utils/typ
 import { getTypeIcon } from '../components/NoteItem'
 import type { NoteSearchResultItem } from '../components/NoteSearchList'
 import { slugifyNoteStem } from '../utils/noteSlug'
+import { displayLabel } from '../utils/noteLabel'
 
 const DEFAULT_MAX_RESULTS = 20
 
@@ -170,7 +171,7 @@ function toResult({ entry, typeEntryMap, showWorkspace }: ResultInput): NoteSear
   const te = noteType ? typeEntryMap[noteType] : undefined
   return {
     entry,
-    title: entry.title,
+    title: displayLabel(entry),
     noteIcon: entry.icon,
     ...typePresentation({ noteType, typeEntry: te }),
     workspace: workspacePresentation({ entry, showWorkspace }),
@@ -185,7 +186,7 @@ export function useNoteSearch(entries: VaultEntry[], query: string, maxResults =
   const typeEntryMap = useMemo(() => buildTypeEntryMap(entries), [entries])
 
   const searchableEntries = useMemo(
-    () => entries.filter((e) => !SEARCH_EXCLUDED_TYPES.has(e.isA ?? '')),
+    () => entries.filter((e) => !SEARCH_EXCLUDED_TYPES.has(e.isA ?? '') && !e.isIndex),
     [entries],
   )
   const showWorkspace = useMemo(
