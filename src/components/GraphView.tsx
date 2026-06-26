@@ -26,8 +26,10 @@ interface GraphInstance extends ForceGraphGeneric<GraphInstance, NodeObject> {
 }
 
 const buildGraphInstance = (el: HTMLElement): GraphInstance => {
-  const factory = ForceGraphBase as unknown as { (el: HTMLElement): GraphInstance }
-  return factory(el)
+  // Runtime API: ForceGraph()(el) — class invoked as zero-arg factory,
+  // then the returned initializer is called with the container element.
+  const factory = ForceGraphBase as unknown as () => (el: HTMLElement) => GraphInstance
+  return factory()(el)
 }
 
 /** Narrow a runtime node back to our GraphNode (which carries label/color/entry). */
@@ -291,6 +293,7 @@ export function GraphView({ entries, onOpenNote, onToggleFavorite, onArchive, lo
           className="h-8 px-2"
           onClick={() => setShowFilters((s) => !s)}
           title={t('graph.filters')}
+          aria-label={t('graph.filters')}
         >
           <Funnel size={14} />
         </Button>
@@ -349,10 +352,10 @@ export function GraphView({ entries, onOpenNote, onToggleFavorite, onArchive, lo
       )}
 
       {/* canvas */}
-      <div ref={containerRef} className="relative flex-1" />
+      <div ref={containerRef} data-testid="graph-canvas" className="relative flex-1" />
 
       {/* node count + hover info */}
-      <div className="flex items-center justify-between border-t border-[var(--sidebar-border)] px-3 py-1 text-[11px] text-muted-foreground">
+      <div data-testid="graph-footer" className="flex items-center justify-between border-t border-[var(--sidebar-border)] px-3 py-1 text-[11px] text-muted-foreground">
         <span>
           {renderedGraph.nodes.length} {t('graph.nodes')} · {renderedGraph.links.length} {t('graph.links')}
         </span>
